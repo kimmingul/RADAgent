@@ -45,7 +45,8 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | DirtyBuffers | 프롬프트 전 더티 버퍼 스냅샷과 충돌 판정. 자동 저장 기본 꺼짐. |
 | Compile | 활성 프로젝트 빌드와 완료 통지. 결과는 메시지 뷰로 보낸다. |
 | HostToolDefs | host-tool 이름과 `set_host_tools` 스키마. ToolsAPI 없음. |
-| HostTools | 버퍼 읽기, 승인된 패치 적용, 컴파일. 메인 스레드에서만 ToolsAPI를 호출한다. |
+| HostTools | host-tool 호출을 도구별 구현으로 나눠 보낸다. 버퍼 읽기, 컴파일. 메인 스레드에서만 ToolsAPI를 호출한다. |
+| BufferEdits | 승인 후 IDE 버퍼 반영(줄 범위, 전체, 캐럿 삽입). 스냅샷 이후 버퍼가 바뀌었으면 반영하지 않는다. 저장하지 않는다. |
 | DebugTools | 디버거 상태, 호출 스택, 부작용 없는 식 평가, 중단점 목록. 읽기 전용. 실행 제어는 하지 않는다. |
 
 ## 데이터 흐름

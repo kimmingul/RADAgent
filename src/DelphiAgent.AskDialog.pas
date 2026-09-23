@@ -11,6 +11,7 @@ function AskChoice(const Title: string; Items: TStrings; out Choice: string): Bo
 function AskCsv(const Title, Csv: string; out Choice: string): Boolean;
 function AskYes(const Title, Message: string): Boolean;
 function AskText(const Title, Prompt: string; out Value: string): Boolean;
+function AskApproval(const FileName, Preview: string): Boolean;
 function AskOpenFile(out Path: string): Boolean;
 function ChooseModel(const ListText: string; out Provider, ModelId: string): Boolean;
 function ExtensionReply(const Line: string; out Reply, Notice: string): Boolean;
@@ -30,6 +31,7 @@ uses
 const
   SOk = #$D655#$C778;
   SCancel = #$CDE8#$C18C;
+  SApprove = #$C2B9#$C778;
 
 procedure PaintDark(Form: TForm);
 begin
@@ -117,6 +119,35 @@ begin
     LabelText.Caption := Message;
     MakeButton(Form, SOk, 220, 96, mrYes);
     MakeButton(Form, SCancel, 316, 96, mrNo);
+    Result := Form.ShowModal = mrYes;
+  finally
+    Form.Free;
+  end;
+end;
+
+{ Shows the target file and the text that will enter the IDE buffer. }
+function AskApproval(const FileName, Preview: string): Boolean;
+var
+  Form: TForm;
+  Memo: TMemo;
+begin
+  Form := TForm.CreateNew(nil);
+  try
+    PaintDark(Form);
+    Form.Caption := 'DelphiAgent';
+    Form.ClientWidth := 520;
+    Form.ClientHeight := 300;
+    Memo := TMemo.Create(Form);
+    Memo.Parent := Form;
+    Memo.Align := alTop;
+    Memo.Height := 240;
+    Memo.ReadOnly := True;
+    Memo.ScrollBars := ssVertical;
+    Memo.Color := clBlack;
+    Memo.Font.Color := clWhite;
+    Memo.Text := FileName + sLineBreak + Preview;
+    MakeButton(Form, SApprove, 300, 256, mrYes);
+    MakeButton(Form, SCancel, 400, 256, mrCancel);
     Result := Form.ShowModal = mrYes;
   finally
     Form.Free;

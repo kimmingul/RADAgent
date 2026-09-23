@@ -3,7 +3,7 @@
 interface
 uses
   Vcl.Forms, Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.Controls, System.Classes,
-  DelphiAgent.HostTools, DelphiAgent.RpcClient;
+  DelphiAgent.BufferEdits, DelphiAgent.HostTools, DelphiAgent.RpcClient;
 type
   TDelphiAgentChatFrame = class(TFrame, IAgentApproval)
     memLog: TMemo;
@@ -24,6 +24,7 @@ type
     procedure BuildUi;
     procedure StyleHighContrast;
     procedure RefreshStatus;
+    procedure ProjectChanged;
     procedure AppendLog(const Text: string);
     procedure EnsureStarted;
     procedure TimerTick(Sender: TObject);
@@ -126,7 +127,7 @@ begin
     FTimer.OnTimer := TimerTick;
     FTimer.Enabled := True;
   end;
-  InstallProjectWatch(RefreshStatus);
+  InstallProjectWatch(ProjectChanged);
   EnsureStarted;
 end;
 destructor TDelphiAgentChatFrame.Destroy;
@@ -240,6 +241,21 @@ begin
   end;
   RefreshStatus;
 end;
+{ Project opened or switched after the window: move omp to the new project folder now,
+  so the first prompt is not lost to a restart inside SendClick. }
+procedure TDelphiAgentChatFrame.ProjectChanged;
+var
+  Dir: string;
+begin
+  Dir := ExcludeTrailingPathDelimiter(ActiveProjectDir);
+  if (FClient <> nil) and (FClient.Pid <> 0) and (Dir <> '') and
+    not SameText(ExcludeTrailingPathDelimiter(FClient.Cwd), Dir) then
+  begin
+    AppendLog('프로젝트 폴더가 바뀌어 omp를 다시 시작합니다: ' + Dir + sLineBreak);
+    EnsureStarted;
+  end;
+  RefreshStatus;
+end;
 procedure TDelphiAgentChatFrame.TimerTick(Sender: TObject);
 begin
   EnsureStarted;
@@ -248,8 +264,8 @@ begin
 end;
 procedure TDelphiAgentChatFrame.SendClick(Sender: TObject);
 var
-  Dirty: TArray<TEditorText>;
-  Files, Texts, Paths: TArray<string>;
+  Open: TArray<TEditorText>;
+  Files, Texts, DirtyFiles, DirtyTexts, Paths: TArray<string>;
   Index: Integer;
   Message, Original, Arg1, Arg2: string;
   Command: TChatCommand;
@@ -262,15 +278,21 @@ begin
   Command := ClassifyChat(Original, Arg1, Arg2);
   if Command = ccPrompt then
   begin
-    Dirty := DirtyEditorTexts;
-    SetLength(Files, Length(Dirty));
-    SetLength(Texts, Length(Dirty));
-    for Index := 0 to High(Dirty) do
+    { Remember every open buffer for conflict checks; only dirty ones go to disk for omp. }
+    Open := OpenEditorTexts;
+    SetLength(Files, Length(Open));
+    SetLength(Texts, Length(Open));
+    for Index := 0 to High(Open) do
     begin
-      Files[Index] := Dirty[Index].FileName;
-      Texts[Index] := Dirty[Index].Text;
+      Files[Index] := Open[Index].FileName;
+      Texts[Index] := Open[Index].Text;
+      if Open[Index].Modified then
+      begin
+        DirtyFiles := DirtyFiles + [Open[Index].FileName];
+        DirtyTexts := DirtyTexts + [Open[Index].Text];
+      end;
     end;
-    Paths := WriteSnapshots(AgentTempRoot, Files, Texts);
+    Paths := WriteSnapshots(AgentTempRoot, DirtyFiles, DirtyTexts);
     RememberSnapshots(Files, Texts);
     Message := MessageWithSnapshots(Original, Paths);
     if not FClient.SendPrompt(Message) then
@@ -350,47 +372,8 @@ begin
     FClient.SendHostResult(CallId, Text, IsError);
 end;
 function TDelphiAgentChatFrame.ApproveBufferChange(const FileName, Preview: string): Boolean;
-var
-  Dialog: TForm;
-  Memo: TMemo;
-  YesButton, NoButton: TButton;
 begin
-  Dialog := TForm.CreateNew(nil);
-  try
-    Dialog.Caption := 'DelphiAgent';
-    Dialog.BorderStyle := bsDialog;
-    Dialog.Position := poScreenCenter;
-    Dialog.ClientWidth := 520;
-    Dialog.ClientHeight := 300;
-    Dialog.Color := clBlack;
-    Memo := TMemo.Create(Dialog);
-    Memo.Parent := Dialog;
-    Memo.Align := alTop;
-    Memo.Height := 240;
-    Memo.ReadOnly := True;
-    Memo.ScrollBars := ssVertical;
-    Memo.Color := clBlack;
-    Memo.Font.Color := clWhite;
-    Memo.Font.Name := 'Malgun Gothic';
-    Memo.Text := FileName + sLineBreak + Preview;
-    YesButton := TButton.Create(Dialog);
-    YesButton.Parent := Dialog;
-    YesButton.Caption := '승인';
-    YesButton.ModalResult := mrYes;
-    YesButton.Left := 300;
-    YesButton.Top := 256;
-    YesButton.Width := 88;
-    NoButton := TButton.Create(Dialog);
-    NoButton.Parent := Dialog;
-    NoButton.Caption := '취소';
-    NoButton.ModalResult := mrCancel;
-    NoButton.Left := 400;
-    NoButton.Top := 256;
-    NoButton.Width := 88;
-    Result := Dialog.ShowModal = mrYes;
-  finally
-    Dialog.Free;
-  end;
+  Result := AskApproval(FileName, Preview);
 end;
 procedure TDelphiAgentChatFrame.ShowConflict(const FileName: string);
 begin

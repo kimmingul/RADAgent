@@ -74,9 +74,11 @@ begin
     Tools.AddElement(ToolDef(ToolListDirty,
       'List open IDE buffers that differ from disk. Does not save.', ''));
     Tools.AddElement(ToolDef(ToolReadBuffer,
-      'Return unsaved IDE editor text for a path. Does not save.', 'path'));
+      'Return unsaved IDE editor text for an absolute path. Does not save.', 'path'));
     Tools.AddElement(ToolDef(ToolApplyEdit,
-      'Replace IDE buffer text after the user confirms. Does not save.',
+      'After the user confirms, replace lines startLine..endLine (1-based, inclusive) of the ' +
+      'open IDE buffer at absolute path with newText, or the whole buffer with content. ' +
+      'Refuses if the buffer changed since the prompt snapshot. Does not save.',
       'path,content,startLine,endLine,newText'));
     Tools.AddElement(ToolDef(ToolDebugState,
       'Report the IDE debugger process state and the stopped source location. Read-only.', ''));

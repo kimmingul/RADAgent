@@ -59,6 +59,7 @@ stdin에는 JSONL만 쓴다. 일반 텍스트 한 줄이면 omp가 죽는다. `@
 | 모달 | `DelphiAgent.AskDialog` |
 | host-tool 이름과 스키마 | `DelphiAgent.HostToolDefs.BuildSetHostToolsFrame` |
 | host-tool 실행 | `DelphiAgent.HostTools.ExecuteHostTool` |
+| 승인 후 버퍼 반영, 충돌 검사 | `DelphiAgent.BufferEdits.ApplyEdit`, `InsertAtCaret` |
 | 디버거 host-tool | `DelphiAgent.DebugTools.ExecuteDebugTool` |
 | 컴파일 | `DelphiAgent.Compile.BuildActiveProjectJson` |
 | RPC 프로세스 | `DelphiAgent.RpcClient` |
@@ -117,11 +118,12 @@ omp가 IDE 도구(`rad.*`)를 부른 사실은 채팅에 보이지 않는다. �
 Select-String -Path "$env:TEMP\DelphiAgent\rpc.log" -Pattern '"toolName":"rad\.[a-z_]+"' | Select-Object -Last 3
 ```
 
-### 알려진 문제 (이 절차는 이것들을 피하도록 짜여 있다)
+### 이 절차로 확인하는 수정 (2026-09-23)
 
-- `rad.apply_edit`는 스냅샷 충돌을 검사하지 않는다. 충돌 검사는 `rad.insert_at_caret`에만 있다. 그래서 충돌 확인(6단계)은 `rad.insert_at_caret`로 한다.
-- `rad.apply_edit`에 `content`(파일 전체 교체)를 주면 기존 텍스트를 지우지 않고 맨 앞에 끼워 넣는다. 그래서 4~5단계는 줄 범위(`startLine`, `endLine`, `newText`)로만 요청한다.
-- 프로젝트를 열기 전에 DelphiAgent 창을 열면 omp가 엉뚱한 폴더에서 뜬다. 처음 **보내기**를 누를 때 다시 뜨면서 그 문장은 버려진다. 그래서 준비 단계에서 프로젝트를 먼저 연다.
+- `rad.apply_edit`도 스냅샷 충돌을 검사한다. 프롬프트를 보낼 때 열린 버퍼 전부를 기억하므로, 저장된 버퍼도 검사 대상이다. 6단계에서 확인한다.
+- `rad.apply_edit`의 `content`는 버퍼 전체를 교체한다. 예전에는 맨 앞에 끼워 넣었다.
+- 줄 범위 교체에서 `newText` 끝에 줄바꿈이 없으면 붙인다. 4~5단계에서 확인한다.
+- 프로젝트를 DelphiAgent 창보다 나중에 열어도, 그 순간 omp가 프로젝트 폴더에서 다시 뜬다. 채팅에 `프로젝트 폴더가 바뀌어 omp를 다시 시작합니다`가 찍힌다. 준비 7~9번의 순서를 바꿔 확인할 수 있다.
 
 ### 준비 (IDE마다 한 번)
 
@@ -187,7 +189,7 @@ Select-String -Path "$env:TEMP\DelphiAgent\rpc.log" -Pattern '"toolName":"rad\.[
 - **입력할 문장:**
 
   ```text
-  디스크 파일은 절대 수정하지 마. rad.apply_edit 도구만 써서 버퍼를 고쳐줘. path는 C:\Users\kimmi\AppData\Local\Temp\DelphiAgentSmoke\MainForm.pas, startLine과 endLine은 모두 "38", newText는 "  Label1.Caption := 'Answer=' + IntToStr(Answer);" 뒤에 줄바꿈 \r\n을 붙인 문자열이야.
+  디스크 파일은 절대 수정하지 마. rad.apply_edit 도구만 써서 버퍼를 고쳐줘. path는 C:\Users\kimmi\AppData\Local\Temp\DelphiAgentSmoke\MainForm.pas, startLine과 endLine은 모두 "38", newText는 "  Label1.Caption := 'Answer=' + IntToStr(Answer);" 야.
   ```
 
 - **할 일:** 제목이 `DelphiAgent`인 승인 창이 뜬다. 창 안에는 파일 경로와 새 줄이 보인다. 창이 떠 있는 동안 뒤의 에디터 38줄이 아직 `Sum=`인지 본다. 그다음 **취소**를 누른다.
@@ -215,19 +217,19 @@ Select-String -Path "$env:TEMP\DelphiAgent\rpc.log" -Pattern '"toolName":"rad\.[
 
 ### 6. 스냅샷 뒤에 사람이 고치면 덮어쓰지 않는다 (충돌)
 
-- **할 일:** 에디터에서 38줄 끝에 캐럿을 둔다.
 - **입력할 문장:**
 
   ```text
-  먼저 bash로 sleep 20을 실행하고, 끝나면 rad.insert_at_caret 도구로 text "  // agent" 를 삽입해줘. 디스크 파일은 수정하지 마.
+  먼저 bash로 sleep 20을 실행하고, 끝나면 rad.apply_edit 도구로 path C:\Users\kimmi\AppData\Local\Temp\DelphiAgentSmoke\MainForm.pas, startLine과 endLine "30", newText "    Result := Result + Index * 1;" 로 버퍼를 고쳐줘. 디스크 파일은 수정하지 마.
   ```
 
-- **할 일:** 보낸 직후 20초 안에 에디터를 클릭하고, 30줄 끝에 스페이스를 하나 친다. omp가 bash 실행 확인을 물으면 승인한다.
+- **할 일:** 보낸 직후 20초 안에 에디터를 클릭하고, 37줄 끝에 스페이스를 하나 친다. omp가 bash 실행 확인을 물으면 승인한다.
 - **통과 조건:**
   - 승인 창이 뜨지 않는다.
   - 채팅에 `충돌: 스냅샷 이후 버퍼가 바뀌어 반영하지 않았습니다. ...MainForm.pas`가 찍힌다.
-  - 버퍼 어디에도 `// agent`가 없다.
-- **대조 확인:** 같은 문장을 다시 보내되 이번에는 에디터를 건드리지 않는다. 승인 창이 뜨고, **승인**하면 캐럿 위치(38줄 끝)에 `  // agent`가 들어간다.
+  - 30줄은 `Result := Result + Index;` 그대로다.
+- **대조 확인:** 같은 문장을 다시 보내되 이번에는 에디터를 건드리지 않는다. 승인 창이 뜨고, **승인**하면 30줄만 `Result := Result + Index * 1;`로 바뀐다.
+- **캐럿 삽입:** 38줄 끝에 캐럿을 두고 `rad.insert_at_caret 도구로 text "  // agent" 를 삽입해줘.`를 보낸다. 승인하면 38줄 끝에 `  // agent`가 붙는다.
 
 ### 7. 컴파일 성공이 메시지 뷰에 보인다
 

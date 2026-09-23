@@ -15,11 +15,12 @@ type
     Text: string;
     Line: Integer;
     Col: Integer;
+    Modified: Boolean;
   end;
 
 function ActiveProjectFile: string;
 function ActiveProjectDir: string;
-function DirtyEditorTexts: TArray<TEditorText>;
+function OpenEditorTexts: TArray<TEditorText>;
 function CurrentEditorText: TEditorText;
 function BufferText(const FileName: string): string;
 procedure ReportToMessageView(const Text: string);
@@ -221,7 +222,8 @@ begin
     Result := nil;
 end;
 
-function DirtyEditorTexts: TArray<TEditorText>;
+{ Every open source buffer, modified or not. Modified mirrors the IDE dirty flag. }
+function OpenEditorTexts: TArray<TEditorText>;
 var
   Modules: IOTAModuleServices;
   Module: IOTAModule;
@@ -240,12 +242,13 @@ begin
     begin
       Editor := Module.ModuleFileEditors[FileIndex];
       Source := SourceFromEditor(Editor);
-      if (Source = nil) or not Source.Modified then
+      if Source = nil then
         Continue;
       Item.FileName := Source.FileName;
       Item.Text := ReadSource(Source);
       Item.Line := 1;
       Item.Col := 1;
+      Item.Modified := Source.Modified;
       Count := Length(Result);
       SetLength(Result, Count + 1);
       Result[Count] := Item;
@@ -264,6 +267,7 @@ begin
   Result.Text := '';
   Result.Line := 0;
   Result.Col := 0;
+  Result.Modified := False;
   Services := BorlandIDEServices as IOTAEditorServices;
   View := Services.TopView;
   if View = nil then

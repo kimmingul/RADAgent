@@ -87,6 +87,7 @@
     <DCCReference Include="DelphiAgent.IdeContext.pas"/>
     <DCCReference Include="DelphiAgent.DirtyBuffers.pas"/>
     <DCCReference Include="DelphiAgent.Compile.pas"/>
+    <DCCReference Include="DelphiAgent.BufferEdits.pas"/>
     <DCCReference Include="DelphiAgent.DebugTools.pas"/>
     <DCCReference Include="DelphiAgent.HostTools.pas"/>
     <DCCReference Include="DelphiAgent.DockForm.pas"/>
