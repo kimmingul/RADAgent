@@ -50,6 +50,14 @@ description: RAD Studio 13.2 ToolsAPI로 DelphiAgent design-time BPL을 만들 �
 - 메시지 뷰: `IOTAMessageServices.AddTitleMessage`, `AddToolMessage`. 도구 접두사는 `DelphiAgent`.
 - 컴파일 메시지를 지울 때는 `ClearCompilerMessages`만 쓴다. `ClearAllMessages`로 다른 도구 출력을 지우지 않는다.
 
+## 디버거 host-tool
+
+- `BorlandIDEServices`를 `IOTADebuggerServices`로 `Supports` 한다. 프로세스는 `ProcessCount > 0`일 때만 `CurrentProcess`로 얻는다.
+- 멈춤 판정: `ProcessState in [psStopped, psFault, psResFault, psException]`.
+- 호출 스택: `StartCallStackAccess`의 결과가 `csAccessible`일 때만 읽고, 항상 `EndCallStackAccess`를 부른다. `CallHeaders[i]`와 `GetCallPos`의 인덱스는 1부터 시작한다.
+- 식 평가: `Evaluate(..., AllowSideEffects = False, ...)`. 결과가 `erDeferred`나 `erBusy`면 기다리지 않고 오류로 돌려준다.
+- 실행, 스텝, 중단점 추가, 메모리 쓰기는 host-tool로 열지 않는다.
+
 ## 디버그
 
 비트마다 호스트가 다르다. 64-bit BPL을 32-bit IDE로 디버그하지 않는다.

@@ -10,6 +10,9 @@ uses
   Winapi.Windows,
   DelphiAgent.Options in '..\src\DelphiAgent.Options.pas',
   DelphiAgent.RpcProtocol in '..\src\DelphiAgent.RpcProtocol.pas',
+  DelphiAgent.HostToolDefs in '..\src\DelphiAgent.HostToolDefs.pas',
+  DelphiAgent.ChatCommand in '..\src\DelphiAgent.ChatCommand.pas',
+  DelphiAgent.RpcDispatch in '..\src\DelphiAgent.RpcDispatch.pas',
   DelphiAgent.DirtyBuffers in '..\src\DelphiAgent.DirtyBuffers.pas',
   DelphiAgent.RpcClient in '..\src\DelphiAgent.RpcClient.pas';
 
@@ -89,22 +92,38 @@ end;
 
 procedure TestHostToolsAndCompileJson;
 var
-  Obj, Item: TJSONObject;
-  Tools, Errors: TJSONArray;
+  Obj, Item, Params: TJSONObject;
+  Tools, Errors, Required: TJSONArray;
   List: TArray<TAgentCompileError>;
-  Names: string;
+  Names, Name: string;
   Index: Integer;
+  SchemaOk: Boolean;
 begin
   Obj := Parse(BuildSetHostToolsFrame('req-3'));
   try
     Check(Obj.GetValue<string>('type') = 'set_host_tools', 'host tools type');
     Tools := Obj.GetValue('tools') as TJSONArray;
     Names := '';
+    SchemaOk := True;
     for Index := 0 to Tools.Count - 1 do
-      Names := Names + ' ' + Tools.Items[Index].GetValue<string>('name');
-    Check(Names.Contains('rad.compile'), 'tool compile');
-    Check(Names.Contains('rad.open_buffer'), 'tool open');
-    Check(Names.Contains('rad.insert_at_caret'), 'tool insert');
+    begin
+      Item := Tools.Items[Index] as TJSONObject;
+      Name := Item.GetValue<string>('name');
+      Names := Names + Name + ' ';
+      Params := Item.GetValue('parameters') as TJSONObject;
+      if (Item.GetValue<string>('description') = '') or
+        (Params.GetValue<string>('type') <> 'object') then
+        SchemaOk := False;
+      Required := Params.GetValue('required') as TJSONArray;
+      if (Required <> nil) and ((Params.GetValue('properties') as TJSONObject)
+        .GetValue(Required.Items[0].Value) = nil) then
+        SchemaOk := False;
+    end;
+    Check(Names = ToolCompile + ' ' + ToolOpenBuffer + ' ' + ToolInsertAtCaret + ' ' +
+      ToolListDirty + ' ' + ToolReadBuffer + ' ' + ToolApplyEdit + ' ' + ToolDebugState + ' ' +
+      ToolDebugStack + ' ' + ToolDebugEvaluate + ' ' + ToolDebugBreakpoints + ' ',
+      'all host tools declared');
+    Check(SchemaOk, 'every tool schema is an object with a declared required field');
   finally
     Obj.Free;
   end;
@@ -163,6 +182,60 @@ begin
   end;
 end;
 
+procedure CheckClass(const Text: string; Expected: TChatCommand;
+  const Want1, Want2, Name: string);
+var
+  A1, A2: string;
+begin
+  Check((ClassifyChat(Text, A1, A2) = Expected) and (A1 = Want1) and (A2 = Want2), Name);
+end;
+
+procedure TestClassifyChat;
+var
+  Obj: TJSONObject;
+begin
+  CheckClass('안녕', ccPrompt, '', '', 'plain text is prompt');
+  CheckClass('  a/b 경로  ', ccPrompt, '', '', 'slash inside text is prompt');
+  CheckClass('/clear', ccNewSession, '', '', '/clear new session');
+  CheckClass('/NEW', ccNewSession, '', '', '/new case-insensitive');
+  CheckClass('/abort', ccAbort, '', '', '/abort');
+  CheckClass('/model', ccListModels, '', '', '/model lists');
+  CheckClass('/model anthropic claude-x', ccSetModel, 'anthropic', 'claude-x',
+    '/model provider id');
+  CheckClass('/model anthropic', ccSlashAsPrompt, '', '', '/model one arg falls back');
+  CheckClass('/model a b c', ccSlashAsPrompt, '', '', '/model three args falls back');
+  CheckClass('/fast', ccFast, '', '', '/fast asks');
+  CheckClass('/fast OFF', ccFast, 'OFF', '', '/fast off');
+  CheckClass('/fast maybe', ccSlashAsPrompt, '', '', '/fast bad arg falls back');
+  CheckClass('/thinking high', ccThinking, 'high', '', '/thinking level');
+  CheckClass('/effort', ccThinking, '', '', '/effort asks');
+  CheckClass('/thinking very high', ccSlashAsPrompt, '', '', '/thinking two words falls back');
+  CheckClass('/goal ship it', ccSlashAsPrompt, '', '', '/goal passes through');
+  CheckClass('/fastmode', ccSlashAsPrompt, '', '', 'prefix is not /fast');
+  Obj := Parse(BuildSetModelFrame('req-5', 'anthropic', 'claude-x'));
+  try
+    Check((Obj.GetValue<string>('type') = 'set_model') and
+      (Obj.GetValue<string>('provider') = 'anthropic') and
+      (Obj.GetValue<string>('modelId') = 'claude-x'), 'set_model fields');
+  finally
+    Obj.Free;
+  end;
+  Obj := Parse(BuildSetFastFrame('req-6', False));
+  try
+    Check((Obj.GetValue<string>('type') = 'set_fast_mode') and
+      (Obj.GetValue('enabled') is TJSONFalse), 'set_fast_mode enabled false');
+  finally
+    Obj.Free;
+  end;
+  Obj := Parse(BuildSetThinkingFrame('req-7', 'high'));
+  try
+    Check((Obj.GetValue<string>('type') = 'set_thinking_level') and
+      (Obj.GetValue<string>('level') = 'high'), 'set_thinking_level level');
+  finally
+    Obj.Free;
+  end;
+end;
+
 procedure TestLiveReady;
 var
   Client: TAgentRpcClient;
@@ -193,6 +266,7 @@ begin
     TestPromptGate;
     TestHostToolsAndCompileJson;
     TestSnapshotsAndFrames;
+    TestClassifyChat;
     TestLiveReady;
   except
     on E: Exception do

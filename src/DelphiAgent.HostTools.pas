@@ -1,6 +1,6 @@
 ﻿unit DelphiAgent.HostTools;
 
-{ rad.compile, rad.open_buffer, rad.insert_at_caret. Buffer edits wait for approval. }
+{ rad.* host tools. Buffer edits wait for approval. Debugger tools live in DelphiAgent.DebugTools. }
 
 interface
 
@@ -18,8 +18,8 @@ implementation
 
 uses
   System.SysUtils, System.IOUtils, System.JSON, Winapi.Windows, ToolsAPI,
-  DelphiAgent.RpcProtocol, DelphiAgent.IdeContext, DelphiAgent.DirtyBuffers,
-  DelphiAgent.Compile;
+  DelphiAgent.IdeContext, DelphiAgent.DirtyBuffers, DelphiAgent.Compile,
+  DelphiAgent.HostToolDefs, DelphiAgent.DebugTools;
 
 function ArgText(const ArgumentsJson, Name: string): string;
 var
@@ -372,6 +372,8 @@ begin
     else
       ResultText := Problem;
   end
+  else if IsDebugTool(ToolName) then
+    ExecuteDebugTool(ToolName, ArgText(ArgumentsJson, 'expression'), ResultText, IsError)
   else
     ResultText := 'unknown host tool';
 end;

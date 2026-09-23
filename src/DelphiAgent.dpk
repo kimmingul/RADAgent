@@ -13,6 +13,7 @@ requires
 contains
   DelphiAgent.Options in 'DelphiAgent.Options.pas',
   DelphiAgent.RpcProtocol in 'DelphiAgent.RpcProtocol.pas',
+  DelphiAgent.HostToolDefs in 'DelphiAgent.HostToolDefs.pas',
   DelphiAgent.ChatCommand in 'DelphiAgent.ChatCommand.pas',
   DelphiAgent.AskDialog in 'DelphiAgent.AskDialog.pas',
   DelphiAgent.RpcDispatch in 'DelphiAgent.RpcDispatch.pas',
@@ -20,6 +21,7 @@ contains
   DelphiAgent.IdeContext in 'DelphiAgent.IdeContext.pas',
   DelphiAgent.DirtyBuffers in 'DelphiAgent.DirtyBuffers.pas',
   DelphiAgent.Compile in 'DelphiAgent.Compile.pas',
+  DelphiAgent.DebugTools in 'DelphiAgent.DebugTools.pas',
   DelphiAgent.HostTools in 'DelphiAgent.HostTools.pas',
   DelphiAgent.DockForm in 'DelphiAgent.DockForm.pas',
   DelphiAgent.Wizard in 'DelphiAgent.Wizard.pas';

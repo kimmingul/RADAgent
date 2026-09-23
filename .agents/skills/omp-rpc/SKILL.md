@@ -1,11 +1,11 @@
 ﻿---
 name: omp-rpc
-description: omp 18.2.8 --mode rpc JSONL 계약. ready 프레임, prompt, abort, host-tools. Use when starting omp, writing the Delphi RPC client, or handling host tool calls. DelphiLSP는 이 스킬이 아니라 delphi-lsp 스킬로 연결한다.
+description: omp 18.2.11 --mode rpc JSONL 계약. ready 프레임, prompt, abort, host-tools. Use when starting omp, writing the Delphi RPC client, or handling host tool calls. DelphiLSP는 이 스킬이 아니라 delphi-lsp 스킬로 연결한다.
 ---
 
 # omp RPC
 
-엔진은 설치된 omp 18.2.8이다. 기본 명령:
+엔진은 설치된 omp 18.2.11이다. 기본 명령:
 
 ```text
 omp --mode rpc

@@ -9,12 +9,6 @@ uses
 
 const
   MaxFrameBytes = 1048576;
-  ToolCompile = 'rad.compile';
-  ToolOpenBuffer = 'rad.open_buffer';
-  ToolInsertAtCaret = 'rad.insert_at_caret';
-  ToolListDirty = 'rad.list_dirty';
-  ToolReadBuffer = 'rad.read_buffer';
-  ToolApplyEdit = 'rad.apply_edit';
 
 type
   TAgentCompileError = record
@@ -32,7 +26,6 @@ function AllowOutbound(Ready: Boolean; const FrameType: string): Boolean;
 function NewRequestId(var NextId: Integer): string;
 function BuildPromptFrame(const Id, Message: string): string;
 function BuildAbortFrame(const Id: string): string;
-function BuildSetHostToolsFrame(const Id: string): string;
 function BuildHostToolResultFrame(const Id, Text: string; IsError: Boolean): string;
 function BuildExtensionUiResponse(const RequestLine: string): string;
 function AssistantDelta(const Line: string): string;
@@ -145,75 +138,6 @@ begin
   try
     Obj.AddPair('id', Id);
     Obj.AddPair('type', 'abort');
-    Result := Obj.ToJSON;
-  finally
-    Obj.Free;
-  end;
-end;
-
-function ToolDef(const Name, Description, PropList: string): TJSONObject;
-var
-  Params, Props, Prop: TJSONObject;
-  Required: TJSONArray;
-  PropName, One: string;
-begin
-  Result := TJSONObject.Create;
-  Result.AddPair('name', Name);
-  Result.AddPair('description', Description);
-  Params := TJSONObject.Create;
-  Params.AddPair('type', 'object');
-  Props := TJSONObject.Create;
-  PropName := PropList;
-  if PropName <> '' then
-  begin
-    Required := TJSONArray.Create;
-    while PropName <> '' do
-    begin
-      if Pos(',', PropName) > 0 then
-        One := Copy(PropName, 1, Pos(',', PropName) - 1)
-      else
-        One := PropName;
-      Prop := TJSONObject.Create;
-      Prop.AddPair('type', 'string');
-      Props.AddPair(One, Prop);
-      if Required.Count = 0 then
-        Required.Add(One);
-      if Pos(',', PropName) > 0 then
-        Delete(PropName, 1, Pos(',', PropName))
-      else
-        PropName := '';
-    end;
-    Params.AddPair('required', Required);
-  end;
-  Params.AddPair('properties', Props);
-  AddBool(Params, 'additionalProperties', False);
-  Result.AddPair('parameters', Params);
-end;
-
-function BuildSetHostToolsFrame(const Id: string): string;
-var
-  Obj: TJSONObject;
-  Tools: TJSONArray;
-begin
-  Obj := TJSONObject.Create;
-  try
-    Obj.AddPair('id', Id);
-    Obj.AddPair('type', 'set_host_tools');
-    Tools := TJSONArray.Create;
-    Tools.AddElement(ToolDef(ToolCompile,
-      'Build the active Delphi project and return compiler errors.', ''));
-    Tools.AddElement(ToolDef(ToolOpenBuffer,
-      'Open a file in the IDE editor.', 'file'));
-    Tools.AddElement(ToolDef(ToolInsertAtCaret,
-      'Insert text at the editor caret after the user approves.', 'text'));
-    Tools.AddElement(ToolDef(ToolListDirty,
-      'List open IDE buffers that differ from disk. Does not save.', ''));
-    Tools.AddElement(ToolDef(ToolReadBuffer,
-      'Return unsaved IDE editor text for a path. Does not save.', 'path'));
-    Tools.AddElement(ToolDef(ToolApplyEdit,
-      'Replace IDE buffer text after the user confirms. Does not save.',
-      'path,content,startLine,endLine,newText'));
-    Obj.AddPair('tools', Tools);
     Result := Obj.ToJSON;
   finally
     Obj.Free;

@@ -79,6 +79,7 @@
     <DCCReference Include="designide.dcp"/>
     <DCCReference Include="DelphiAgent.Options.pas"/>
     <DCCReference Include="DelphiAgent.RpcProtocol.pas"/>
+    <DCCReference Include="DelphiAgent.HostToolDefs.pas"/>
     <DCCReference Include="DelphiAgent.ChatCommand.pas"/>
     <DCCReference Include="DelphiAgent.AskDialog.pas"/>
     <DCCReference Include="DelphiAgent.RpcDispatch.pas"/>
@@ -86,6 +87,7 @@
     <DCCReference Include="DelphiAgent.IdeContext.pas"/>
     <DCCReference Include="DelphiAgent.DirtyBuffers.pas"/>
     <DCCReference Include="DelphiAgent.Compile.pas"/>
+    <DCCReference Include="DelphiAgent.DebugTools.pas"/>
     <DCCReference Include="DelphiAgent.HostTools.pas"/>
     <DCCReference Include="DelphiAgent.DockForm.pas"/>
     <DCCReference Include="DelphiAgent.Wizard.pas"/>

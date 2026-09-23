@@ -1,6 +1,6 @@
 ﻿# DelphiAgent
 
-RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp 18.2.8이다. Delphi로 다시 구현하지 않는다.
+RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp 18.2.11이다. Delphi로 다시 구현하지 않는다.
 
 상세 절차는 스킬에 있다. 여기 규칙과 스킬이 충돌하면 여기 규칙을 따른다.
 
@@ -13,6 +13,7 @@ RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp 18.2.8이
 
 - Delphi 12/13 Object Pascal. 컴파일러는 BDS 37.0.
 - 유닛 하나는 책임 하나. `DESIGN.md`의 모듈을 한 유닛에 합치지 않는다.
+- 한 파일은 400줄을 넘기지 않는다. 넘기면 같은 책임 안에서 유닛을 나눈다.
 - 식별자, 유닛 이름, 파일 이름은 ASCII Pascal.
 - 사용자가 보는 문자열은 한글. 로그 접두사와 프로토콜 필드 이름은 영어.
 - 문자열은 `UnicodeString`. IDE 버퍼를 `AnsiString`으로 왕복하지 않는다.

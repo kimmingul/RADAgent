@@ -1,6 +1,6 @@
 ﻿# DelphiAgent
 
-RAD Studio 13.2 IDE 안의 design-time BPL이다. 에이전트 루프는 설치된 omp 18.2.8이고, Delphi로 다시 만들지 않는다. 도킹 창은 Tools 또는 View 메뉴의 DelphiAgent다. 이어서 할 일은 [docs/continue.md](docs/continue.md)에 적어 두었다.
+RAD Studio 13.2 IDE 안의 design-time BPL이다. 에이전트 루프는 설치된 omp 18.2.11이고, Delphi로 다시 만들지 않는다. 도킹 창은 Tools 또는 View 메뉴의 DelphiAgent다. 이어서 할 일은 [docs/continue.md](docs/continue.md)에 적어 두었다.
 
 ## 요구사항
 
@@ -8,7 +8,7 @@ RAD Studio 13.2 IDE 안의 design-time BPL이다. 에이전트 루프는 설치�
 - `%BDS%` 기본값: `C:\Program Files (x86)\Embarcadero\Studio\37.0`
 - 32-bit IDE: `%BDS%\bin\bds.exe`. 그 IDE 안의 DelphiLSP는 `%BDS%\bin\DelphiLSP.exe`이며, omp는 이 파일을 쓰지 않는다.
 - 64-bit IDE: `%BDS%\bin64\bds.exe`. omp가 쓸 DelphiLSP는 항상 `%BDS%\bin64\DelphiLSP.exe`다.
-- `omp` 18.2.8. PATH에 없으면 `%LOCALAPPDATA%\omp\omp.exe`. 진입점: `omp --mode rpc`
+- `omp` 18.2.11. PATH에 없으면 `%LOCALAPPDATA%\omp\omp.exe`. 진입점: `omp --mode rpc`
 
 DelphiLSP.exe는 IDE 설치본만 사용한다. 이 저장소에 복사하지 않는다. BPL은 `DelphiLSP.exe`를 실행하지 않는다. omp가 `templates/omp.lsp.json`을 활성 프로젝트의 `.omp/lsp.json`으로 펼쳐 별도 프로세스로 띄운다. 절차는 [docs/lsp-setup.md](docs/lsp-setup.md)다.
 
@@ -54,6 +54,8 @@ DelphiLSP.exe는 IDE 설치본만 사용한다. 이 저장소에 복사하지 �
 
 `/model`은 omp가 준 목록으로 모델을 고른다. `/fast`, `/thinking`, `/effort`는 모달에서 고른 뒤 기존 RPC만 보낸다. `/clear`는 확인 후 새 세션이다. 그 외 `/`로 시작하는 문장은 omp에 원문 그대로 넘긴다. `파일` 버튼은 고른 경로를 입력칸에 붙인다. `@file`은 쓰지 않는다.
 
-IDE 도구는 `rad.compile`, `rad.open_buffer`, `rad.insert_at_caret`, `rad.list_dirty`, `rad.read_buffer`, `rad.apply_edit`이다. 버퍼를 고치는 도구는 적용을 누르기 전에는 쓰지 않고, 디스크에 자동 저장하지 않는다. 폼 디자이너와 디버거는 아직 없다.
+IDE 도구는 `rad.compile`, `rad.open_buffer`, `rad.insert_at_caret`, `rad.list_dirty`, `rad.read_buffer`, `rad.apply_edit`이다. 버퍼를 고치는 도구는 적용을 누르기 전에는 쓰지 않고, 디스크에 자동 저장하지 않는다.
+
+디버거 도구는 `rad.debug_state`, `rad.debug_stack`, `rad.debug_evaluate`, `rad.debug_breakpoints`이다. 모두 읽기 전용이다. 실행, 스텝, 중단점 추가는 하지 않는다. 식 평가는 부작용 없이 한다. 폼 디자이너는 아직 없다.
 
 RPC 원문은 `%TEMP%\DelphiAgent\rpc.log`에만 남긴다. 채팅 로그에는 사용자 문장과 모델 응답만 보인다.

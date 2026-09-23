@@ -1,6 +1,6 @@
 ﻿# DelphiAgent 설계
 
-design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.8 자식 프로세스에 JSONL RPC로 프롬프트를 넘긴다. 에이전트 루프, 도구 실행, LSP 세션은 omp가 소유한다.
+design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자식 프로세스에 JSONL RPC로 프롬프트를 넘긴다. 에이전트 루프, 도구 실행, LSP 세션은 omp가 소유한다.
 
 ## 아키텍처
 
@@ -35,16 +35,23 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.8 자식
 | --- | --- |
 | Wizard | `IOTAWizard`. 패키지 `Register`에서 등록하고 IDE 종료 시 해제한다. |
 | DockForm | `INTACustomDockableForm` Chat. 프롬프트 입력, 스트림 표시, 승인, 중단. |
-| RpcClient | `omp --mode rpc` 자식 프로세스. JSONL. `ready` 전 프롬프트 금지. |
+| RpcClient | `omp --mode rpc` 자식 프로세스와 읽기 스레드. `ready` 전 프롬프트 금지. |
+| RpcProtocol | JSONL 프레임 생성과 판별. ToolsAPI 없음. |
+| RpcDispatch | stdout 줄을 프레임 종류별로 나눠 이벤트로 넘긴다. ToolsAPI 없음. |
+| ChatCommand | 채팅 입력을 기존 omp RPC 프레임으로 분류한다. 새 명령 `type`을 만들지 않는다. |
+| AskDialog | `extension_ui_request`와 슬래시 명령 선택 모달. |
+| Options | omp 실행 파일, 명령줄, `%TEMP%\DelphiAgent` 로그 경로. |
 | IdeContext | 활성 `.dproj` 경로, 열린 모듈, 에디터 버퍼 위치. |
-| DirtyBuffers | 프롬프트 전 더티 버퍼 스냅샷. 자동 저장 기본 꺼짐. 승인 후 IDE 버퍼 반영. |
+| DirtyBuffers | 프롬프트 전 더티 버퍼 스냅샷과 충돌 판정. 자동 저장 기본 꺼짐. |
 | Compile | 활성 프로젝트 빌드와 완료 통지. 결과는 메시지 뷰로 보낸다. |
-| HostTools | omp가 되부를 IDE 동작. 버퍼 읽기, 승인된 패치 적용, 컴파일. 메인 스레드에서만 ToolsAPI를 호출한다. |
+| HostToolDefs | host-tool 이름과 `set_host_tools` 스키마. ToolsAPI 없음. |
+| HostTools | 버퍼 읽기, 승인된 패치 적용, 컴파일. 메인 스레드에서만 ToolsAPI를 호출한다. |
+| DebugTools | 디버거 상태, 호출 스택, 부작용 없는 식 평가, 중단점 목록. 읽기 전용. 실행 제어는 하지 않는다. |
 
 ## 데이터 흐름
 
 1. 사용자가 DockForm에 프롬프트를 보낸다.
-2. DirtyBuffers가 수정된 IDE 버퍼를 메모리에 스냅샷한다. 디스크에 저장하지 않는다.
+2. DirtyBuffers가 수정된 IDE 버퍼의 사본을 `%TEMP%\DelphiAgent`에 쓰고 그 경로를 프롬프트에 붙인다. 원본 파일은 저장하지 않는다.
 3. RpcClient가 `ready`를 받은 뒤에만 `prompt` 프레임을 쓴다.
 4. omp가 도구와 LSP로 답을 만든다. DelphiLSP는 omp 설정의 별도 인스턴스다.
 5. omp가 파일을 고치면 패치는 디스크에 남는다. IDE 버퍼는 아직 그대로다.
@@ -72,4 +79,4 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.8 자식
 
 ## 진행 메모
 
-채팅과 `omp --mode rpc`까지는 동작한다. 이후에도 터미널 임베드는 하지 않는다. IDE에만 있는 기능은 host-tool로 열고, omp에 이미 있는 명령은 채팅창이 기존 RPC로 보낸다. 폼 디자이너와 디버거는 아직 없다. 이어서 볼 위치는 `docs/continue.md`다.
+채팅과 `omp --mode rpc`까지는 동작한다. 이후에도 터미널 임베드는 하지 않는다. IDE에만 있는 기능은 host-tool로 열고, omp에 이미 있는 명령은 채팅창이 기존 RPC로 보낸다. 디버거는 읽기 전용 host-tool만 있다. 폼 디자이너는 아직 없다. 이어서 볼 위치는 `docs/continue.md`다.

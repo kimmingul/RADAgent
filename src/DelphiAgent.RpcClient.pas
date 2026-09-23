@@ -78,7 +78,8 @@ procedure ShutdownActiveClient;
 implementation
 uses
   System.JSON, System.SyncObjs, Winapi.Windows,
-  DelphiAgent.Options, DelphiAgent.RpcProtocol, DelphiAgent.ChatCommand;
+  DelphiAgent.Options, DelphiAgent.RpcProtocol, DelphiAgent.ChatCommand,
+  DelphiAgent.HostToolDefs;
 var
   GActive: TAgentRpcClient;
   GGate: TCriticalSection;

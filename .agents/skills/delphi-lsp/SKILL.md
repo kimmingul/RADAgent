@@ -38,6 +38,6 @@ omp는 `initOptions`를 LSP `initializationOptions`로, `settings`를 `workspace
 
 `rootMarkers`는 cwd(활성 `.dproj` 디렉터리)만 본다. 상위 폴더의 `.dproj`로는 서버가 뜨지 않는다.
 
-## definition / references
+## 되는 요청
 
-`$Y`(symbol reference info)가 켜져 있고 Debug 구성으로 한 번 빌드된 DCU가 있어야 definition과 references가 나온다. Release에 `$Y`가 없으면 실패한다. 검색 경로의 DCU에 소스가 browsing path에 없는 경우도 실패한다.
+2026-09-23 DelphiLSP 37.0(Win64)에서 확인한 결과. Debug DCU가 없는 이 저장소에서도 definition과 diagnostics는 된다. references는 `-32601 Method not found`로 거절되고, hover는 `-32603`이 난다. 참조 검색은 `grep`으로 한다. 이 저장소 자체에 쓰는 설정은 `docs/lsp-setup.md`의 "이 저장소를 고칠 때"를 따른다.
