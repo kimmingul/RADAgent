@@ -15,3 +15,4 @@ __recovery
 *.delphilsp.json
 src/Win32/
 src/Win64/
+third_party/

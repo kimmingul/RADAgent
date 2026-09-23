@@ -14,7 +14,14 @@ uses
   DelphiAgent.ChatCommand in '..\src\DelphiAgent.ChatCommand.pas',
   DelphiAgent.RpcDispatch in '..\src\DelphiAgent.RpcDispatch.pas',
   DelphiAgent.DirtyBuffers in '..\src\DelphiAgent.DirtyBuffers.pas',
-  DelphiAgent.RpcClient in '..\src\DelphiAgent.RpcClient.pas';
+  DelphiAgent.RpcClient in '..\src\DelphiAgent.RpcClient.pas',
+  DelphiAgent.RpcJson in '..\src\DelphiAgent.RpcJson.pas',
+  DelphiAgent.RpcEvents in '..\src\DelphiAgent.RpcEvents.pas',
+  DelphiAgent.RpcResponses in '..\src\DelphiAgent.RpcResponses.pas',
+  DelphiAgent.LineDiff in '..\src\DelphiAgent.LineDiff.pas',
+  TestCheck in 'TestCheck.pas',
+  RpcEventsTests in 'RpcEventsTests.pas',
+  LineDiffTests in 'LineDiffTests.pas';
 
 var
   GFailures: Integer;
@@ -50,12 +57,12 @@ begin
   Command := BuildOmpCommandLine('omp', 'D:\work', '', '');
   Check(Command.Contains('--mode rpc'), 'command has rpc mode');
   Check(Command.Contains('--cwd'), 'command has cwd');
-  Check(not Command.Contains('--model'), 'command omits empty model');
-  Check(not Command.Contains('--provider'), 'command omits empty provider');
+  Check(not Command.Contains('--config'), 'command omits empty overlay');
+  Command := BuildOmpCommandLine('omp', 'D:\work', 'D:\work\.omp\delphiagent.yml', '--no-lsp');
+  Check(Command.Contains('--config "D:\work\.omp\delphiagent.yml"'), 'command passes overlay');
+  Check(Command.EndsWith(' --no-lsp'), 'command appends extra args');
   Check(SameText(ExtractFileName(OmpExecutable), 'omp.exe') or (OmpExecutable = 'omp'),
     'default executable is omp');
-  Check(OmpModel = '', 'default model empty');
-  Check(OmpProvider = '', 'default provider empty');
 end;
 
 procedure TestPromptGate;
@@ -121,7 +128,11 @@ begin
     end;
     Check(Names = ToolCompile + ' ' + ToolOpenBuffer + ' ' + ToolInsertAtCaret + ' ' +
       ToolListDirty + ' ' + ToolReadBuffer + ' ' + ToolApplyEdit + ' ' + ToolDebugState + ' ' +
-      ToolDebugStack + ' ' + ToolDebugEvaluate + ' ' + ToolDebugBreakpoints + ' ',
+      ToolDebugStack + ' ' + ToolDebugEvaluate + ' ' + ToolDebugBreakpoints + ' ' +
+      ToolFormComponents + ' ' + ToolFormProperties + ' ' + ToolFormSetProperty + ' ' +
+      ToolFormAddComponent + ' ' + ToolFormDeleteComponent + ' ' + ToolFormRenameComponent + ' ' +
+      ToolFormSetEvent + ' ' + ToolDebugRun + ' ' + ToolDebugStep + ' ' + ToolDebugPause + ' ' +
+      ToolDebugReset + ' ' + ToolDebugAddBreakpoint + ' ',
       'all host tools declared');
     Check(SchemaOk, 'every tool schema is an object with a declared required field');
   finally
@@ -169,8 +180,6 @@ begin
   Check(not SnapshotConflicts('Unit1.pas', Texts[0]), 'same text is not a conflict');
   Check(SnapshotConflicts('Unit1.pas', Texts[0] + ' '), 'edited text conflicts');
   Check(IsReadyFrame('{"type":"ready","protocolVersion":1}'), 'ready frame');
-  Check(AssistantDelta('{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":"안녕"}}') = '안녕',
-    'text delta');
   Huge := StringOfChar('x', MaxFrameBytes + 1);
   Check(not AcceptFrameLine(Huge), 'oversize line rejected');
   Client := TAgentRpcClient.Create;
@@ -246,7 +255,7 @@ begin
   ForceDirectories(Dir);
   Client := TAgentRpcClient.Create;
   try
-    Check(Client.Start(OmpExecutable, Dir), 'omp process starts');
+    Check(Client.Start(OmpExecutable, Dir, '', ''), 'omp process starts');
     Deadline := GetTickCount64 + 25000;
     while (not Client.HostToolsSent) and (GetTickCount64 < Deadline) do
       CheckSynchronize(100);
@@ -267,6 +276,8 @@ begin
     TestHostToolsAndCompileJson;
     TestSnapshotsAndFrames;
     TestClassifyChat;
+    RunRpcEventsTests(Check);
+    RunLineDiffTests(Check);
     TestLiveReady;
   except
     on E: Exception do

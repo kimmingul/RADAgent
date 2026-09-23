@@ -1,11 +1,13 @@
 ﻿unit DelphiAgent.HostTools;
 
-{ rad.* host-tool dispatch. Buffer edits live in DelphiAgent.BufferEdits, debugger tools in DelphiAgent.DebugTools. }
+{ rad.* host-tool dispatch. Buffer edits live in DelphiAgent.BufferEdits, debugger reads in
+  DelphiAgent.DebugTools, debugger control in DelphiAgent.DebugControl, form designer tools in
+  DelphiAgent.FormTools. }
 
 interface
 
 uses
-  DelphiAgent.BufferEdits;
+  DelphiAgent.Approval;
 
 procedure ExecuteHostTool(const ToolName, ArgumentsJson: string;
   const Approval: IAgentApproval; out ResultText: string; out IsError: Boolean);
@@ -14,8 +16,9 @@ implementation
 
 uses
   System.SysUtils, System.IOUtils, System.JSON, Winapi.Windows, ToolsAPI,
-  DelphiAgent.IdeContext, DelphiAgent.Compile,
-  DelphiAgent.HostToolDefs, DelphiAgent.DebugTools;
+  DelphiAgent.IdeContext, DelphiAgent.Compile, DelphiAgent.BufferEdits,
+  DelphiAgent.HostToolDefs, DelphiAgent.DebugTools, DelphiAgent.DebugControl,
+  DelphiAgent.FormEdits, DelphiAgent.FormTools;
 
 function ArgText(const ArgumentsJson, Name: string): string;
 var
@@ -145,6 +148,29 @@ begin
     Result := True;
 end;
 
+function FormArgs(const ArgumentsJson: string): TFormToolArgs;
+begin
+  Result.Path := ArgText(ArgumentsJson, 'path');
+  Result.Component := ArgText(ArgumentsJson, 'component');
+  Result.PropName := ArgText(ArgumentsJson, 'property');
+  Result.Value := ArgText(ArgumentsJson, 'value');
+  Result.ClassName := ArgText(ArgumentsJson, 'class');
+  Result.Name := ArgText(ArgumentsJson, 'name');
+  Result.Parent := ArgText(ArgumentsJson, 'parent');
+  Result.Left := ArgInt(ArgumentsJson, 'left');
+  Result.Top := ArgInt(ArgumentsJson, 'top');
+  Result.NewName := ArgText(ArgumentsJson, 'newName');
+  Result.Event := ArgText(ArgumentsJson, 'event');
+  Result.Handler := ArgText(ArgumentsJson, 'handler');
+end;
+
+function DebugControlArgs(const ArgumentsJson: string): TDebugControlArgs;
+begin
+  Result.Mode := ArgText(ArgumentsJson, 'mode');
+  Result.FileName := ArgText(ArgumentsJson, 'file');
+  Result.Line := ArgInt(ArgumentsJson, 'line');
+end;
+
 procedure ExecuteHostTool(const ToolName, ArgumentsJson: string;
   const Approval: IAgentApproval; out ResultText: string; out IsError: Boolean);
 var
@@ -218,6 +244,10 @@ begin
   end
   else if IsDebugTool(ToolName) then
     ExecuteDebugTool(ToolName, ArgText(ArgumentsJson, 'expression'), ResultText, IsError)
+  else if IsDebugControlTool(ToolName) then
+    ExecuteDebugControl(ToolName, DebugControlArgs(ArgumentsJson), Approval, ResultText, IsError)
+  else if IsFormTool(ToolName) then
+    ExecuteFormTool(ToolName, FormArgs(ArgumentsJson), Approval, ResultText, IsError)
   else
     ResultText := 'unknown host tool';
 end;

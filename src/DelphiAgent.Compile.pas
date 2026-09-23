@@ -14,10 +14,11 @@ procedure RemoveCompileNotifier;
 implementation
 
 uses
-  System.SysUtils, System.Variants, Winapi.Windows, ToolsAPI, DelphiAgent.IdeContext;
+  System.SysUtils, System.Variants, Winapi.Windows, Vcl.Forms, ToolsAPI, DelphiAgent.IdeContext;
 
 const
   HideProgressDialog = True;
+  ErrorInsightWaitMs = 8000;
 
 type
   TCompileNotifier = class(TNotifierObject, IOTACompileNotifier)
@@ -129,13 +130,15 @@ begin
   end;
 end;
 
+{ Error Insight per source file. GetErrors('') returns nothing; the file name is required. }
 function CollectErrors: TArray<TAgentCompileError>;
 var
   Modules: IOTAModuleServices;
   Module: IOTAModule;
   ModuleErrors: IOTAModuleErrors;
   Found: TOTAErrors;
-  ModuleIndex, ErrorIndex, Count: Integer;
+  ModuleIndex, FileIndex, ErrorIndex, Count: Integer;
+  FileName: string;
   Item: TAgentCompileError;
 begin
   SetLength(Result, 0);
@@ -145,19 +148,38 @@ begin
     Module := Modules.Modules[ModuleIndex];
     if not Supports(Module, IOTAModuleErrors, ModuleErrors) then
       Continue;
-    Found := ModuleErrors.GetErrors;
-    for ErrorIndex := 0 to High(Found) do
+    for FileIndex := 0 to Module.ModuleFileCount - 1 do
     begin
-      if Found[ErrorIndex].Severity <> 1 then
-        Continue;
-      Item.FileName := Module.FileName;
-      Item.Line := Found[ErrorIndex].Start.Line;
-      Item.Col := Found[ErrorIndex].Start.CharIndex + 1;
-      Item.Msg := Found[ErrorIndex].Text;
-      Count := Length(Result);
-      SetLength(Result, Count + 1);
-      Result[Count] := Item;
+      FileName := Module.ModuleFileEditors[FileIndex].FileName;
+      Found := ModuleErrors.GetErrors(FileName);
+      for ErrorIndex := 0 to High(Found) do
+      begin
+        if Found[ErrorIndex].Severity <> 1 then
+          Continue;
+        Item.FileName := FileName;
+        Item.Line := Found[ErrorIndex].Start.Line;
+        Item.Col := Found[ErrorIndex].Start.CharIndex + 1;
+        Item.Msg := Found[ErrorIndex].Text;
+        Count := Length(Result);
+        SetLength(Result, Count + 1);
+        Result[Count] := Item;
+      end;
     end;
+  end;
+end;
+
+{ Error Insight lags the build by a few seconds after an edit. Pump messages until it reports. }
+function CollectErrorsAfterFailure: TArray<TAgentCompileError>;
+var
+  Deadline: UInt64;
+begin
+  Result := CollectErrors;
+  Deadline := GetTickCount64 + ErrorInsightWaitMs;
+  while (Length(Result) = 0) and (GetTickCount64 < Deadline) do
+  begin
+    Application.ProcessMessages;
+    Sleep(100);
+    Result := CollectErrors;
   end;
 end;
 
@@ -205,7 +227,7 @@ begin
   end
   else
   begin
-    Errors := CollectErrors;
+    Errors := CollectErrorsAfterFailure;
     if Length(Errors) = 0 then
     begin
       SetLength(Errors, 1);

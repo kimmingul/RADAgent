@@ -5,17 +5,27 @@
 
 interface
 
+uses
+  ToolsAPI;
+
 function IsDebugTool(const ToolName: string): Boolean;
 procedure ExecuteDebugTool(const ToolName, Expression: string;
   out ResultText: string; out IsError: Boolean);
+function Debugger: IOTADebuggerServices;
+function CurrentProcess: IOTAProcess;
+function IsStopped(const Process: IOTAProcess): Boolean;
+{ Process state and, when stopped, the source location. }
+function DebugStateJson: string;
 
 implementation
 
 uses
-  System.SysUtils, System.JSON, Winapi.Windows, ToolsAPI, DelphiAgent.HostToolDefs;
+  System.SysUtils, System.JSON, Winapi.Windows, DelphiAgent.HostToolDefs;
 
 const
   MaxStackFrames = 64;
+  { Headers embed full argument dumps (whole TForm records); 64 of them exceed omp's tool output. }
+  MaxHeaderChars = 240;
   EvalBufferChars = 4096;
   ProcessStateNames: array[TOTAProcessState] of string = ('nothing', 'running',
     'stopping', 'stopped', 'fault', 'resFault', 'terminated', 'exception', 'noProcess');
@@ -71,7 +81,7 @@ begin
     Problem := '현재 스레드가 없습니다.';
 end;
 
-function StateJson: string;
+function DebugStateJson: string;
 var
   Process: IOTAProcess;
   Thread: IOTAThread;
@@ -108,7 +118,7 @@ end;
 function StackJson(out ResultText: string): Boolean;
 var
   Thread: IOTAThread;
-  Problem, FileName: string;
+  Problem, FileName, Header: string;
   Frames: TJSONArray;
   Frame: TJSONObject;
   Index, Count, LineNum: Integer;
@@ -144,7 +154,10 @@ begin
       begin
         Frame := TJSONObject.Create;
         Frame.AddPair('index', TJSONNumber.Create(Index));
-        Frame.AddPair('header', Thread.CallHeaders[Index]);
+        Header := Thread.CallHeaders[Index];
+        if Length(Header) > MaxHeaderChars then
+          Header := Copy(Header, 1, MaxHeaderChars) + '...';
+        Frame.AddPair('header', Header);
         Thread.GetCallPos(Index, FileName, LineNum);
         if FileName <> '' then
         begin
@@ -257,7 +270,7 @@ begin
   end;
   if ToolName = ToolDebugState then
   begin
-    ResultText := StateJson;
+    ResultText := DebugStateJson;
     IsError := False;
   end
   else if ToolName = ToolDebugStack then

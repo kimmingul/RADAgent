@@ -1,4 +1,4 @@
-﻿unit DelphiAgent.DirtyBuffers;
+unit DelphiAgent.DirtyBuffers;
 
 { Writes dirty editor text under %TEMP%\DelphiAgent. Does not save the IDE buffer. }
 

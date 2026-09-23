@@ -1,21 +1,24 @@
-﻿unit DelphiAgent.Options;
+unit DelphiAgent.Options;
 
-{ omp.exe path, model, and provider. Defaults stay on the local omp the user already configured. }
+{ omp.exe location, temp/log paths and the omp command line. No ToolsAPI. }
 
 interface
 
 function OmpExecutable: string;
-function OmpModel: string;
-function OmpProvider: string;
 function AgentTempRoot: string;
 function OmpStderrLog: string;
 procedure AppendRpcLog(const Line: string);
-function BuildOmpCommandLine(const Executable, WorkDir, Model, Provider: string): string;
+{ ConfigOverlay: optional --config file; ExtraArgs: appended verbatim. }
+function BuildOmpCommandLine(const Executable, WorkDir, ConfigOverlay, ExtraArgs: string): string;
 
 implementation
 
 uses
-  System.SysUtils, System.IOUtils, Winapi.Windows;
+  System.SysUtils, System.IOUtils, System.SyncObjs, Winapi.Windows;
+
+var
+  { The RPC reader thread and the main thread both log; unsynchronised appends drop lines. }
+  GLogGate: TCriticalSection;
 
 function OmpExecutable: string;
 var
@@ -31,16 +34,6 @@ begin
     'omp\omp.exe';
   if FileExists(Local) then
     Result := Local;
-end;
-
-function OmpModel: string;
-begin
-  Result := '';
-end;
-
-function OmpProvider: string;
-begin
-  Result := '';
 end;
 
 function AgentTempRoot: string;
@@ -63,10 +56,15 @@ end;
 
 procedure AppendRpcLog(const Line: string);
 begin
+  GLogGate.Acquire;
   try
-    ForceDirectories(AgentTempRoot);
-    TFile.AppendAllText(AgentTempRoot + 'rpc.log', Line + sLineBreak, TEncoding.UTF8);
-  except
+    try
+      ForceDirectories(AgentTempRoot);
+      TFile.AppendAllText(AgentTempRoot + 'rpc.log', Line + sLineBreak, TEncoding.UTF8);
+    except
+    end;
+  finally
+    GLogGate.Release;
   end;
 end;
 
@@ -75,13 +73,19 @@ begin
   Result := '"' + StringReplace(Value, '"', '\"', [rfReplaceAll]) + '"';
 end;
 
-function BuildOmpCommandLine(const Executable, WorkDir, Model, Provider: string): string;
+function BuildOmpCommandLine(const Executable, WorkDir, ConfigOverlay, ExtraArgs: string): string;
 begin
   Result := QuoteArg(Executable) + ' --mode rpc --cwd ' + QuoteArg(WorkDir);
-  if Model <> '' then
-    Result := Result + ' --model ' + QuoteArg(Model);
-  if Provider <> '' then
-    Result := Result + ' --provider ' + QuoteArg(Provider);
+  if ConfigOverlay <> '' then
+    Result := Result + ' --config ' + QuoteArg(ConfigOverlay);
+  if Trim(ExtraArgs) <> '' then
+    Result := Result + ' ' + Trim(ExtraArgs);
 end;
+
+initialization
+  GLogGate := TCriticalSection.Create;
+
+finalization
+  FreeAndNil(GLogGate);
 
 end.

@@ -1,336 +1,315 @@
 ﻿unit DelphiAgent.DockForm;
-{ High-contrast chat frame. The IDE embeds it in a dockable form. }
+{ Chat frame embedded by the IDE's dockable form. A view over DelphiAgent.ChatSession: toolbar,
+  WebView2 transcript, editor context bar, multi-line input and two-line status. }
 interface
 uses
-  Vcl.Forms, Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.Controls, System.Classes,
-  DelphiAgent.BufferEdits, DelphiAgent.HostTools, DelphiAgent.RpcClient;
+  System.Classes, Vcl.Forms, Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.Controls,
+  DelphiAgent.ChatSession, DelphiAgent.ChatInput, DelphiAgent.WebView2Host;
 type
-  TDelphiAgentChatFrame = class(TFrame, IAgentApproval)
-    memLog: TMemo;
-    pnlBottom: TPanel;
-    edtInput: TEdit;
-    pnlButtons: TPanel;
-    btnSend: TButton;
-    btnCancel: TButton;
-    lblStatus: TLabel;
+  TDelphiAgentChatFrame = class(TFrame, IChatView)
   private
-    FCompile: TButton;
-    FFile: TButton;
-    FPickModel: Boolean;
+    FTop, FFooter, FContext, FBottom, FButtons, FStatus: TPanel;
+    FNewSession, FSessions, FExport, FSettings, FSend, FStop, FCompile, FFile: TButton;
+    FIncludeSelection: TCheckBox;
+    FContextLabel, FStatusLine, FDetailLine: TLabel;
+    FWeb: TWebView2Host;
+    FFallback: TMemo;
+    FInput: TChatInput;
     FTimer: TTimer;
-    FClient: TAgentRpcClient;
-    FNotedNoProject: Boolean;
-    FStartError: string;
+    FAttached: Boolean;
+    function MakeButton(Parent: TWinControl; const Caption: string; Handler: TNotifyEvent): TButton;
+    function MakeLabel(Parent: TWinControl; Align: TAlign): TLabel;
     procedure BuildUi;
-    procedure StyleHighContrast;
-    procedure RefreshStatus;
-    procedure ProjectChanged;
-    procedure AppendLog(const Text: string);
-    procedure EnsureStarted;
+    procedure ApplyTheme;
+    procedure ThemeChanged;
+    procedure RefreshContext;
+    procedure LayoutInput(Sender: TObject);
+    procedure WebFailed(Sender: TObject);
+    procedure WebMessage(const Json: string);
+    procedure Submit(const Text: string);
     procedure TimerTick(Sender: TObject);
     procedure SendClick(Sender: TObject);
-    procedure CancelClick(Sender: TObject);
+    procedure StopClick(Sender: TObject);
     procedure CompileClick(Sender: TObject);
-    procedure HandleHostTool(const CallId, ToolName, ArgumentsJson: string);
-    procedure HandleUi(const Line: string);
-    procedure HandleModels(const Text: string);
     procedure FileClick(Sender: TObject);
-    function ApproveBufferChange(const FileName, Preview: string): Boolean;
-    procedure ShowConflict(const FileName: string);
+    procedure NewSessionClick(Sender: TObject);
+    procedure SessionsClick(Sender: TObject);
+    procedure ExportClick(Sender: TObject);
+    procedure SettingsClick(Sender: TObject);
+    { IChatView }
+    procedure PageMessage(const Json: string);
+    procedure SessionChanged;
   public
-    constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure HostFrameCreated;
+    procedure FocusInput;
   end;
+{ Shows the chat, puts Text in the input and sends it when the session can take it. }
+procedure SendFromIde(const Text: string);
 implementation
 {$R *.dfm}
 uses
-  Vcl.Graphics, System.SysUtils, Winapi.Windows,
-  DelphiAgent.Options, DelphiAgent.RpcProtocol, DelphiAgent.ChatCommand,
-  DelphiAgent.AskDialog, DelphiAgent.IdeContext,
-  DelphiAgent.DirtyBuffers, DelphiAgent.Compile;
-const
-  SSend = #$BCF4#$B0B4#$AE30;
-  SStop = #$C911#$C9C0;
-  SCompile = #$CEF4#$D30C#$C77C;
-  SWait = #$B300#$AE30;
-  SConnected = #$C5F0#$ACB0#$B428;
-  SNoProject = #$D65C#$C131' '#$D504#$B85C#$C81D#$D2B8#$AC00' '#$C5C6#$C2B5#$B2C8#$B2E4'.';
-procedure TDelphiAgentChatFrame.StyleHighContrast;
+  System.SysUtils, System.JSON, System.Math, Winapi.Windows, Winapi.ShellAPI, Vcl.Graphics,
+  Vcl.Dialogs, Vcl.Clipbrd, DelphiAgent.ChatActions, DelphiAgent.ChatTheme, DelphiAgent.AskDialog,
+  DelphiAgent.EditorContext, DelphiAgent.ChatFallback, DelphiAgent.SettingsDialog;
+var
+  GActiveFrame: TDelphiAgentChatFrame;
+function TDelphiAgentChatFrame.MakeButton(Parent: TWinControl; const Caption: string;
+  Handler: TNotifyEvent): TButton;
 begin
-  Color := clBlack;
-  ParentBackground := False;
-  ParentColor := False;
-  Font.Name := 'Malgun Gothic';
-  Font.Color := clWhite;
-  Font.Size := 10;
+  Result := TButton.Create(Self);
+  Result.Parent := Parent;
+  Result.Caption := Caption;
+  Result.OnClick := Handler;
+  Result.Height := ScaleValue(26);
+  Result.Width := ScaleValue(Max(64, Length(Caption) * 14 + 20));
+end;
+function TDelphiAgentChatFrame.MakeLabel(Parent: TWinControl; Align: TAlign): TLabel;
+begin
+  Result := TLabel.Create(Self);
+  Result.Parent := Parent;
+  Result.Align := Align;
+  Result.AutoSize := False;
+  Result.Layout := tlCenter;
+  Result.ShowHint := True;
+  Result.Height := ScaleValue(20);
+  Result.AlignWithMargins := True;
+  Result.Margins.SetBounds(ScaleValue(6), 0, ScaleValue(6), 0);
 end;
 procedure TDelphiAgentChatFrame.BuildUi;
+  function Panel(Owner: TWinControl; Align: TAlign; Height: Integer): TPanel;
+  begin
+    Result := TPanel.Create(Self);
+    Result.Parent := Owner;
+    Result.Align := Align;
+    Result.BevelOuter := bvNone;
+    Result.Height := ScaleValue(Height);
+    Result.ParentBackground := False;
+  end;
 begin
-  StyleHighContrast;
-  memLog.Color := clBlack;
-  memLog.Font.Color := clWhite;
-  memLog.Font.Name := 'Malgun Gothic';
-  memLog.Font.Size := 10;
-  edtInput.Color := clBlack;
-  edtInput.Font.Color := clWhite;
-  edtInput.Font.Name := 'Malgun Gothic';
-  lblStatus.Color := clBlack;
-  lblStatus.Font.Color := clWhite;
-  lblStatus.Font.Name := 'Malgun Gothic';
-  lblStatus.Transparent := False;
-  lblStatus.ParentColor := False;
-  lblStatus.Layout := tlCenter;
-  lblStatus.AutoSize := False;
-  lblStatus.Height := 22;
-  lblStatus.Align := alBottom;
-  btnSend.Caption := SSend;
-  btnCancel.Caption := SStop;
-  pnlBottom.Color := clBlack;
-  pnlBottom.ParentBackground := False;
-  pnlButtons.Color := clBlack;
-  pnlButtons.ParentBackground := False;
-  btnSend.OnClick := SendClick;
-  btnCancel.OnClick := CancelClick;
-  if FCompile = nil then
-  begin
-    FCompile := TButton.Create(pnlButtons);
-    FCompile.Parent := pnlButtons;
-    FCompile.Caption := SCompile;
-    FCompile.OnClick := CompileClick;
-  end;
-  pnlButtons.Width := 230;
-  btnSend.SetBounds(4, 4, 220, 28);
-  btnCancel.SetBounds(4, 36, 70, 28);
-  FCompile.SetBounds(78, 36, 70, 28);
-  if FFile = nil then
-  begin
-    FFile := TButton.Create(pnlButtons);
-    FFile.Parent := pnlButtons;
-    FFile.Caption := #$D30C#$C77C;
-    FFile.OnClick := FileClick;
-  end;
-  FFile.SetBounds(152, 36, 70, 28);
-  RefreshStatus;
+  Font.Name := 'Malgun Gothic';
+  Font.Size := 9;
+  FTop := Panel(Self, alTop, 32);
+  FTop.Padding.SetBounds(ScaleValue(4), ScaleValue(3), ScaleValue(4), ScaleValue(3));
+  FNewSession := MakeButton(FTop, '새 세션', NewSessionClick);
+  FSessions := MakeButton(FTop, '세션 목록', SessionsClick);
+  FExport := MakeButton(FTop, '내보내기', ExportClick);
+  FNewSession.Align := alLeft;
+  FSessions.Align := alLeft;
+  FExport.Align := alLeft;
+  FSessions.Left := FNewSession.Left + FNewSession.Width;
+  FExport.Left := FSessions.Left + FSessions.Width;
+  FSettings := MakeButton(FTop, '설정', SettingsClick);
+  FSettings.Align := alRight;
+  { Footer children align inside one panel, so resizing the input never reorders them. }
+  FFooter := Panel(Self, alBottom, 44 + 84 + 24);
+  FStatus := Panel(FFooter, alBottom, 44);
+  FDetailLine := MakeLabel(FStatus, alBottom);
+  FDetailLine.EllipsisPosition := epPathEllipsis;
+  FStatusLine := MakeLabel(FStatus, alClient);
+  FStatusLine.EllipsisPosition := epEndEllipsis;
+  FContext := Panel(FFooter, alTop, 24);
+  FBottom := Panel(FFooter, alClient, 84);
+  FBottom.Padding.SetBounds(ScaleValue(4), ScaleValue(2), ScaleValue(4), ScaleValue(2));
+  FButtons := TPanel.Create(Self);
+  FButtons.Parent := FBottom;
+  FButtons.Align := alRight;
+  FButtons.BevelOuter := bvNone;
+  FButtons.Width := ScaleValue(150);
+  FSend := MakeButton(FButtons, '보내기', SendClick);
+  FSend.SetBounds(ScaleValue(4), 0, ScaleValue(142), ScaleValue(28));
+  FStop := MakeButton(FButtons, '중지', StopClick);
+  FStop.SetBounds(ScaleValue(4), ScaleValue(30), ScaleValue(46), ScaleValue(26));
+  FCompile := MakeButton(FButtons, '컴파일', CompileClick);
+  FCompile.SetBounds(ScaleValue(52), ScaleValue(30), ScaleValue(46), ScaleValue(26));
+  FFile := MakeButton(FButtons, '파일', FileClick);
+  FFile.SetBounds(ScaleValue(100), ScaleValue(30), ScaleValue(46), ScaleValue(26));
+  FInput := TChatInput.Create(Self);
+  FInput.Parent := FBottom;
+  FInput.Align := alClient;
+  FInput.OnSubmit := Submit;
+  FInput.OnHeightWanted := LayoutInput;
+  FIncludeSelection := TCheckBox.Create(Self);
+  FIncludeSelection.Parent := FContext;
+  FIncludeSelection.Align := alRight;
+  FIncludeSelection.Width := ScaleValue(120);
+  FIncludeSelection.Caption := '선택 영역 포함';
+  FContextLabel := MakeLabel(FContext, alClient);
+  FContextLabel.EllipsisPosition := epEndEllipsis;
+  FWeb := TWebView2Host.Create(Self);
+  { Handlers first: setting Parent creates the handle and may fail synchronously. }
+  FWeb.OnMessage := WebMessage;
+  FWeb.OnFailed := WebFailed;
+  FWeb.Align := alClient;
+  FWeb.Parent := Self;
+  FTimer := TTimer.Create(Self);
+  FTimer.Interval := 700;
+  FTimer.OnTimer := TimerTick;
 end;
-constructor TDelphiAgentChatFrame.Create(AOwner: TComponent);
+procedure TDelphiAgentChatFrame.ApplyTheme;
+var
+  Palette: TChatPalette;
 begin
-  inherited Create(AOwner);
+  Palette := CurrentPalette;
+  Color := Palette.Bg;
+  ParentBackground := False;
+  ApplyVclTheme(Self);
+  FWeb.SetBackColor(Palette.Bg);
+  FContextLabel.Font.Color := Palette.Muted;
+  FDetailLine.Font.Color := Palette.Muted;
+end;
+procedure TDelphiAgentChatFrame.ThemeChanged;
+begin
+  ApplyTheme;
+  ChatSession.ThemeChanged;
 end;
 procedure TDelphiAgentChatFrame.HostFrameCreated;
 begin
+  if FAttached then
+    Exit;
   BuildUi;
-  if not Assigned(FTimer) then
-  begin
-    FTimer := TTimer.Create(Self);
-    FTimer.Interval := 1000;
-    FTimer.OnTimer := TimerTick;
-    FTimer.Enabled := True;
-  end;
-  InstallProjectWatch(ProjectChanged);
-  EnsureStarted;
+  ApplyTheme;
+  InstallThemeWatch(ThemeChanged);
+  GActiveFrame := Self;
+  FAttached := True;
+  ChatSession.Attach(Self);
+  FTimer.Enabled := True;
 end;
 destructor TDelphiAgentChatFrame.Destroy;
 begin
-  if Assigned(FTimer) then
+  if FAttached then
   begin
-    FTimer.OnTimer := nil;
-    FTimer.Enabled := False;
-    FreeAndNil(FTimer);
+    ChatSession.Detach(Self);
+    RemoveThemeWatch;
   end;
-  RemoveProjectWatch;
-  if FClient <> nil then
-  begin
-    FClient.OnLog := nil;
-    FClient.OnStatus := nil;
-    FClient.OnHostTool := nil;
-    FClient.SendAbort;
-    FClient.Free;
-    FClient := nil;
-  end;
+  if GActiveFrame = Self then
+    GActiveFrame := nil;
   inherited Destroy;
 end;
-procedure TDelphiAgentChatFrame.AppendLog(const Text: string);
+procedure TDelphiAgentChatFrame.PageMessage(const Json: string);
 begin
-  memLog.SelStart := Length(memLog.Text);
-  memLog.SelLength := 0;
-  memLog.SelText := Text;
-end;
-procedure TDelphiAgentChatFrame.RefreshStatus;
-var
-  Kind, ProjectName, Folder, Reason: string;
-  ProjectFile: string;
-  Pid: Cardinal;
-begin
-  ProjectFile := ActiveProjectFile;
-  if ProjectFile = '' then
-  begin
-    ProjectName := #$C5C6#$C74C;
-    Folder := '';
-  end
+  if FFallback <> nil then
+    AppendFallback(FFallback, Json)
   else
-  begin
-    ProjectName := ChangeFileExt(ExtractFileName(ProjectFile), '');
-    Folder := ExcludeTrailingPathDelimiter(ExtractFilePath(ExpandFileName(ProjectFile)));
-  end;
-  Pid := 0;
-  Kind := SWait;
-  Reason := '';
-  if FClient <> nil then
-  begin
-    Pid := FClient.Pid;
-    if (FClient.LinkError <> '') or (FStartError <> '') then
-    begin
-      Kind := #$C624#$B958;
-      if FClient.LinkError <> '' then
-        Reason := ' ' + FClient.LinkError
-      else
-        Reason := ' ' + FStartError;
-    end
-    else if FClient.Ready then
-      Kind := SConnected
-    else
-      Kind := SWait;
-    if FClient.StateCwd <> '' then
-      Folder := ExcludeTrailingPathDelimiter(FClient.StateCwd);
-  end;
-  lblStatus.Caption := Format('[%s]  pid=%d  프로젝트=%s  폴더=%s%s',
-    [Kind, Pid, ProjectName, Folder, Reason]);
-  if (FClient <> nil) and (FClient.ModelLabel <> '') then
-    lblStatus.Caption := lblStatus.Caption + '  모델=' + FClient.ModelLabel;
-  btnSend.Enabled := (FClient <> nil) and FClient.Ready and FClient.HostToolsSent;
+    FWeb.PostJson(Json);
 end;
-procedure TDelphiAgentChatFrame.EnsureStarted;
-var
-  Dir: string;
+procedure TDelphiAgentChatFrame.WebFailed(Sender: TObject);
 begin
-  Dir := ActiveProjectDir;
-  if Dir = '' then
-  begin
-    if not FNotedNoProject then
+  { Keep chatting in plain text when WebView2 cannot start; say why once. }
+  FWeb.Visible := False;
+  FFallback := CreateFallback(Self, FWeb.Problem);
+  { Replay the transcript as text; before HostFrameCreated the attach there does it. }
+  if FAttached then
+    ChatSession.Attach(Self);
+end;
+procedure TDelphiAgentChatFrame.WebMessage(const Json: string);
+var
+  Value: TJSONValue;
+  Obj: TJSONObject;
+  Kind, Url: string;
+begin
+  Value := TJSONObject.ParseJSONValue(Json);
+  try
+    if not (Value is TJSONObject) then
+      Exit;
+    Obj := TJSONObject(Value);
+    Kind := Obj.GetValue<string>('t', '');
+    if Kind = 'openFile' then
     begin
-      AppendLog(SNoProject + sLineBreak);
-      FNotedNoProject := True;
-    end;
-  end
+      if not OpenFileAtLine(Obj.GetValue<string>('path', ''), Obj.GetValue<Integer>('line', 0)) then
+        ChatSession.Notice('warn', '파일을 열지 못했습니다: ' + Obj.GetValue<string>('path', ''));
+    end
+    else if Kind = 'openUrl' then
+    begin
+      Url := Obj.GetValue<string>('url', '');
+      if Url.StartsWith('http://', True) or Url.StartsWith('https://', True) then
+        ShellExecute(0, 'open', PChar(Url), nil, nil, SW_SHOWNORMAL);
+    end
+    else if Kind = 'copy' then
+      Clipboard.AsText := Obj.GetValue<string>('text', '');
+  finally
+    Value.Free;
+  end;
+end;
+procedure TDelphiAgentChatFrame.SessionChanged;
+var
+  Session: TChatSession;
+begin
+  Session := ChatSession;
+  FStatusLine.Caption := SessionStatusLine;
+  FStatusLine.Hint := FStatusLine.Caption;
+  FDetailLine.Caption := SessionDetailLine;
+  FDetailLine.Hint := FDetailLine.Caption;
+  FSend.Enabled := Session.Connected and not Session.Busy;
+  FStop.Enabled := Session.Busy;
+  FNewSession.Enabled := Session.Connected and not Session.Busy;
+  FSessions.Enabled := FNewSession.Enabled and (Session.State.SessionFile <> '');
+  FExport.Enabled := Session.Connected;
+  FInput.SetCommands(Session.Commands);
+end;
+procedure TDelphiAgentChatFrame.RefreshContext;
+var
+  Info: TEditorInfo;
+  Text: string;
+  Unsaved: Integer;
+begin
+  Info := ActiveEditorInfo;
+  if Info.FileName = '' then
+    Text := '열린 파일 없음'
   else
-    FNotedNoProject := False;
-  if (FClient <> nil) and (FClient.Pid <> 0) and (Dir <> '') and
-    not SameText(ExcludeTrailingPathDelimiter(FClient.Cwd), ExcludeTrailingPathDelimiter(Dir)) then
-    FClient.Stop;
-  if FClient = nil then
-    FClient := TAgentRpcClient.Create;
-  FClient.OnLog := AppendLog;
-  FClient.OnStatus := RefreshStatus;
-  FClient.OnHostTool := HandleHostTool;
-  FClient.OnUi := HandleUi;
-  FClient.OnModels := HandleModels;
-  if FClient.Pid = 0 then
-  begin
-    if Dir <> '' then
-      Dir := ExcludeTrailingPathDelimiter(Dir)
-    else
-      Dir := GetCurrentDir;
-    if not FClient.Start(OmpExecutable, Dir) then
-    begin
-      FStartError := '프로세스 시작 실패 ' + IntToStr(GetLastError);
-      AppendLog('omp start failed ' + IntToStr(GetLastError) + sLineBreak);
-    end
-    else
-      FStartError := '';
-  end;
-  RefreshStatus;
-end;
-{ Project opened or switched after the window: move omp to the new project folder now,
-  so the first prompt is not lost to a restart inside SendClick. }
-procedure TDelphiAgentChatFrame.ProjectChanged;
-var
-  Dir: string;
-begin
-  Dir := ExcludeTrailingPathDelimiter(ActiveProjectDir);
-  if (FClient <> nil) and (FClient.Pid <> 0) and (Dir <> '') and
-    not SameText(ExcludeTrailingPathDelimiter(FClient.Cwd), Dir) then
-  begin
-    AppendLog('프로젝트 폴더가 바뀌어 omp를 다시 시작합니다: ' + Dir + sLineBreak);
-    EnsureStarted;
-  end;
-  RefreshStatus;
+    Text := ExtractFileName(Info.FileName);
+  if Info.HasSelection then
+    Text := Text + Format(' · 선택 %d–%d줄', [Info.StartLine, Info.EndLine]);
+  Unsaved := UnsavedModuleCount;
+  if Unsaved > 0 then
+    Text := Text + Format(' · 저장 안 한 파일 %d개', [Unsaved]);
+  FContextLabel.Caption := Text;
+  FContextLabel.Hint := Info.FileName;
+  FIncludeSelection.Enabled := Info.HasSelection;
 end;
 procedure TDelphiAgentChatFrame.TimerTick(Sender: TObject);
 begin
-  EnsureStarted;
-  if Assigned(FTimer) and (FClient <> nil) and FClient.HostToolsSent then
-    FTimer.Enabled := False;
+  RefreshContext;
+end;
+procedure TDelphiAgentChatFrame.LayoutInput(Sender: TObject);
+begin
+  FFooter.Height := FContext.Height + FStatus.Height + Max(ScaleValue(62),
+    FInput.WantedLines * Abs(FInput.Font.Height) * 3 div 2 + ScaleValue(14));
+end;
+procedure TDelphiAgentChatFrame.Submit(const Text: string);
+var
+  Info: TEditorInfo;
+  Attachment, AttachmentLabel: string;
+begin
+  Attachment := '';
+  AttachmentLabel := '';
+  if FIncludeSelection.Checked and FIncludeSelection.Enabled then
+  begin
+    Info := ActiveEditorInfo;
+    Attachment := SelectionAttachment(Info);
+    if Attachment <> '' then
+      AttachmentLabel := Format('%s %d–%d줄 선택 영역 포함', [ExtractFileName(Info.FileName),
+        Info.StartLine, Info.EndLine]);
+  end;
+  if SubmitChat(Text, Attachment, AttachmentLabel) then
+  begin
+    FInput.Clear;
+    FIncludeSelection.Checked := False;
+  end;
 end;
 procedure TDelphiAgentChatFrame.SendClick(Sender: TObject);
-var
-  Open: TArray<TEditorText>;
-  Files, Texts, DirtyFiles, DirtyTexts, Paths: TArray<string>;
-  Index: Integer;
-  Message, Original, Arg1, Arg2: string;
-  Command: TChatCommand;
 begin
-  RefreshStatus;
-  EnsureStarted;
-  if (FClient = nil) or not FClient.Ready or not FClient.HostToolsSent then
-    Exit;
-  Original := edtInput.Text;
-  Command := ClassifyChat(Original, Arg1, Arg2);
-  if Command = ccPrompt then
-  begin
-    { Remember every open buffer for conflict checks; only dirty ones go to disk for omp. }
-    Open := OpenEditorTexts;
-    SetLength(Files, Length(Open));
-    SetLength(Texts, Length(Open));
-    for Index := 0 to High(Open) do
-    begin
-      Files[Index] := Open[Index].FileName;
-      Texts[Index] := Open[Index].Text;
-      if Open[Index].Modified then
-      begin
-        DirtyFiles := DirtyFiles + [Open[Index].FileName];
-        DirtyTexts := DirtyTexts + [Open[Index].Text];
-      end;
-    end;
-    Paths := WriteSnapshots(AgentTempRoot, DirtyFiles, DirtyTexts);
-    RememberSnapshots(Files, Texts);
-    Message := MessageWithSnapshots(Original, Paths);
-    if not FClient.SendPrompt(Message) then
-      Exit;
-    AppendLog(sLineBreak + '> ' + Original + sLineBreak);
-  end
-  else
-  begin
-    if not DispatchSlash(Original, FClient.SendRaw, FPickModel) then
-      FClient.SendPrompt(Original);
-    if not FPickModel then
-      AppendLog(sLineBreak + '> ' + Original + sLineBreak);
-  end;
-  edtInput.Text := '';
+  Submit(Trim(FInput.Text));
+  FocusInput;
 end;
-procedure TDelphiAgentChatFrame.HandleModels(const Text: string);
-var
-  Provider, ModelId: string;
+procedure TDelphiAgentChatFrame.StopClick(Sender: TObject);
 begin
-  if not FPickModel then
-    Exit;
-  FPickModel := False;
-  if ChooseModel(Text, Provider, ModelId) then
-  begin
-    FClient.SendRaw('set_model', BuildSetModelFrame('req', Provider, ModelId));
-    AppendLog(#$BAA8#$B378' ' + Provider + '/' + ModelId + sLineBreak);
-  end;
+  if ChatSession.Client <> nil then
+    ChatSession.Client.SendAbort;
 end;
-procedure TDelphiAgentChatFrame.HandleUi(const Line: string);
-var
-  Reply, Notice: string;
+procedure TDelphiAgentChatFrame.CompileClick(Sender: TObject);
 begin
-  if (FClient = nil) or not ExtensionReply(Line, Reply, Notice) then
-    Exit;
-  if Notice <> '' then
-    AppendLog(Notice + sLineBreak);
-  if Reply <> '' then
-    FClient.SendRaw('extension_ui_response', Reply);
+  CompileActiveProject;
 end;
 procedure TDelphiAgentChatFrame.FileClick(Sender: TObject);
 var
@@ -338,45 +317,53 @@ var
 begin
   if not AskOpenFile(Path) then
     Exit;
-  if edtInput.Text = '' then
-    edtInput.Text := Path
+  if FInput.Text = '' then
+    FInput.Text := Path
   else
-    edtInput.Text := edtInput.Text + ' ' + Path;
+    FInput.Text := FInput.Text + ' ' + Path;
 end;
-procedure TDelphiAgentChatFrame.CancelClick(Sender: TObject);
+procedure TDelphiAgentChatFrame.NewSessionClick(Sender: TObject);
 begin
-  if (FClient <> nil) and FClient.Ready then
-    FClient.SendAbort;
+  StartNewSession;
 end;
-procedure TDelphiAgentChatFrame.CompileClick(Sender: TObject);
+procedure TDelphiAgentChatFrame.SessionsClick(Sender: TObject);
+begin
+  PickSession;
+end;
+procedure TDelphiAgentChatFrame.ExportClick(Sender: TObject);
 var
-  Json: string;
+  Dialog: TSaveDialog;
 begin
-  Json := BuildActiveProjectJson;
-  if Json.Contains('"ok":true') then
-    AppendLog(SCompile + ' ok' + sLineBreak)
-  else if Json.Contains('프로젝트 없음') then
-    AppendLog(SCompile + ' ' + #$D504#$B85C#$C81D#$D2B8' '#$C5C6#$C74C + sLineBreak)
-  else
-    AppendLog(SCompile + ' ' + #$C2E4#$D328 + sLineBreak);
+  Dialog := TSaveDialog.Create(nil);
+  try
+    Dialog.Filter := 'HTML (*.html)|*.html';
+    Dialog.DefaultExt := 'html';
+    Dialog.FileName := 'DelphiAgent-' + FormatDateTime('yyyymmdd-hhnn', Now) + '.html';
+    Dialog.Options := Dialog.Options + [ofOverwritePrompt];
+    if Dialog.Execute then
+      ExportConversation(Dialog.FileName);
+  finally
+    Dialog.Free;
+  end;
 end;
-procedure TDelphiAgentChatFrame.HandleHostTool(const CallId, ToolName, ArgumentsJson: string);
-var
-  Text: string;
-  IsError: Boolean;
+procedure TDelphiAgentChatFrame.SettingsClick(Sender: TObject);
 begin
-  if (FClient <> nil) and FClient.WasCancelled(CallId) then
+  ShowSettings;
+  { Font size and high contrast change the frame too. }
+  ThemeChanged;
+end;
+procedure TDelphiAgentChatFrame.FocusInput;
+begin
+  if FInput.CanFocus then
+    FInput.SetFocus;
+end;
+procedure SendFromIde(const Text: string);
+begin
+  if GActiveFrame = nil then
     Exit;
-  ExecuteHostTool(ToolName, ArgumentsJson, Self, Text, IsError);
-  if (FClient <> nil) and not FClient.WasCancelled(CallId) then
-    FClient.SendHostResult(CallId, Text, IsError);
-end;
-function TDelphiAgentChatFrame.ApproveBufferChange(const FileName, Preview: string): Boolean;
-begin
-  Result := AskApproval(FileName, Preview);
-end;
-procedure TDelphiAgentChatFrame.ShowConflict(const FileName: string);
-begin
-  AppendLog('충돌: 스냅샷 이후 버퍼가 바뀌어 반영하지 않았습니다. ' + FileName + sLineBreak);
+  GActiveFrame.FInput.Text := Text;
+  GActiveFrame.FocusInput;
+  if ChatSession.Connected and not ChatSession.Busy then
+    GActiveFrame.Submit(Text);
 end;
 end.

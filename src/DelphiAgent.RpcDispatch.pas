@@ -1,4 +1,4 @@
-﻿unit DelphiAgent.RpcDispatch;
+unit DelphiAgent.RpcDispatch;
 
 { Splits stdout JSONL and dispatches omp v1 frames. No process and no ToolsAPI. }
 
@@ -94,10 +94,7 @@ begin
       Value.Free;
     Exit;
   end;
-  Say(Events, AssistantDelta(Line));
-  Say(Events, ResponseErrorText(Line));
-  if IsTerminalAgentEnd(Line) then
-    Say(Events, sLineBreak);
+  { Assistant text, tool rows and errors travel as typed events (DelphiAgent.RpcEvents). }
   if (Kind <> 'host_tool_call') or not Assigned(Events.HostCall) then
     Exit;
   Value := TJSONObject.ParseJSONValue(Line);

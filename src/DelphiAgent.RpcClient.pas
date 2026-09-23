@@ -2,11 +2,12 @@
 { omp --mode rpc child. The read thread never calls ToolsAPI. }
 interface
 uses
-  System.Classes, System.SysUtils, DelphiAgent.RpcDispatch;
+  System.Classes, System.SysUtils, DelphiAgent.RpcDispatch, DelphiAgent.RpcEvents;
 type
-  TRpcLogEvent = procedure(const Text: string) of object;
+  TRpcLogEvent = reference to procedure(const Text: string);
   TRpcStatusEvent = procedure of object;
-  TRpcHostToolEvent = procedure(const CallId, ToolName, ArgumentsJson: string) of object;
+  TRpcHostToolEvent = reference to procedure(const CallId, ToolName, ArgumentsJson: string);
+  TRpcAgentEvent = procedure(const Event: TAgentEvent) of object;
   TAgentRpcClient = class
   private
     type
@@ -32,18 +33,18 @@ type
     FOnLog: TRpcLogEvent;
     FOnStatus: TRpcStatusEvent;
     FOnHostTool: TRpcHostToolEvent;
-    FOnModels: TRpcLogEvent;
+    FOnResponse: TRpcLogEvent;
+    FOnAgentEvent: TRpcAgentEvent;
     FOnUi: TRpcLogEvent;
     FEvents: TRpcDispatch;
     FLinkError: string;
-    FModel: string;
-    FStateCwd: string;
     FStopping: Boolean;
     procedure WriteFrame(const Frame, FrameType: string);
     procedure QueueFrame(const Frame, FrameType: string);
     procedure QueueHost(const CallId, ToolName, Args: string);
     procedure QueueUi(const Line: string);
-    procedure QueueModels(const Text: string);
+    procedure QueueResponse(const Line: string);
+    procedure QueueEvent(const Event: TAgentEvent);
     procedure NoteReady;
     procedure ReadLoop;
     procedure ReaderLine(const Line: string);
@@ -54,7 +55,7 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    function Start(const Executable, WorkDir: string): Boolean;
+    function Start(const Executable, WorkDir, ConfigOverlay, ExtraArgs: string): Boolean;
     procedure Stop;
     function SendPrompt(const Message: string): Boolean;
     procedure SendAbort;
@@ -68,11 +69,11 @@ type
     property OnLog: TRpcLogEvent read FOnLog write FOnLog;
     property OnStatus: TRpcStatusEvent read FOnStatus write FOnStatus;
     property OnHostTool: TRpcHostToolEvent read FOnHostTool write FOnHostTool;
-    property OnModels: TRpcLogEvent read FOnModels write FOnModels;
+    { Response frames and available_commands_update, raw JSON line, on the main thread. }
+    property OnResponse: TRpcLogEvent read FOnResponse write FOnResponse;
+    property OnAgentEvent: TRpcAgentEvent read FOnAgentEvent write FOnAgentEvent;
     property OnUi: TRpcLogEvent read FOnUi write FOnUi;
     property LinkError: string read FLinkError;
-    property ModelLabel: string read FModel;
-    property StateCwd: string read FStateCwd;
   end;
 procedure ShutdownActiveClient;
 implementation
@@ -168,9 +169,13 @@ procedure TAgentRpcClient.QueueUi(const Line: string);
 begin
   TThread.Queue(TThread(nil), procedure begin if FAlive and Assigned(FOnUi) then FOnUi(Line); end);
 end;
-procedure TAgentRpcClient.QueueModels(const Text: string);
+procedure TAgentRpcClient.QueueResponse(const Line: string);
 begin
-  TThread.Queue(TThread(nil), procedure begin if FAlive and Assigned(FOnModels) then FOnModels(Text); end);
+  TThread.Queue(TThread(nil), procedure begin if FAlive and Assigned(FOnResponse) then FOnResponse(Line); end);
+end;
+procedure TAgentRpcClient.QueueEvent(const Event: TAgentEvent);
+begin
+  TThread.Queue(TThread(nil), procedure begin if FAlive and Assigned(FOnAgentEvent) then FOnAgentEvent(Event); end);
 end;
 procedure TAgentRpcClient.NoteCancel(const CallId: string);
 var
@@ -212,20 +217,18 @@ begin
 end;
 procedure TAgentRpcClient.ReaderLine(const Line: string);
 var
-  Model, Cwd, Models: string;
+  Kind: string;
+  Event: TAgentEvent;
 begin
   if Line = '' then begin Post('frame exceeds 1MiB'); Exit; end;
   AppendRpcLog('< ' + Line);
-  if StateModelAndCwd(Line, Model, Cwd) then
-  begin
-    if Model <> '' then FModel := Model;
-    if Cwd <> '' then FStateCwd := Cwd;
-    TThread.Queue(TThread(nil), procedure begin if FAlive and Assigned(FOnStatus) then FOnStatus(); end);
-  end;
-  if Assigned(FOnUi) and (FrameTypeOf(Line) = 'extension_ui_request') then begin QueueUi(Line); Exit; end;
-  Models := ModelListText(Line);
-  if Models <> '' then
-    if Assigned(FOnModels) then QueueModels(Models) else Post(Models);
+  Kind := FrameTypeOf(Line);
+  if Assigned(FOnUi) and (Kind = 'extension_ui_request') then begin QueueUi(Line); Exit; end;
+  if (Kind = 'response') or (Kind = 'available_commands_update') then
+    QueueResponse(Line);
+  Event := ParseAgentEvent(Line);
+  if Event.Kind <> aekNone then
+    QueueEvent(Event);
   DispatchRpcLine(Line, FEvents);
 end;
 function TAgentRpcClient.ReaderStopped: Boolean;
@@ -260,7 +263,7 @@ begin
     Handle := 0;
   end;
 end;
-function TAgentRpcClient.Start(const Executable, WorkDir: string): Boolean;
+function TAgentRpcClient.Start(const Executable, WorkDir, ConfigOverlay, ExtraArgs: string): Boolean;
 var
   Pipes: TRpcPipes;
 begin
@@ -268,7 +271,7 @@ begin
   if FProcess <> 0 then
     Exit(True);
   ForceDirectories(AgentTempRoot);
-  if not SpawnRpcProcess(BuildOmpCommandLine(Executable, WorkDir, OmpModel, OmpProvider),
+  if not SpawnRpcProcess(BuildOmpCommandLine(Executable, WorkDir, ConfigOverlay, ExtraArgs),
     WorkDir, OmpStderrLog, Pipes) then
     Exit;
   FStdIn := Pipes.StdIn;
@@ -363,8 +366,12 @@ begin
   Value := TJSONObject.ParseJSONValue(Frame);
   if not (Value is TJSONObject) then begin Value.Free; Exit; end;
   Obj := TJSONObject(Value);
-  Obj.RemovePair('id');
-  Obj.AddPair('id', NewRequestId(FNextId));
+  { A UI reply names the request it answers; only commands get a fresh id. }
+  if FrameType <> 'extension_ui_response' then
+  begin
+    Obj.RemovePair('id').Free;
+    Obj.AddPair('id', NewRequestId(FNextId));
+  end;
   WriteFrame(Obj.ToJSON, FrameType);
   Obj.Free;
 end;

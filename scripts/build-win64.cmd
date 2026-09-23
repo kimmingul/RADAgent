@@ -17,6 +17,8 @@ if exist "%NEWBPL%" (
   if exist "%NEWBPL%" goto fail
 )
 if not exist "%INSTBPL%" goto fail
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0deploy-assets.ps1" -BplDir "%BPLDIR%" -Arch x64
+if errorlevel 1 goto fail
 powershell -NoProfile -Command "if ((Get-Item -LiteralPath '%INSTBPL%').LastWriteTime -lt (Get-Item -LiteralPath '%~dp0..\src\DelphiAgent.Wizard.pas').LastWriteTime) { exit 1 }"
 if errorlevel 1 goto stale
 exit /b 0

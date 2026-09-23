@@ -1,4 +1,4 @@
-unit DelphiAgent.AskDialog;
+﻿unit DelphiAgent.AskDialog;
 
 { Modal prompts for slash commands and omp extension UI. }
 
@@ -11,10 +11,10 @@ function AskChoice(const Title: string; Items: TStrings; out Choice: string): Bo
 function AskCsv(const Title, Csv: string; out Choice: string): Boolean;
 function AskYes(const Title, Message: string): Boolean;
 function AskText(const Title, Prompt: string; out Value: string): Boolean;
-function AskApproval(const FileName, Preview: string): Boolean;
 function AskOpenFile(out Path: string): Boolean;
 function ChooseModel(const ListText: string; out Provider, ModelId: string): Boolean;
-function ExtensionReply(const Line: string; out Reply, Notice: string): Boolean;
+{ InputCancelled: the user closed an input prompt without a value. }
+function ExtensionReply(const Line: string; out Reply, Notice: string; out InputCancelled: Boolean): Boolean;
 
 type
   TRawSend = procedure(const FrameType, Frame: string) of object;
@@ -25,13 +25,17 @@ function DispatchSlash(const Original: string; const Send: TRawSend;
 implementation
 
 uses
-  Vcl.Forms, Vcl.StdCtrls, Vcl.Controls, Vcl.Graphics, Vcl.Dialogs,
+  Winapi.Windows, Winapi.ShellAPI, Vcl.Forms, Vcl.StdCtrls, Vcl.Controls, Vcl.Graphics, Vcl.Dialogs,
   DelphiAgent.ChatCommand, DelphiAgent.RpcProtocol;
 
 const
   SOk = #$D655#$C778;
   SCancel = #$CDE8#$C18C;
   SApprove = #$C2B9#$C778;
+
+var
+  { The open AskText form, so an omp "cancel" (login finished in the browser) can close it. }
+  GActiveAsk: TForm;
 
 procedure PaintDark(Form: TForm);
 begin
@@ -114,40 +118,12 @@ begin
     Form.ClientHeight := 140;
     LabelText := TLabel.Create(Form);
     LabelText.Parent := Form;
+    LabelText.AutoSize := False;
     LabelText.SetBounds(12, 16, 396, 64);
     LabelText.WordWrap := True;
     LabelText.Caption := Message;
     MakeButton(Form, SOk, 220, 96, mrYes);
     MakeButton(Form, SCancel, 316, 96, mrNo);
-    Result := Form.ShowModal = mrYes;
-  finally
-    Form.Free;
-  end;
-end;
-
-{ Shows the target file and the text that will enter the IDE buffer. }
-function AskApproval(const FileName, Preview: string): Boolean;
-var
-  Form: TForm;
-  Memo: TMemo;
-begin
-  Form := TForm.CreateNew(nil);
-  try
-    PaintDark(Form);
-    Form.Caption := 'DelphiAgent';
-    Form.ClientWidth := 520;
-    Form.ClientHeight := 300;
-    Memo := TMemo.Create(Form);
-    Memo.Parent := Form;
-    Memo.Align := alTop;
-    Memo.Height := 240;
-    Memo.ReadOnly := True;
-    Memo.ScrollBars := ssVertical;
-    Memo.Color := clBlack;
-    Memo.Font.Color := clWhite;
-    Memo.Text := FileName + sLineBreak + Preview;
-    MakeButton(Form, SApprove, 300, 256, mrYes);
-    MakeButton(Form, SCancel, 400, 256, mrCancel);
     Result := Form.ShowModal = mrYes;
   finally
     Form.Free;
@@ -169,6 +145,7 @@ begin
     Form.ClientHeight := 140;
     LabelText := TLabel.Create(Form);
     LabelText.Parent := Form;
+    LabelText.AutoSize := False;
     LabelText.SetBounds(12, 12, 396, 36);
     LabelText.WordWrap := True;
     LabelText.Caption := Prompt;
@@ -179,7 +156,12 @@ begin
     Edit.Font.Color := clWhite;
     MakeButton(Form, SOk, 220, 96, mrOk);
     MakeButton(Form, SCancel, 316, 96, mrCancel);
-    Result := (Form.ShowModal = mrOk) and (Trim(Edit.Text) <> '');
+    GActiveAsk := Form;
+    try
+      Result := (Form.ShowModal = mrOk) and (Trim(Edit.Text) <> '');
+    finally
+      GActiveAsk := nil;
+    end;
     if Result then
       Value := Trim(Edit.Text);
   finally
@@ -228,7 +210,7 @@ begin
   end;
 end;
 
-function ExtensionReply(const Line: string; out Reply, Notice: string): Boolean;
+function ExtensionReply(const Line: string; out Reply, Notice: string; out InputCancelled: Boolean): Boolean;
 var
   Ui: TExtensionUi;
   Choice: string;
@@ -237,6 +219,7 @@ var
 begin
   Reply := '';
   Notice := '';
+  InputCancelled := False;
   Result := False;
   if not ParseExtensionUi(Line, Ui) then
     Exit;
@@ -245,6 +228,13 @@ begin
   begin
     Notice := Ui.Message;
     Reply := BuildUiReply(Ui.Id, '', True, False);
+  end
+  else if Ui.Method = 'open_url' then
+  begin
+    { Login: omp waits for the browser flow, not for a reply. }
+    if Ui.Url.StartsWith('http://', True) or Ui.Url.StartsWith('https://', True) then
+      ShellExecute(0, 'open', PChar(Ui.Url), nil, nil, SW_SHOWNORMAL);
+    Notice := Trim('브라우저에서 로그인을 마치세요. ' + Ui.Message + ' ' + Ui.Url);
   end
   else if Ui.Method = 'confirm' then
     Reply := BuildUiReply(Ui.Id, '', AskYes(Ui.Title, Ui.Message), False)
@@ -262,12 +252,22 @@ begin
       Items.Free;
     end;
   end
+  else if Ui.Method = 'cancel' then
+  begin
+    if GActiveAsk <> nil then
+      GActiveAsk.ModalResult := mrCancel;
+  end
   else if (Ui.Method = 'input') or (Ui.Method = 'editor') then
   begin
+    if Ui.Message = '' then
+      Ui.Message := Ui.Title;
     if AskText(Ui.Title, Ui.Message, Choice) then
       Reply := BuildUiReply(Ui.Id, Choice, False, False)
     else
+    begin
       Reply := BuildUiReply(Ui.Id, '', False, True);
+      InputCancelled := True;
+    end;
   end
   else
     Reply := BuildUiReply(Ui.Id, '', True, False);

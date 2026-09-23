@@ -1,4 +1,4 @@
-﻿unit DelphiAgent.RpcProtocol;
+unit DelphiAgent.RpcProtocol;
 
 { JSONL frames for omp --mode rpc v1. No ToolsAPI. }
 
@@ -28,9 +28,6 @@ function BuildPromptFrame(const Id, Message: string): string;
 function BuildAbortFrame(const Id: string): string;
 function BuildHostToolResultFrame(const Id, Text: string; IsError: Boolean): string;
 function BuildExtensionUiResponse(const RequestLine: string): string;
-function AssistantDelta(const Line: string): string;
-function ResponseErrorText(const Line: string): string;
-function IsTerminalAgentEnd(const Line: string): Boolean;
 function MessageWithSnapshots(const Message: string; const Paths: TArray<string>): string;
 function TryBuildPromptFrame(Ready, HostToolsSent: Boolean; const Id, Message: string;
   out Frame: string): Boolean;
@@ -40,33 +37,7 @@ function BuildCompileResultJson(Ok: Boolean; const ConfigName, PlatformName: str
 implementation
 
 uses
-  System.Generics.Collections, System.JSON;
-
-function JsonObject(const Line: string): TJSONObject;
-var
-  Value: TJSONValue;
-begin
-  Result := nil;
-  if Trim(Line) = '' then
-    Exit;
-  Value := TJSONObject.ParseJSONValue(Line);
-  if Value is TJSONObject then
-    Result := TJSONObject(Value)
-  else
-    Value.Free;
-end;
-
-function JsonStr(Obj: TJSONObject; const Name: string): string;
-var
-  Value: TJSONValue;
-begin
-  Result := '';
-  if Obj = nil then
-    Exit;
-  Value := Obj.GetValue(Name);
-  if Value is TJSONString then
-    Result := TJSONString(Value).Value;
-end;
+  System.Generics.Collections, System.JSON, DelphiAgent.RpcJson;
 
 function AddBool(Obj: TJSONObject; const Name: string; Value: Boolean): TJSONObject;
 begin
@@ -207,65 +178,6 @@ begin
     end;
   finally
     Request.Free;
-  end;
-end;
-function AssistantDelta(const Line: string): string;
-var
-  Obj, Event: TJSONObject;
-begin
-  Result := '';
-  Obj := JsonObject(Line);
-  if Obj = nil then
-    Exit;
-  try
-    if JsonStr(Obj, 'type') <> 'message_update' then
-      Exit;
-    if not (Obj.GetValue('assistantMessageEvent') is TJSONObject) then
-      Exit;
-    Event := TJSONObject(Obj.GetValue('assistantMessageEvent'));
-    if JsonStr(Event, 'type') <> 'text_delta' then
-      Exit;
-    Result := JsonStr(Event, 'delta');
-  finally
-    Obj.Free;
-  end;
-end;
-function ResponseErrorText(const Line: string): string;
-var
-  Obj: TJSONObject;
-  Success: TJSONValue;
-begin
-  Result := '';
-  Obj := JsonObject(Line);
-  if Obj = nil then
-    Exit;
-  try
-    if JsonStr(Obj, 'type') <> 'response' then
-      Exit;
-    Success := Obj.GetValue('success');
-    if (Success is TJSONFalse) or ((Success is TJSONString) and
-      SameText(TJSONString(Success).Value, 'false')) then
-      Result := JsonStr(Obj, 'error');
-  finally
-    Obj.Free;
-  end;
-end;
-function IsTerminalAgentEnd(const Line: string): Boolean;
-var
-  Obj: TJSONObject;
-  Terminal: TJSONValue;
-begin
-  Result := False;
-  Obj := JsonObject(Line);
-  if Obj = nil then
-    Exit;
-  try
-    if JsonStr(Obj, 'type') <> 'agent_end' then
-      Exit;
-    Terminal := Obj.GetValue('isTerminal');
-    Result := not (Terminal is TJSONFalse);
-  finally
-    Obj.Free;
   end;
 end;
 function MessageWithSnapshots(const Message: string; const Paths: TArray<string>): string;

@@ -22,6 +22,16 @@ scripts\build-win64.cmd
 
 `%BDS%`가 없고 `C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\rsvars.bat`도 없으면 스크립트는 컴파일러를 호출하지 않고 오류로 끝난다.
 
+### 채팅 화면(WebView2)
+
+채팅 기록은 Edge WebView2로 그린다. 패키지 Requires는 그대로 `rtl`, `vcl`, `designide`이고, `vcledge`(TEdgeBrowser)는 쓰지 않는다. rtl의 `Winapi.WebView2`로 직접 띄운다.
+
+- 빌드 스크립트가 BPL 옆 `DelphiAgent\` 폴더에 `chat\`(src\chat의 HTML/CSS/JS)과 그 비트의 `WebView2Loader.dll`을 복사한다. Win32는 `Bpl\DelphiAgent\`, Win64는 `Bpl\Win64\DelphiAgent\`다.
+- `WebView2Loader.dll`은 `scripts\fetch-webview2.ps1`이 NuGet의 `Microsoft.Web.WebView2` 고정 버전에서 한 번 받아 `third_party\webview2\`에 둔다. Microsoft 서명을 확인하고, 저장소에는 넣지 않는다(`.gitignore`).
+- 실행하는 PC에는 Edge WebView2 런타임이 있어야 한다. Windows 11에는 기본으로 있다.
+- 브라우저 데이터는 `%LOCALAPPDATA%\DelphiAgent\WebView2`에 둔다.
+- WebView2를 띄우지 못하면 채팅 창은 이유를 적고 글자만 보여 주는 화면으로 계속 동작한다.
+
 ## 64-bit IDE
 
 1. `scripts\build-win64.cmd`로 `$(BDSCOMMONDIR)\Bpl\Win64\DelphiAgent370.bpl`을 만든다.

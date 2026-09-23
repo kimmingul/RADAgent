@@ -5,15 +5,8 @@
 
 interface
 
-type
-  IAgentApproval = interface
-    ['{B1C2A8E4-7F0D-4C3A-9E21-6D5A4B3C2D10}']
-    function ApproveBufferChange(const FileName, Preview: string): Boolean;
-    procedure ShowConflict(const FileName: string);
-  end;
-
-const
-  SEditCancelled = '{"ok":false,"cancelled":true}';
+uses
+  DelphiAgent.Approval;
 
 function LineCountOf(const Text: string): Integer;
 function InsertAtCaret(const Text: string; const Approval: IAgentApproval;
@@ -106,7 +99,7 @@ begin
     Problem := SConflict;
     Exit;
   end;
-  if (Approval = nil) or not Approval.ApproveBufferChange(Current.FileName, Text) then
+  if (Approval = nil) or not Approval.ApproveChange(Current.FileName, '', Text) then
   begin
     Problem := '사용자가 버퍼 반영을 승인하지 않았습니다.';
     Exit;
@@ -126,6 +119,30 @@ begin
   end;
   View.Position.InsertText(Text);
   Result := True;
+end;
+
+{ Char index (1-based) where LineNo starts; past the end when LineNo is beyond the text. }
+function LineChar(const Text: string; LineNo: Integer): Integer;
+var
+  Line: Integer;
+begin
+  Result := 1;
+  Line := 1;
+  while (Result <= Length(Text)) and (Line < LineNo) do
+  begin
+    if Text[Result] = #10 then
+      Inc(Line);
+    Inc(Result);
+  end;
+end;
+
+{ The buffer text as it will be after the edit, for the approval diff. }
+function AfterEdit(const Current, Content, Replacement: string; StartLine, EndLine: Integer): string;
+begin
+  if Content <> '' then
+    Exit(Content);
+  Result := Copy(Current, 1, LineChar(Current, StartLine) - 1) + Replacement +
+    Copy(Current, LineChar(Current, EndLine + 1), MaxInt);
 end;
 
 function ApplyEdit(const Path, Content: string; NewText: string; StartLine, EndLine: Integer;
@@ -167,7 +184,8 @@ begin
     Problem := SConflict;
     Exit;
   end;
-  if (Approval = nil) or not Approval.ApproveBufferChange(Path, Preview) then
+  if (Approval = nil) or not Approval.ApproveChange(Path, Current,
+    AfterEdit(Current, Content, Preview, StartLine, EndLine)) then
   begin
     Problem := SEditCancelled;
     Exit;

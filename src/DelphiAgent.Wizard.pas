@@ -1,4 +1,4 @@
-﻿unit DelphiAgent.Wizard;
+unit DelphiAgent.Wizard;
 
 { Package entry. Registers the wizard, the View menu, and the dockable chat. }
 
@@ -10,8 +10,9 @@ implementation
 
 uses
   System.SysUtils, System.Classes, System.IniFiles, Winapi.Windows, Vcl.Forms,
-  Vcl.Controls, Vcl.Menus, Vcl.ActnList, Vcl.ImgList, Vcl.ComCtrls, Vcl.ToolWin,
-  ToolsAPI, DesignIntf, DelphiAgent.DockForm, DelphiAgent.Compile, DelphiAgent.RpcClient;
+  Vcl.Controls, Vcl.Menus, Vcl.ActnList, Vcl.ImgList, Vcl.ComCtrls, Vcl.ToolWin, Vcl.ExtCtrls,
+  ToolsAPI, DesignIntf, DelphiAgent.DockForm, DelphiAgent.Compile, DelphiAgent.RpcClient,
+  DelphiAgent.Options, DelphiAgent.ChatSession, DelphiAgent.IdeMenus, DelphiAgent.DockKeeper;
 
 type
   TDelphiAgentWizard = class(TNotifierObject, IOTAWizard)
@@ -23,8 +24,6 @@ type
   end;
 
   TDelphiAgentDockable = class(TInterfacedObject, INTACustomDockableForm)
-  private
-    FForm: TCustomForm;
   public
     function GetCaption: string;
     function GetIdentifier: string;
@@ -41,11 +40,15 @@ type
     function GetEditState: TEditState;
     function EditAction(Action: TEditAction): Boolean;
     procedure Show;
+    function Showing: Boolean;
   end;
 
   TMenuOwner = class(TComponent)
   public
+    FRetry: TTimer;
+    FTries: Integer;
     procedure OpenChat(Sender: TObject);
+    procedure RetryMenu(Sender: TObject);
   end;
 
 var
@@ -152,32 +155,92 @@ function TDelphiAgentDockable.EditAction(Action: TEditAction): Boolean;
 begin
   Result := False;
 end;
+function FindFrameIn(Parent: TWinControl): TDelphiAgentChatFrame;
+var
+  Index: Integer;
+begin
+  for Index := 0 to Parent.ControlCount - 1 do
+  begin
+    if Parent.Controls[Index] is TDelphiAgentChatFrame then
+      Exit(TDelphiAgentChatFrame(Parent.Controls[Index]));
+    if Parent.Controls[Index] is TWinControl then
+    begin
+      Result := FindFrameIn(TWinControl(Parent.Controls[Index]));
+      if Result <> nil then
+        Exit;
+    end;
+  end;
+  Result := nil;
+end;
+
+{ The IDE may free the dockable form on a desktop switch; never trust a cached pointer.
+  The frame's nearest parent form is the dockable form even while docked into another window. }
+function FindChatForm: TCustomForm;
+var
+  FormIndex: Integer;
+  Form: TCustomForm;
+  Frame: TDelphiAgentChatFrame;
+begin
+  for FormIndex := 0 to Screen.CustomFormCount - 1 do
+  begin
+    Form := Screen.CustomForms[FormIndex];
+    if csDestroying in Form.ComponentState then
+      Continue;
+    Frame := FindFrameIn(Form);
+    if Frame <> nil then
+      Exit(GetParentForm(Frame, False));
+  end;
+  Result := nil;
+end;
 
 procedure TDelphiAgentDockable.Show;
 var
   Services: INTAServices270;
+  Form: TCustomForm;
 begin
-  Services := BorlandIDEServices as INTAServices270;
-  if (FForm = nil) or (csDestroying in FForm.ComponentState) then
-    FForm := Services.CreateDockableForm(Self);
-  if (FForm <> nil) and not (csDestroying in FForm.ComponentState) then
-    FForm.Show;
+  Form := FindChatForm;
+  if Form = nil then
+  begin
+    Services := BorlandIDEServices as INTAServices270;
+    Form := Services.CreateDockableForm(Self);
+  end;
+  if Form <> nil then
+    Form.Show;
+end;
+
+function TDelphiAgentDockable.Showing: Boolean;
+var
+  Form: TCustomForm;
+begin
+  Form := FindChatForm;
+  Result := (Form <> nil) and Form.Visible;
+end;
+
+procedure ShowChatAndSend(const Text: string);
+begin
+  if GDockObj = nil then
+    Exit;
+  GDockObj.Show;
+  SendFromIde(Text);
 end;
 
 procedure NoteMenu(const Msg: string);
 begin
   OutputDebugString(PChar('DelphiAgent: ' + Msg));
+  AppendRpcLog('menu ' + Msg);
 end;
 
+{ The IDE main menu comes from INTAServices; Application.MainForm.Menu is not it. }
 function MainMenuHasItem(const ItemName: string): Boolean;
 var
+  Services: INTAServices;
   Menu: TMainMenu;
   Index: Integer;
 begin
   Result := False;
-  if (Application = nil) or (Application.MainForm = nil) then
+  if not Supports(BorlandIDEServices, INTAServices, Services) then
     Exit;
-  Menu := Application.MainForm.Menu;
+  Menu := Services.MainMenu;
   if Menu = nil then
     Exit;
   for Index := 0 to Menu.Items.Count - 1 do
@@ -192,14 +255,17 @@ begin
     Exit;
   try
     Services.AddActionMenu(ParentName, GViewAction, GViewItem, True, True);
-    Result := True;
+    { AddActionMenu can return without attaching; only a parented item counts. }
+    Result := GViewItem.Parent <> nil;
+    NoteMenu(ParentName + BoolToStr(Result, True));
   except
     on E: Exception do
       NoteMenu(ParentName + ': ' + E.Message);
   end;
 end;
 
-procedure InstallViewMenu;
+{ At IDE startup Register runs before the main menu exists. Returns True once placed. }
+function InstallViewMenu: Boolean;
 const
   MenuNames: array[0..3] of string = ('ViewsMenu', 'ViewMenu', 'ToolsMenu', 'HelpMenu');
 var
@@ -207,17 +273,24 @@ var
   Index: Integer;
   Placed: Boolean;
 begin
-  if GMenuOwner <> nil then
-    Exit;
+  if (GMenuOwner <> nil) and (GViewItem <> nil) and (GViewItem.Parent <> nil) then
+    Exit(True);
   Placed := False;
   try
-    GMenuOwner := TMenuOwner.Create(nil);
-    GViewAction := TAction.Create(GMenuOwner);
-    GViewAction.Caption := 'DelphiAgent';
-    GViewAction.OnExecute := GMenuOwner.OpenChat;
-    GViewItem := TMenuItem.Create(GMenuOwner);
-    GViewItem.Caption := 'DelphiAgent';
-    GViewItem.OnClick := GMenuOwner.OpenChat;
+    if GMenuOwner = nil then
+      GMenuOwner := TMenuOwner.Create(nil);
+    if GViewAction = nil then
+    begin
+      GViewAction := TAction.Create(GMenuOwner);
+      GViewAction.Caption := 'DelphiAgent';
+      GViewAction.OnExecute := GMenuOwner.OpenChat;
+    end;
+    if GViewItem = nil then
+    begin
+      GViewItem := TMenuItem.Create(GMenuOwner);
+      GViewItem.Caption := 'DelphiAgent';
+      GViewItem.OnClick := GMenuOwner.OpenChat;
+    end;
     Services := BorlandIDEServices as INTAServices;
     for Index := 0 to High(MenuNames) do
       if TryAddAgentMenu(Services, MenuNames[Index]) then
@@ -225,27 +298,33 @@ begin
         Placed := True;
         Break;
       end;
-    if not Placed then
-    begin
-      try
-        Services.AddActionMenu('ToolsMenu', GViewAction, GViewItem, True, True);
-        Placed := True;
-      except
-        on E: Exception do
-          NoteMenu('ToolsMenu: ' + E.Message);
-      end;
-    end;
   except
     on E: Exception do
       NoteMenu(E.Message);
   end;
   if not Placed then
+    NoteMenu('menu not ready');
+  Result := Placed;
+end;
+
+procedure TMenuOwner.RetryMenu(Sender: TObject);
+begin
+  Inc(FTries);
+  if InstallViewMenu or (FTries >= 240) then
   begin
-    NoteMenu('menu not installed');
-    GViewItem := nil;
-    GViewAction := nil;
-    FreeAndNil(GMenuOwner);
+    if FTries >= 240 then
+      NoteMenu('menu not installed');
+    FRetry.Enabled := False;
   end;
+end;
+
+procedure ScheduleViewMenu;
+begin
+  if InstallViewMenu or (GMenuOwner = nil) or (GMenuOwner.FRetry <> nil) then
+    Exit;
+  GMenuOwner.FRetry := TTimer.Create(GMenuOwner);
+  GMenuOwner.FRetry.Interval := 500;
+  GMenuOwner.FRetry.OnTimer := GMenuOwner.RetryMenu;
 end;
 
 procedure RemoveViewMenu;
@@ -278,19 +357,33 @@ begin
   Services := BorlandIDEServices as INTAServices270;
   Services.RegisterDockableForm(GDockable);
   InstallCompileNotifier;
-  InstallViewMenu;
+  ScheduleViewMenu;
+  InstallIdeMenus(ShowChatAndSend);
+  InstallDockKeeper(
+    function: Boolean
+    begin
+      Result := (GDockObj <> nil) and GDockObj.Showing;
+    end,
+    procedure
+    begin
+      if GDockObj <> nil then
+        GDockObj.Show;
+    end);
 end;
 
 procedure UnregisterAll;
 var
   Services: INTAServices270;
 begin
+  RemoveDockKeeper;
+  RemoveIdeMenus;
   RemoveCompileNotifier;
   GDockObj := nil;
   if (GDockable <> nil) and (BorlandIDEServices <> nil) and
     Supports(BorlandIDEServices, INTAServices270, Services) then
     Services.UnregisterDockableForm(GDockable);
   GDockable := nil;
+  FreeChatSession;
   ShutdownActiveClient;
   GWizard := nil;
   RemoveViewMenu;

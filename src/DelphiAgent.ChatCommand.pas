@@ -23,7 +23,8 @@ function BuildIdTypeFrame(const Id, FrameType: string): string;
 function BuildSetModelFrame(const Id, Provider, ModelId: string): string;
 function BuildSetFastFrame(const Id: string; Enabled: Boolean): string;
 function BuildSetThinkingFrame(const Id, Level: string): string;
-function StateModelAndCwd(const Line: string; out Model, Cwd: string): Boolean;
+{ Frames with one string field besides type, e.g. switch_session/sessionPath. }
+function BuildTypeFieldFrame(const FrameType, Field, Value: string): string;
 function ModelListText(const Line: string): string;
 
 type
@@ -32,6 +33,7 @@ type
     Method: string;
     Title: string;
     Message: string;
+    Url: string;
     Options: TArray<string>;
   end;
 
@@ -171,50 +173,25 @@ begin
   end;
 end;
 
+function BuildTypeFieldFrame(const FrameType, Field, Value: string): string;
+var
+  Obj: TJSONObject;
+begin
+  Obj := TJSONObject.Create;
+  try
+    Obj.AddPair('type', FrameType);
+    Obj.AddPair(Field, Value);
+    Result := Obj.ToJSON;
+  finally
+    Obj.Free;
+  end;
+end;
+
 function JsonStr(Obj: TJSONObject; const Name: string): string;
 begin
   Result := '';
   if (Obj <> nil) and (Obj.GetValue(Name) is TJSONString) then
     Result := TJSONString(Obj.GetValue(Name)).Value;
-end;
-
-function StateModelAndCwd(const Line: string; out Model, Cwd: string): Boolean;
-var
-  Root, Data, ModelObj: TJSONObject;
-  Value: TJSONValue;
-begin
-  Model := '';
-  Cwd := '';
-  Result := False;
-  Value := TJSONObject.ParseJSONValue(Line);
-  if not (Value is TJSONObject) then
-  begin
-    Value.Free;
-    Exit;
-  end;
-  Root := TJSONObject(Value);
-  try
-    if not SameText(JsonStr(Root, 'command'), 'get_state') then
-      Exit;
-    if not (Root.GetValue('data') is TJSONObject) then
-      Exit;
-    Data := TJSONObject(Root.GetValue('data'));
-    Cwd := JsonStr(Data, 'cwd');
-    if Data.GetValue('model') is TJSONObject then
-    begin
-      ModelObj := TJSONObject(Data.GetValue('model'));
-      Model := JsonStr(ModelObj, 'provider');
-      if JsonStr(ModelObj, 'id') <> '' then
-      begin
-        if Model <> '' then
-          Model := Model + '/';
-        Model := Model + JsonStr(ModelObj, 'id');
-      end;
-    end;
-    Result := True;
-  finally
-    Root.Free;
-  end;
 end;
 
 procedure CollectModels(const Value: TJSONValue; const Lines: TStringList);
@@ -298,6 +275,7 @@ begin
   Ui.Method := '';
   Ui.Title := '';
   Ui.Message := '';
+  Ui.Url := '';
   SetLength(Ui.Options, 0);
   Value := TJSONObject.ParseJSONValue(Line);
   if not (Value is TJSONObject) then
@@ -313,6 +291,10 @@ begin
     Ui.Method := JsonStr(Root, 'method');
     Ui.Title := JsonStr(Root, 'title');
     Ui.Message := JsonStr(Root, 'message');
+    Ui.Url := JsonStr(Root, 'url');
+    { Device-code logins put the code to type in "instructions". }
+    if Ui.Message = '' then
+      Ui.Message := JsonStr(Root, 'instructions');
     if Root.GetValue('options') is TJSONArray then
     begin
       Options := TJSONArray(Root.GetValue('options'));

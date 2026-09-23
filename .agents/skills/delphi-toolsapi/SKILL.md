@@ -56,7 +56,14 @@ description: RAD Studio 13.2 ToolsAPI로 DelphiAgent design-time BPL을 만들 �
 - 멈춤 판정: `ProcessState in [psStopped, psFault, psResFault, psException]`.
 - 호출 스택: `StartCallStackAccess`의 결과가 `csAccessible`일 때만 읽고, 항상 `EndCallStackAccess`를 부른다. `CallHeaders[i]`와 `GetCallPos`의 인덱스는 1부터 시작한다.
 - 식 평가: `Evaluate(..., AllowSideEffects = False, ...)`. 결과가 `erDeferred`나 `erBusy`면 기다리지 않고 오류로 돌려준다.
-- 실행, 스텝, 중단점 추가, 메모리 쓰기는 host-tool로 열지 않는다.
+- 실행, 계속, 스텝(over/into/return), 일시 정지, 종료, 중단점 추가는 `IAgentApproval.ApproveChange`로 사용자가 승인한 뒤에만 한다. 계속과 스텝은 `IOTAProcess.Run(TOTARunMode)`, 프로세스가 없을 때 실행은 IDE 액션 `RunRunCommand`, 중단점은 `NewSourceBreakpoint`이다.
+- 디버기 메모리 쓰기와 식 평가의 부작용 허용은 host-tool로 열지 않는다.
+
+## 폼 디자이너 host-tool
+
+- 대상은 `.pas` 모듈의 `IOTAFormEditor`다. 네이티브 컴포넌트는 `INTAComponent.GetComponent`, 디자이너는 `INTAFormEditor.FormDesigner`로 얻는다.
+- 변경(속성, 추가, 삭제, 이름 변경, 이벤트 연결)은 승인 뒤에만 하고, 끝나면 `IDesigner.Modified`를 부른다. 저장하지 않는다.
+- `CreateComponent`는 컨트롤 위치를 무시하므로 만든 뒤 `SetBounds`로 놓는다. 이벤트는 `IDesigner.CreateMethod`로 기존 메서드를 쓰거나 빈 메서드를 만든다.
 
 ## 디버그
 
