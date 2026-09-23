@@ -73,3 +73,38 @@ stdin에는 JSONL만 쓴다. 일반 텍스트 한 줄이면 omp가 죽는다. `@
 `C:\Users\Public\Documents\Embarcadero\Studio\37.0\Bpl\Win64\DelphiAgent370.bpl`
 
 이미 설치되어 있으면 IDE를 다시 연다. 32-bit는 `scripts\build-win32.cmd`와 `Bpl\DelphiAgent370.bpl`이다. 한 BPL을 양쪽 Known Packages에 넣지 않는다.
+
+## 테스트
+
+`tests`에서 rsvars.bat을 부른 뒤 다음을 실행한다. `TestLiveReady`는 실제 `omp`를 띄워 `ping` 프롬프트를 보낸다.
+
+```bat
+dcc64 -Q -B -U..\src -NUdcu -NSSystem;Winapi;System.Win ProtocolTests.dpr
+ProtocolTests.exe
+```
+
+## 검증 기록
+
+2026-09-23 18:33 기준.
+
+| 항목 | 결과 |
+| --- | --- |
+| `scripts\build-win32.cmd` | 성공. `Bpl\DelphiAgent370.bpl` 갱신 |
+| `scripts\build-win64.cmd` | 성공. `Bpl\Win64\DelphiAgent370.bpl` 갱신 |
+| `ProtocolTests.exe` (Win64, omp 18.2.11) | 40개 전부 통과 |
+| 프로젝트 스킬 | `.agents/skills`로 옮김. omp `get_available_commands`에 `skill:delphi-lsp`, `skill:delphi-toolsapi`, `skill:omp-rpc`가 나온다 |
+| Win32 IDE 등록 | 안 됨. `Known Packages`에 항목이 없다 |
+| Win64 IDE 등록 | `Known Packages x64`에 `DelphiAgent370.bpl`이 있다. 없는 파일을 가리키는 `DelphiAgent.bpl` 항목도 남아 있다 |
+
+## MVP 한 바퀴 (미확인)
+
+AGENTS.md 범위 조건이다. 폼 디자이너와 디버거는 이것을 확인한 뒤에 시작한다. IDE 조작이 필요해서 아직 사람이 확인하지 않았다. 각 IDE에서 한 번씩 확인하고 결과를 여기에 적는다.
+
+1. VCL 앱을 연다. 상태줄에 `프로젝트=<이름>`이 보인다.
+2. 저장하지 않은 편집을 남긴 채 파일 수정을 요청한다. 디스크의 원본 파일은 바뀌지 않고 `%TEMP%\DelphiAgent`에 스냅샷이 생긴다.
+3. omp가 `rad.apply_edit`를 부른다. 적용을 누르기 전에는 버퍼가 그대로다.
+4. 적용을 누르면 에디터 버퍼가 바뀐다. 파일은 저장되지 않는다.
+5. 스냅샷 뒤에 같은 버퍼를 직접 고친 경우에는 덮어쓰지 않고 충돌이 표시된다.
+6. `rad.compile`이 `ok`를 돌려주고, 메시지 뷰의 `DelphiAgent` 항목으로 확인된다.
+7. 일부러 컴파일 오류를 넣으면 `errors`의 파일, 줄, 열이 메시지 뷰와 같다.
+8. 중지 버튼을 누르면 `abort`가 전송되고, omp 프로세스(pid)는 그대로다.
