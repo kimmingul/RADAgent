@@ -1,0 +1,27 @@
+﻿package DelphiAgent370;
+
+{$R DelphiAgent.res}
+{$DESCRIPTION 'DelphiAgent — omp-powered agentic coding for RAD Studio 13.2'}
+{$DESIGNONLY}
+{$IMPLICITBUILD OFF}
+
+requires
+  rtl,
+  vcl,
+  designide;
+
+contains
+  DelphiAgent.Options in 'DelphiAgent.Options.pas',
+  DelphiAgent.RpcProtocol in 'DelphiAgent.RpcProtocol.pas',
+  DelphiAgent.ChatCommand in 'DelphiAgent.ChatCommand.pas',
+  DelphiAgent.AskDialog in 'DelphiAgent.AskDialog.pas',
+  DelphiAgent.RpcDispatch in 'DelphiAgent.RpcDispatch.pas',
+  DelphiAgent.RpcClient in 'DelphiAgent.RpcClient.pas',
+  DelphiAgent.IdeContext in 'DelphiAgent.IdeContext.pas',
+  DelphiAgent.DirtyBuffers in 'DelphiAgent.DirtyBuffers.pas',
+  DelphiAgent.Compile in 'DelphiAgent.Compile.pas',
+  DelphiAgent.HostTools in 'DelphiAgent.HostTools.pas',
+  DelphiAgent.DockForm in 'DelphiAgent.DockForm.pas',
+  DelphiAgent.Wizard in 'DelphiAgent.Wizard.pas';
+
+end.

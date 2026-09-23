@@ -1,0 +1,21 @@
+{
+  "servers": {
+    "delphilsp": {
+      "command": "{{BDS}}\\bin64\\DelphiLSP.exe",
+      "fileTypes": [".pas", ".dpr", ".dpk", ".pp", ".inc"],
+      "languageId": "pascal",
+      "rootMarkers": ["*.dproj", "*.dpr", "*.groupproj"],
+      "warmupTimeoutMs": 60000,
+      "initOptions": {
+        "serverType": "controller",
+        "agentCount": 2,
+        "returnDccFlags": true,
+        "returnHoverModel": true,
+        "storeProjectSettings": false
+      },
+      "settings": {
+        "settingsFile": "{{PROJECT_DELPHILSP_JSON}}"
+      }
+    }
+  }
+}

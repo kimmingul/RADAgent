@@ -1,0 +1,17 @@
+*.dcu
+*.exe
+*.bpl
+*.bpi
+*.dcp
+*.res
+!src/DelphiAgent.res
+*.identcache
+*.local
+*.dproj.local
+__history
+__recovery
+*.skincfg
+.omp/
+*.delphilsp.json
+src/Win32/
+src/Win64/

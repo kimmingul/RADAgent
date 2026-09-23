@@ -1,0 +1,121 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectGuid>{4C1E8A2B-9D57-4F63-A1E0-7B2C6D8E9F10}</ProjectGuid>
+    <MainSource>DelphiAgent.dpk</MainSource>
+    <ProjectVersion>20.3</ProjectVersion>
+    <FrameworkType>VCL</FrameworkType>
+    <Base>True</Base>
+    <Config Condition="'$(Config)'==''">Release</Config>
+    <Platform Condition="'$(Platform)'==''">Win32</Platform>
+    <TargetedPlatforms>3</TargetedPlatforms>
+    <AppType>Package</AppType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+    <Base>true</Base>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_Release)'!=''">
+    <Cfg_Release>true</Cfg_Release>
+    <CfgParent>Base</CfgParent>
+    <Base>true</Base>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_Debug)'!=''">
+    <Cfg_Debug>true</Cfg_Debug>
+    <CfgParent>Base</CfgParent>
+    <Base>true</Base>
+  </PropertyGroup>
+  <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
+    <Base_Win32>true</Base_Win32>
+    <CfgParent>Base</CfgParent>
+    <Base>true</Base>
+  </PropertyGroup>
+  <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
+    <Base_Win64>true</Base_Win64>
+    <CfgParent>Base</CfgParent>
+    <Base>true</Base>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Base)'!=''">
+    <DCC_DesignPackage>true</DCC_DesignPackage>
+    <GenPackage>true</GenPackage>
+    <GenDll>true</GenDll>
+    <DCC_DcuOutput>.\$(Platform)\$(Config)</DCC_DcuOutput>
+    <DCC_BplOutput>$(BDSCOMMONDIR)\Bpl</DCC_BplOutput>
+    <DCC_DcpOutput>$(BDSCOMMONDIR)\Dcp</DCC_DcpOutput>
+    <DCC_Description>DelphiAgent — omp-powered agentic coding for RAD Studio 13.2</DCC_Description>
+    <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;$(DCC_Namespace)</DCC_Namespace>
+    <SanitizedProjectName>DelphiAgent370</SanitizedProjectName>
+    <OutputName>DelphiAgent370</OutputName>
+    <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+    <VerInfo_MajorVer>1</VerInfo_MajorVer>
+    <VerInfo_Keys>CompanyName=;FileDescription=DelphiAgent — omp-powered agentic coding for RAD Studio 13.2;FileVersion=1.0.0.0;InternalName=DelphiAgent370;LegalCopyright=;LegalTrademarks=;OriginalFilename=DelphiAgent370.bpl;ProductName=DelphiAgent;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+    <Debugger_Parameters>-pDelphi</Debugger_Parameters>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)'=='Win32'">
+    <DCC_BplOutput>$(BDSCOMMONDIR)\Bpl</DCC_BplOutput>
+    <DCC_DcpOutput>$(BDSCOMMONDIR)\Dcp</DCC_DcpOutput>
+    <Debugger_HostApplication>$(BDS)\bin\bds.exe</Debugger_HostApplication>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)'=='Win64'">
+    <DCC_BplOutput>$(BDSCOMMONDIR)\Bpl\Win64</DCC_BplOutput>
+    <DCC_DcpOutput>$(BDSCOMMONDIR)\Dcp\Win64</DCC_DcpOutput>
+    <DCC_Namespace>System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
+    <Debugger_HostApplication>$(BDS)\bin64\bds.exe</Debugger_HostApplication>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Cfg_Release)'!=''">
+    <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
+    <DCC_DebugInformation>0</DCC_DebugInformation>
+    <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
+    <DCC_Optimize>true</DCC_Optimize>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Cfg_Debug)'!=''">
+    <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
+    <DCC_Optimize>false</DCC_Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <DelphiCompile Include="DelphiAgent.dpk">
+      <MainSource>MainSource</MainSource>
+    </DelphiCompile>
+    <DCCReference Include="rtl.dcp"/>
+    <DCCReference Include="vcl.dcp"/>
+    <DCCReference Include="designide.dcp"/>
+    <DCCReference Include="DelphiAgent.Options.pas"/>
+    <DCCReference Include="DelphiAgent.RpcProtocol.pas"/>
+    <DCCReference Include="DelphiAgent.ChatCommand.pas"/>
+    <DCCReference Include="DelphiAgent.AskDialog.pas"/>
+    <DCCReference Include="DelphiAgent.RpcDispatch.pas"/>
+    <DCCReference Include="DelphiAgent.RpcClient.pas"/>
+    <DCCReference Include="DelphiAgent.IdeContext.pas"/>
+    <DCCReference Include="DelphiAgent.DirtyBuffers.pas"/>
+    <DCCReference Include="DelphiAgent.Compile.pas"/>
+    <DCCReference Include="DelphiAgent.HostTools.pas"/>
+    <DCCReference Include="DelphiAgent.DockForm.pas"/>
+    <DCCReference Include="DelphiAgent.Wizard.pas"/>
+  </ItemGroup>
+  <Import Project="$(BDS)\Bin\CodeGear.Delphi.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')"/>
+  <Import Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj" Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')"/>
+  <Target Name="NameDelphiAgentBpl" AfterTargets="Make;Build">
+    <PropertyGroup>
+      <_Src>$(DCC_BplOutput)DelphiAgent.bpl</_Src>
+      <_Dst>$(DCC_BplOutput)DelphiAgent370.bpl</_Dst>
+    </PropertyGroup>
+    <Copy SourceFiles="$(_Src)" DestinationFiles="$(_Dst)" Condition="Exists('$(_Src)')"/>
+    <Delete Files="$(_Src)" Condition="Exists('$(_Src)')"/>
+    <Error Text="DelphiAgent370.bpl was not written to $(_Dst)" Condition="!Exists('$(_Dst)')"/>
+    <Error Text="DelphiAgent.bpl was left at $(_Src)" Condition="Exists('$(_Src)')"/>
+  </Target>
+  <ProjectExtensions>
+    <Borland.Personality>Delphi.Personality.12</Borland.Personality>
+    <Borland.ProjectType>Package</Borland.ProjectType>
+    <BorlandProject>
+      <Delphi.Personality>
+        <Source>
+          <Source Name="MainSource">DelphiAgent.dpk</Source>
+        </Source>
+      </Delphi.Personality>
+      <Platforms>
+        <Platform value="Win32">True</Platform>
+        <Platform value="Win64">True</Platform>
+      </Platforms>
+    </BorlandProject>
+    <ProjectFileVersion>12</ProjectFileVersion>
+  </ProjectExtensions>
+</Project>
