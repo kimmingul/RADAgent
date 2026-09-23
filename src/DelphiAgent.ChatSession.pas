@@ -9,7 +9,7 @@ interface
 uses
   System.Classes, System.SysUtils, Vcl.ExtCtrls, DelphiAgent.Approval, DelphiAgent.RpcClient,
   DelphiAgent.RpcEvents, DelphiAgent.RpcResponses, DelphiAgent.ChatActivity, DelphiAgent.ChatStream,
-  DelphiAgent.ChatCatalog;
+  DelphiAgent.ChatCatalog, DelphiAgent.HostToolDefs;
 
 type
   IChatView = interface
@@ -18,10 +18,11 @@ type
     procedure SessionChanged;
   end;
 
-  TChatSession = class(TNoRefCountObject, IAgentApproval)
+  TChatSession = class
   private
     FClient: TAgentRpcClient;
     FView: IChatView;
+    FApproval: IAgentApproval;
     FStream: TChatStream;
     FActivity: TChatActivity;
     FCommands: TArray<TSlashCommand>;
@@ -31,7 +32,6 @@ type
     FStartError: string;
     FNotedNoProject, FSubscribed, FRestartPending: Boolean;
     FTimer: TTimer;
-    procedure PostToView(const Json: string);
     procedure ClientStatus;
     procedure ClientEvent(const Event: TAgentEvent);
     procedure ClientResponse(const Line: string);
@@ -40,6 +40,8 @@ type
   public
     constructor Create;
     destructor Destroy; override;
+    { Shows a page message on the attached view without keeping it in the transcript. }
+    procedure PostToView(const Json: string);
     procedure Attach(const View: IChatView);
     procedure Detach(const View: IChatView);
     procedure EnsureStarted;
@@ -48,12 +50,14 @@ type
     procedure Restart;
     { Restart after the running turn ends. }
     procedure RestartWhenIdle;
+    { The project gained or lost forms: register the rad.* tools that fit it now. }
+    procedure RefreshHostTools;
     function Connected: Boolean;
     function Busy: Boolean;
     procedure Notice(const Level, Text: string);
     procedure SendCommand(const FrameType, Frame: string);
     { Sends a prompt frame; on success shows DisplayText as the user's message. }
-    function SendPrompt(const Message, DisplayText: string): Boolean;
+    function SendPrompt(const Message, DisplayText: string; const ImagesJson: string = ''): Boolean;
     { Shows a slash command the chat handled locally. }
     procedure ShowUserText(const Text: string);
     { Adds a page message to the transcript and the attached view. }
@@ -71,8 +75,7 @@ type
     property Commands: TArray<TSlashCommand> read FCommands;
     property Activity: TChatActivity read FActivity;
     property Catalog: TChatCatalog read FCatalog;
-    function ApproveChange(const Target, Before, After: string): Boolean;
-    procedure ShowConflict(const FileName: string);
+    property Approval: IAgentApproval read FApproval;
   end;
 
 function ChatSession: TChatSession;
@@ -82,9 +85,9 @@ implementation
 
 uses
   System.JSON, Winapi.Windows, DelphiAgent.Options, DelphiAgent.ChatCommand,
-  DelphiAgent.ApprovalDialog, DelphiAgent.IdeContext, DelphiAgent.ChatTheme,
+  DelphiAgent.ChatApproval, DelphiAgent.IdeContext, DelphiAgent.ChatTheme,
   DelphiAgent.ChatPageMessages, DelphiAgent.ChatAttention, DelphiAgent.ChatActions,
-  DelphiAgent.AgentSettings, DelphiAgent.OmpSettings;
+  DelphiAgent.AgentSettings, DelphiAgent.OmpSettings, DelphiAgent.OmpLaunch, DelphiAgent.ProjectProfile;
 
 const
   SNoProject = '활성 프로젝트가 없습니다. 프로젝트를 열면 그 폴더에서 omp를 시작합니다.';
@@ -109,6 +112,7 @@ begin
   inherited Create;
   FStream := TChatStream.Create(PostToView);
   FCatalog := TChatCatalog.Create;
+  FApproval := TChatApproval.Create;
   FActivity := TChatActivity.Create;
   FTimer := TTimer.Create(nil);
   FTimer.Interval := 1000;
@@ -122,17 +126,10 @@ begin
   FTimer.Free;
   RemoveProjectWatch;
   FView := nil;
+  { The client drops its queued callbacks when it is freed (FAlive, CheckSynchronize). }
   if FClient <> nil then
-  begin
-    FClient.OnLog := nil;
-    FClient.OnStatus := nil;
-    FClient.OnHostTool := nil;
-    FClient.OnUi := nil;
-    FClient.OnResponse := nil;
-    FClient.OnAgentEvent := nil;
     FClient.SendAbort;
-    FreeAndNil(FClient);
-  end;
+  FreeAndNil(FClient);
   FActivity.Free;
   FCatalog.Free;
   FStream.Free;
@@ -222,7 +219,9 @@ end;
 
 procedure TChatSession.EnsureStarted;
 var
-  Dir: string;
+  Dir, Guide, Note, Extra: string;
+  Tools: TToolProfile;
+  Configs: TArray<string>;
 begin
   Dir := ExcludeTrailingPathDelimiter(ActiveProjectDir);
   if Dir = '' then
@@ -257,7 +256,12 @@ begin
       Dir := GetCurrentDir;
     FState := Default(TStateInfo);
     FSubscribed := False;
-    if FClient.Start(OmpCommand, Dir, ExistingOverlay(Dir), OmpExtraArgs) then
+    FCatalog.LoadProject(OmpCommand, Dir);
+    PrepareLaunch(ExistingOverlay(Dir), Tools, Configs, Guide, Note, Extra);
+    FClient.ToolProfile := Tools;
+    if Note <> '' then
+      Notice('info', Note);
+    if FClient.Start(OmpCommand, Dir, Configs, Guide, Extra) then
       FStartError := ''
     else
       FStartError := '프로세스 시작 실패 ' + IntToStr(GetLastError);
@@ -283,6 +287,12 @@ begin
     FRestartPending := True
   else
     Restart;
+end;
+
+procedure TChatSession.RefreshHostTools;
+begin
+  if FClient <> nil then
+    FClient.ResendHostTools(ActiveProfile.Tools);
 end;
 
 procedure TChatSession.ProjectChanged;
@@ -371,9 +381,9 @@ begin
   end;
 end;
 
-function TChatSession.SendPrompt(const Message, DisplayText: string): Boolean;
+function TChatSession.SendPrompt(const Message, DisplayText, ImagesJson: string): Boolean;
 begin
-  Result := Connected and FClient.SendPrompt(Message);
+  Result := Connected and FClient.SendPrompt(Message, ImagesJson);
   if not Result then
     Exit;
   Emit(PageUser(DisplayText));
@@ -384,17 +394,6 @@ end;
 procedure TChatSession.ShowUserText(const Text: string);
 begin
   Emit(PageUser(Text));
-end;
-
-function TChatSession.ApproveChange(const Target, Before, After: string): Boolean;
-begin
-  RequestAttention;
-  Result := AskApprovalDiff(Target, Before, After);
-end;
-
-procedure TChatSession.ShowConflict(const FileName: string);
-begin
-  Notice('warn', '충돌: 스냅샷 이후 버퍼가 바뀌어 반영하지 않았습니다. ' + FileName);
 end;
 
 end.

@@ -11,6 +11,8 @@ uses
 
 procedure InstallDockKeeper(const IsShowing: TFunc<Boolean>; const ShowChat: TProc);
 procedure RemoveDockKeeper;
+{ Shows the chat window if it is hidden (e.g. before an approval card). }
+procedure RevealChat;
 
 implementation
 
@@ -114,6 +116,12 @@ begin
   GKeeper := TKeeper.Create(IsShowing, ShowChat);
   if Supports(BorlandIDEServices, IOTADebuggerServices, Debugger) then
     GWatchIndex := Debugger.AddNotifier(TDebugWatch.Create);
+end;
+
+procedure RevealChat;
+begin
+  if (GKeeper <> nil) and not GKeeper.FIsShowing() then
+    GKeeper.FShowChat();
 end;
 
 procedure RemoveDockKeeper;

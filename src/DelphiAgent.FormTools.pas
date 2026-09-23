@@ -10,27 +10,45 @@ uses
 
 function IsFormTool(const ToolName: string): Boolean;
 procedure ExecuteFormTool(const ToolName: string; const Args: TFormToolArgs;
-  const Approval: IAgentApproval; out ResultText: string; out IsError: Boolean);
+  const ArgumentsJson: string; const Approval: IAgentApproval; out ResultText: string;
+  out IsError: Boolean);
 
 implementation
 
 uses
-  System.SysUtils, System.Classes, System.JSON, System.TypInfo, Vcl.Controls, ToolsAPI,
-  DelphiAgent.HostToolDefs, DelphiAgent.FormDesigner;
+  System.SysUtils, System.Classes, System.JSON, System.TypInfo, System.Rtti, Vcl.Controls, ToolsAPI,
+  DelphiAgent.HostToolDefs, DelphiAgent.FormDesigner, DelphiAgent.FormBatch, DelphiAgent.IdeContext,
+  DelphiAgent.DirtyBuffers;
 
 function IsFormTool(const ToolName: string): Boolean;
 begin
   Result := (ToolName = ToolFormComponents) or (ToolName = ToolFormProperties) or
+    (ToolName = ToolFormApply) or
     (ToolName = ToolFormSetProperty) or (ToolName = ToolFormAddComponent) or
     (ToolName = ToolFormDeleteComponent) or (ToolName = ToolFormRenameComponent) or
     (ToolName = ToolFormSetEvent);
 end;
 
+{ VCL TControl.Parent, or FMX TFmxObject.Parent through RTTI (no FMX package needed). }
 function ParentName(Component: TComponent): string;
+var
+  Context: TRttiContext;
+  Prop: TRttiProperty;
+  Value: TObject;
 begin
   Result := '';
-  if (Component is TControl) and (TControl(Component).Parent <> nil) then
-    Result := TControl(Component).Parent.Name;
+  if Component is TControl then
+  begin
+    if TControl(Component).Parent <> nil then
+      Result := TControl(Component).Parent.Name;
+    Exit;
+  end;
+  Prop := Context.GetType(Component.ClassType).GetProperty('Parent');
+  if (Prop = nil) or not Prop.IsReadable or (Prop.PropertyType.TypeKind <> tkClass) then
+    Exit;
+  Value := Prop.GetValue(Component).AsObject;
+  if Value is TComponent then
+    Result := TComponent(Value).Name;
 end;
 
 function ComponentsJson(const Editor: IOTAFormEditor): string;
@@ -107,7 +125,7 @@ begin
   IsError := not Ok and (Problem <> SEditCancelled);
 end;
 
-procedure ExecuteFormTool(const ToolName: string; const Args: TFormToolArgs;
+procedure RunFormTool(const ToolName: string; const Args: TFormToolArgs; const ArgumentsJson: string;
   const Approval: IAgentApproval; out ResultText: string; out IsError: Boolean);
 var
   Editor: IOTAFormEditor;
@@ -116,6 +134,11 @@ var
   Ok: Boolean;
 begin
   IsError := True;
+  if ToolName = ToolFormApply then
+  begin
+    ApplyFormBatch(ArgumentsJson, Approval, ResultText, IsError);
+    Exit;
+  end;
   Editor := FindFormEditor(Args.Path, Problem);
   if (Editor = nil) or (RootOf(Editor) = nil) then
   begin
@@ -157,6 +180,20 @@ begin
       Ok := SetEvent(Editor, Args, Approval, Problem);
     Finish(Ok, '{"ok":true}', Problem, ResultText, IsError);
   end;
+end;
+
+{ Designer changes rewrite the unit (fields, handlers). When the buffer still matched the prompt
+  snapshot, those rewrites are ours: move the snapshot along so later edits do not conflict. }
+procedure ExecuteFormTool(const ToolName: string; const Args: TFormToolArgs;
+  const ArgumentsJson: string; const Approval: IAgentApproval; out ResultText: string;
+  out IsError: Boolean);
+var
+  Clean: Boolean;
+begin
+  Clean := (Args.Path <> '') and not SnapshotConflicts(Args.Path, BufferText(Args.Path));
+  RunFormTool(ToolName, Args, ArgumentsJson, Approval, ResultText, IsError);
+  if Clean and not IsError then
+    UpdateSnapshot(Args.Path, BufferText(Args.Path));
 end;
 
 end.

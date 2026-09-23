@@ -19,6 +19,8 @@ function PageToolStart(const Id, Name, Detail, Input: string): string;
 function PageToolUpdate(const Id, Text: string): string;
 function PageToolEnd(const Id: string; Ok: Boolean; Ms: Int64; const ResultText: string): string;
 function PageSubagent(const Event: TAgentEvent): string;
+{ An approved edit that reached the buffer: +Added -Removed, first changed line. }
+function PageFileChange(const Path: string; Added, Removed, Line: Integer): string;
 function PageTodos(const Todos: TArray<TTodoItem>): string;
 { Which activity kinds the page shows. }
 function PageDisplay(Shows: TChatShows): string;
@@ -97,6 +99,24 @@ function PageSubagent(const Event: TAgentEvent): string;
 begin
   Result := Build('subagent', ['id', 'agent', 'description', 'intent', 'status', 'tools'],
     [Event.ToolId, Event.ToolName, Event.Detail, Event.Text, Event.Level, IntToStr(Event.Count)]);
+end;
+
+function PageFileChange(const Path: string; Added, Removed, Line: Integer): string;
+var
+  Obj: TJSONObject;
+begin
+  Obj := TJSONObject.Create;
+  try
+    Obj.AddPair('t', 'fileChange');
+    Obj.AddPair('path', Path);
+    Obj.AddPair('name', ExtractFileName(Path));
+    Obj.AddPair('added', TJSONNumber.Create(Added));
+    Obj.AddPair('removed', TJSONNumber.Create(Removed));
+    Obj.AddPair('line', TJSONNumber.Create(Line));
+    Result := Obj.ToJSON;
+  finally
+    Obj.Free;
+  end;
 end;
 
 function PageTodos(const Todos: TArray<TTodoItem>): string;

@@ -34,6 +34,18 @@ begin
   Append(Result, '[채팅 화면을 WebView2로 띄우지 못해 글자만 보여 줍니다] ' + Problem + sLineBreak);
 end;
 
+{ A finished side question: question and answer (or why there is none). }
+procedure AppendBtw(Memo: TMemo; Obj: TJSONObject);
+var
+  Turn: string;
+begin
+  Turn := 'topic.turns[' + Obj.GetValue<string>('turn', '0') + '].';
+  if Obj.GetValue<string>(Turn + 'state', '') = 'running' then
+    Exit;
+  Append(Memo, sLineBreak + '[BTW] ' + Obj.GetValue<string>(Turn + 'q', '') + sLineBreak +
+    Obj.GetValue<string>(Turn + 'a', '') + Obj.GetValue<string>(Turn + 'error', '') + sLineBreak);
+end;
+
 procedure AppendFallback(Memo: TMemo; const Json: string);
 var
   Value: TJSONValue;
@@ -65,6 +77,8 @@ begin
         Obj.GetValue<string>('id', '') + ': ' + Obj.GetValue<string>('status', '') + sLineBreak)
     else if Kind = 'todos' then
       Append(Memo, '[작업 목록] ' + Obj.GetValue<TJSONArray>('items').Count.ToString + '개' + sLineBreak)
+    else if Kind = 'btw' then
+      AppendBtw(Memo, Obj)
     else if Kind = 'clear' then
       Memo.Clear;
   finally

@@ -6,7 +6,7 @@ unit DelphiAgent.ChatCatalog;
 interface
 
 uses
-  DelphiAgent.RpcResponses;
+  DelphiAgent.RpcResponses, DelphiAgent.OmpSettings, DelphiAgent.OmpCatalog;
 
 type
   TSendCommand = procedure(const FrameType, Frame: string) of object;
@@ -16,8 +16,11 @@ type
     FModels, FLevels: TArray<string>;
     FProviders: TArray<TLoginProvider>;
     FVersion: Integer;
-    FPendingLogin: string;
+    FPendingLogin, FApprovalMode: string;
+    FProject: TOmpProjectSettings;
+    FPlugins: TArray<TPluginInfo>;
   public
+    destructor Destroy; override;
     procedure Request(const Send: TSendCommand);
     { True when Line was one of the catalog responses. }
     function Accept(const Line: string): Boolean;
@@ -28,6 +31,14 @@ type
     property ThinkingLevels: TArray<string> read FLevels;
     property LoginProviders: TArray<TLoginProvider> read FProviders;
     property Version: Integer read FVersion;
+    { Reads this project's omp settings and installed plugins (blocking omp CLI calls). }
+    procedure LoadProject(const Executable, ProjectDir: string);
+    { Effective omp tools.approvalMode for the project. }
+    property ApprovalMode: string read FApprovalMode;
+    procedure SetApprovalMode(const Mode: string);
+    { Project omp settings loaded at omp start; nil before. Save through it, then restart omp. }
+    property Project: TOmpProjectSettings read FProject;
+    property Plugins: TArray<TPluginInfo> read FPlugins;
     { Provider name of the login omp is still running, or ''. }
     property PendingLogin: string read FPendingLogin;
   end;
@@ -35,7 +46,7 @@ type
 implementation
 
 uses
-  System.JSON, DelphiAgent.ChatCommand, DelphiAgent.RpcJson;
+  System.SysUtils, System.JSON, DelphiAgent.ChatCommand, DelphiAgent.RpcJson;
 
 procedure TChatCatalog.Request(const Send: TSendCommand);
 begin
@@ -77,6 +88,32 @@ begin
     FProviders := Providers
   else
     Exit(False);
+  Touch;
+end;
+
+destructor TChatCatalog.Destroy;
+begin
+  FProject.Free;
+  inherited Destroy;
+end;
+
+procedure TChatCatalog.LoadProject(const Executable, ProjectDir: string);
+begin
+  FreeAndNil(FProject);
+  FProject := TOmpProjectSettings.Create(Executable, ProjectDir);
+  FApprovalMode := FProject.OverlayText('tools.approvalMode');
+  if FApprovalMode = '' then
+    FApprovalMode := FProject.BaseText('tools.approvalMode');
+  { Nothing configured anywhere: start without prompts, as omp does in RPC mode. }
+  if FApprovalMode = '' then
+    FApprovalMode := 'yolo';
+  FPlugins := InstalledPlugins(Executable, ProjectDir);
+  Touch;
+end;
+
+procedure TChatCatalog.SetApprovalMode(const Mode: string);
+begin
+  FApprovalMode := Mode;
   Touch;
 end;
 

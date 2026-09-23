@@ -1,24 +1,25 @@
 ﻿unit DelphiAgent.ChatActions;
 
-{ User actions on the chat session (send, compile, sessions, export) and the replies to the
-  commands they send. Status text for the chat window. Main thread only. }
+{ User actions on the chat session (send, compile, sessions, export, omp approval mode) and the
+  replies to the commands they send. Main thread only. }
 
 interface
 
 { Prompt or slash command. Attachment goes to omp only; AttachmentLabel is shown in the chat. }
-function SubmitChat(const Text, Attachment, AttachmentLabel: string): Boolean;
+{ ImagesJson: ImageContent[] for attached pictures, or ''. }
+function SubmitChat(const Text, Attachment, AttachmentLabel: string; const ImagesJson: string = ''): Boolean;
 procedure CompileActiveProject;
 procedure StartNewSession;
 procedure PickSession;
 procedure ExportConversation(const Path: string);
+{ Saves this project's omp tools.approvalMode and restarts omp (after the turn if busy). }
+procedure SetApprovalMode(const Mode: string);
 { Response frames not handled by the session itself. }
 procedure HandleCommandResponse(const Line: string);
-function SessionStatusLine: string;
 { Runs a host tool on the main thread with the session as the approval owner. }
 procedure HandleHostToolCall(const CallId, ToolName, ArgumentsJson: string);
 { omp extension UI (select/confirm/input) as modal dialogs. }
 procedure HandleUiRequest(const Line: string);
-function SessionDetailLine: string;
 
 implementation
 
@@ -26,7 +27,8 @@ uses
   System.SysUtils, System.JSON, DelphiAgent.ChatSession, DelphiAgent.RpcResponses,
   DelphiAgent.RpcProtocol, DelphiAgent.ChatCommand, DelphiAgent.AskDialog,
   DelphiAgent.IdeContext, DelphiAgent.DirtyBuffers, DelphiAgent.Compile, DelphiAgent.AgentSettings,
-  DelphiAgent.ChatPageMessages, DelphiAgent.Sessions, DelphiAgent.Options, DelphiAgent.HostTools;
+  DelphiAgent.ChatPageMessages, DelphiAgent.Sessions, DelphiAgent.Options, DelphiAgent.HostTools,
+  DelphiAgent.OmpSettings, DelphiAgent.HostToolDefs, DelphiAgent.ChatPlan, DelphiAgent.ChatBtw;
 
 var
   GPickModel: Boolean;
@@ -35,8 +37,9 @@ var
 function PromptWithSnapshots(const Text: string): string;
 var
   Open: TArray<TEditorText>;
-  Files, Texts, DirtyFiles, DirtyTexts: TArray<string>;
+  Files, Texts, DirtyFiles, DirtyTexts, Snaps: TArray<string>;
   Index: Integer;
+  Dir: string;
 begin
   { Remember every open buffer for conflict checks; only dirty ones go to disk for omp. }
   Open := OpenEditorTexts;
@@ -53,10 +56,20 @@ begin
     end;
   end;
   RememberSnapshots(Files, Texts);
-  Result := MessageWithSnapshots(Text, WriteSnapshots(AgentTempRoot, DirtyFiles, DirtyTexts));
+  Snaps := WriteSnapshots(AgentTempRoot, DirtyFiles, DirtyTexts);
+  { omp expands @path from disk; an unsaved buffer must be read from its snapshot instead. }
+  Result := Text;
+  Dir := IncludeTrailingPathDelimiter(ActiveProjectDir);
+  for Index := 0 to High(Snaps) do
+  begin
+    Result := StringReplace(Result, '@' + DirtyFiles[Index], '@' + Snaps[Index], [rfReplaceAll, rfIgnoreCase]);
+    Result := StringReplace(Result, '@' + ExtractRelativePath(Dir, DirtyFiles[Index]), '@' + Snaps[Index],
+      [rfReplaceAll, rfIgnoreCase]);
+  end;
+  Result := MessageWithSnapshots(Result, Snaps);
 end;
 
-function SubmitChat(const Text, Attachment, AttachmentLabel: string): Boolean;
+function SubmitChat(const Text, Attachment, AttachmentLabel, ImagesJson: string): Boolean;
 var
   Session: TChatSession;
   Arg1, Arg2, Display: string;
@@ -64,6 +77,12 @@ var
 begin
   Session := ChatSession;
   Result := False;
+  { Side questions run in their own omp child, also while the agent is busy. }
+  if Text.StartsWith('/btw ', True) then
+  begin
+    AskBtw(Copy(Trim(Text), 5, MaxInt), '');
+    Exit(True);
+  end;
   if not Session.Connected or Session.Busy or (Trim(Text) = '') then
     Exit;
   if ClassifyChat(Text, Arg1, Arg2) = ccPrompt then
@@ -71,7 +90,7 @@ begin
     Display := Text;
     if AttachmentLabel <> '' then
       Display := Display + sLineBreak + '(' + AttachmentLabel + ')';
-    Exit(Session.SendPrompt(PromptWithSnapshots(Text + Attachment), Display));
+    Exit(Session.SendPrompt(PromptWithSnapshots(Text + Attachment), Display, ImagesJson));
   end;
   if DispatchSlash(Text, Session.SendCommand, PickModels) then
   begin
@@ -136,6 +155,44 @@ begin
   end;
 end;
 
+procedure SetApprovalMode(const Mode: string);
+var
+  Project: TOmpProjectSettings;
+begin
+  if Mode = 'plan' then
+  begin
+    EnterPlanMode(ChatSession.Catalog.ApprovalMode);
+    Exit;
+  end;
+  if PlanActive and (Mode = ChatSession.Catalog.ApprovalMode) then
+  begin
+    LeavePlanMode(Mode, '');
+    ChatSession.Notice('info', '계획 모드를 끝냈습니다. omp를 다시 시작합니다.');
+    Exit;
+  end;
+  if PlanActive then
+    LeavePlanMode(Mode, '');
+  Project := ChatSession.Catalog.Project;
+  if (Project = nil) or (Mode = ChatSession.Catalog.ApprovalMode) then
+    Exit;
+  { A value equal to omp's own drops the override. }
+  if Mode = Project.BaseText('tools.approvalMode') then
+    Project.SetOverlayText('tools.approvalMode', '')
+  else
+    Project.SetOverlayText('tools.approvalMode', Mode);
+  Project.Save;
+  { IDE changes follow the same mode at once; omp itself picks it up after the restart. }
+  ChatSession.Catalog.SetApprovalMode(Mode);
+  if Mode = 'yolo' then
+    ChatSession.Notice('warn', '권한 무시: omp 도구와 IDE 변경(버퍼·폼·디버거)을 묻지 않고 반영합니다. ' +
+      '저장은 하지 않으며 IDE에서 되돌릴 수 있습니다. omp를 다시 시작합니다.')
+  else if Mode = 'write' then
+    ChatSession.Notice('info', '쓰기 허용: IDE 변경은 턴마다 한 번 승인합니다. omp를 다시 시작합니다.')
+  else
+    ChatSession.Notice('info', '항상 묻기: IDE 변경마다 승인합니다. omp를 다시 시작합니다.');
+  ChatSession.RestartWhenIdle;
+end;
+
 procedure LoadHistoryPage(const Cursor: string);
 var
   Obj: TJSONObject;
@@ -159,7 +216,7 @@ end;
 
 procedure HandleCommandResponse(const Line: string);
 var
-  Command, Provider, ModelId, Cursor: string;
+  Command, Provider, ModelId, Cursor, FollowUp: string;
   Items: TArray<THistoryItem>;
   Root: TJSONValue;
   Ok: Boolean;
@@ -204,6 +261,10 @@ begin
       ChatSession.Emit(PageHistory(GHistory));
       ChatSession.Notice('info', Format('세션을 불러왔습니다. 메시지 %d개.', [Length(GHistory)]));
       GHistory := nil;
+      { A plan the user approved goes out once the restarted omp has the history back. }
+      FollowUp := TakeFollowUp;
+      if FollowUp <> '' then
+        SubmitChat(FollowUp, '', '');
     end;
   end
   else if (Command = 'set_model') or (Command = 'set_thinking_level') or (Command = 'set_fast_mode') then
@@ -217,29 +278,6 @@ begin
   end;
 end;
 
-function SessionStatusLine: string;
-var
-  Session: TChatSession;
-begin
-  Session := ChatSession;
-  if Session.Client = nil then
-    Result := '○ 대기'
-  else if Session.StartError <> '' then
-    Result := '✕ 오류: ' + Session.StartError
-  else if Session.Client.LinkError <> '' then
-    Result := '✕ 오류: ' + Session.Client.LinkError
-  else if Session.Connected then
-    Result := '● 연결됨'
-  else
-    Result := '◌ 연결 중';
-  if Session.State.ModelId <> '' then
-    Result := Result + ' · ' + Session.State.ModelId;
-  if Session.State.HasContext then
-    Result := Result + Format(' · 컨텍스트 %.0f%%', [Session.State.ContextPercent]);
-  if Session.Busy then
-    Result := Result + ' · ' + Session.Activity.Text;
-end;
-
 procedure HandleHostToolCall(const CallId, ToolName, ArgumentsJson: string);
 var
   Session: TChatSession;
@@ -249,7 +287,16 @@ begin
   Session := ChatSession;
   if (Session.Client = nil) or Session.Client.WasCancelled(CallId) then
     Exit;
-  ExecuteHostTool(ToolName, ArgumentsJson, Session, Text, IsError);
+  if PlanActive and IsChangingTool(ToolName) then
+  begin
+    Text := '계획 모드에서는 IDE를 바꿀 수 없습니다. 조사만 하고 rad.submit_plan으로 계획을 제출하세요.';
+    IsError := True;
+  end
+  else
+    ExecuteHostTool(ToolName, ArgumentsJson, Session.Approval, Text, IsError);
+  { A first form makes the form tools available. }
+  if (ToolName = ToolNewModule) and not IsError then
+    Session.RefreshHostTools;
   if (Session.Client <> nil) and not Session.Client.WasCancelled(CallId) then
     Session.Client.SendHostResult(CallId, Text, IsError);
 end;
@@ -274,26 +321,6 @@ begin
     ChatSession.Notice('info', Text);
   if Reply <> '' then
     ChatSession.SendCommand('extension_ui_response', Reply);
-end;
-
-function SessionDetailLine: string;
-var
-  Session: TChatSession;
-  ProjectFile, Folder: string;
-begin
-  Session := ChatSession;
-  ProjectFile := ActiveProjectFile;
-  if ProjectFile = '' then
-    Result := '프로젝트 없음'
-  else
-    Result := '프로젝트 ' + ChangeFileExt(ExtractFileName(ProjectFile), '');
-  if (Session.Client <> nil) and (Session.Client.Pid <> 0) then
-    Result := Result + ' · pid ' + IntToStr(Session.Client.Pid);
-  Folder := Session.State.Cwd;
-  if (Folder = '') and (Session.Client <> nil) then
-    Folder := Session.Client.Cwd;
-  if Folder <> '' then
-    Result := Result + ' · ' + ExcludeTrailingPathDelimiter(Folder);
 end;
 
 end.

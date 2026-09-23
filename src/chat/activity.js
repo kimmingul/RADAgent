@@ -2,7 +2,7 @@
   'use strict';
 
   // Renders omp progress besides the answer text: thinking, tool input being written, live tool
-  // output, subagents and the todo list. chat.js owns turns and calls in through ChatActivity.
+  // output, subagents and the todo list. Rows go into the current tool group (tools.js).
   let ctx = null;
   let thinking = null;
   const drafts = new Map();
@@ -54,7 +54,7 @@
     if (!thinking) {
       ctx.closeAssistant();
       thinking = activityRow('thinking-row live', '생각 중');
-      ctx.ensureTurn().appendChild(thinking.row);
+      ctx.ensureGroup('thinking').appendChild(thinking.row);
     }
     thinking.text += text || '';
     schedule(thinking);
@@ -73,7 +73,7 @@
     item.text = text || '';
     item.pre.textContent = item.text;
     item.meta.textContent = chars(item.text.length);
-    ctx.ensureTurn().appendChild(item.row);
+    ctx.ensureGroup('thinking').appendChild(item.row);
   }
 
   function toolInputDelta(id, name, text) {
@@ -81,7 +81,7 @@
     if (!item) {
       ctx.closeAssistant();
       item = activityRow('tool-input-row', '✎ ' + (name || '도구') + ' 입력 작성 중');
-      ctx.ensureTurn().appendChild(item.row);
+      ctx.ensureGroup('input').appendChild(item.row);
       drafts.set(id, item);
     }
     item.text += text || '';
@@ -118,7 +118,7 @@
       row.appendChild(el('span', 'subagent-name'));
       row.appendChild(el('span', 'subagent-text'));
       row.appendChild(el('span', 'subagent-meta'));
-      ctx.ensureTurn().appendChild(row);
+      ctx.ensureGroup('subagent', msg.id).appendChild(row);
       subagents.set(msg.id, row);
     }
     const status = msg.status || '';
@@ -140,7 +140,7 @@
     if (!todoPanel) {
       todoPanel = el('div');
       todoPanel.id = 'todo-panel';
-      document.body.insertBefore(todoPanel, document.body.firstChild);
+      document.body.insertBefore(todoPanel, document.getElementById('log'));
     }
     todoPanel.innerHTML = '';
     if (!Array.isArray(items) || items.length === 0) {

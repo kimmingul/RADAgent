@@ -39,7 +39,7 @@ function SetEvent(const Editor: IOTAFormEditor; const Args: TFormToolArgs;
 implementation
 
 uses
-  System.SysUtils, System.StrUtils, System.Classes, System.TypInfo, Vcl.Controls, DesignIntf,
+  System.SysUtils, System.StrUtils, System.Classes, System.TypInfo, Vcl.Controls, Vcl.Menus, DesignIntf,
   DelphiAgent.FormDesigner;
 
 function Approved(const Approval: IAgentApproval; const Path, Preview: string;
@@ -64,10 +64,60 @@ begin
     Problem := '컴포넌트를 찾지 못했습니다: ' + Name;
 end;
 
+{ Walks "Font.Size" / "Position.X" to the object that owns the last property. }
+function ResolveProperty(Instance: TComponent; const Path: string; out Target: TObject;
+  out Prop: PPropInfo): Boolean;
+var
+  Parts: TArray<string>;
+  Index: Integer;
+begin
+  Result := False;
+  Target := Instance;
+  Prop := nil;
+  Parts := Path.Split(['.']);
+  if Length(Parts) = 0 then
+    Exit;
+  for Index := 0 to High(Parts) - 1 do
+  begin
+    Prop := GetPropInfo(Target, Parts[Index]);
+    if (Prop = nil) or (Prop.PropType^.Kind <> tkClass) then
+      Exit;
+    Target := GetObjectProp(Target, Prop);
+    if Target = nil then
+      Exit;
+  end;
+  Prop := GetPropInfo(Target, Parts[High(Parts)]);
+  Result := (Prop <> nil) and (Prop.SetProc <> nil);
+end;
+
+{ Text values for simple kinds; a component name for component references (Menu, PopupMenu). }
+procedure AssignValue(const Editor: IOTAFormEditor; Target: TObject; Prop: PPropInfo;
+  const Value: string);
+var
+  Ref: TComponent;
+begin
+  if Prop.PropType^.Kind = tkClass then
+  begin
+    Ref := nil;
+    if Value <> '' then
+    begin
+      Ref := FindNative(Editor, Value);
+      if Ref = nil then
+        raise Exception.Create('참조할 컴포넌트가 없습니다: ' + Value);
+    end;
+    SetObjectProp(Target, Prop, Ref);
+  end
+  else if SameText(string(Prop.PropType^.Name), 'TShortCut') then
+    SetOrdProp(Target, Prop, TextToShortCut(Value))
+  else
+    SetPropValue(Target, Prop, Value);
+end;
+
 function SetProperty(const Editor: IOTAFormEditor; const Args: TFormToolArgs;
   const Approval: IAgentApproval; out Problem: string): Boolean;
 var
   Instance: TComponent;
+  Target: TObject;
   Prop: PPropInfo;
 begin
   Result := False;
@@ -78,20 +128,19 @@ begin
     Problem := '컴포넌트를 찾지 못했습니다: ' + Args.Component;
     Exit;
   end;
-  Prop := GetPropInfo(Instance, Args.PropName);
-  if (Prop = nil) or (Prop.SetProc = nil) then
+  if not ResolveProperty(Instance, Args.PropName, Target, Prop) then
   begin
     Problem := '쓸 수 있는 속성이 아닙니다: ' + Args.PropName;
     Exit;
   end;
-  if not (Prop.PropType^.Kind in TextKinds) then
+  if not (Prop.PropType^.Kind in TextKinds + [tkClass]) then
   begin
-    Problem := '문자, 숫자, 열거, 집합 속성만 바꿀 수 있습니다. 이벤트는 rad.form_set_event를 쓰세요: ' +
+    Problem := '문자, 숫자, 열거, 집합, 컴포넌트 참조 속성만 바꿀 수 있습니다. 이벤트는 events로: ' +
       Args.PropName;
     Exit;
   end;
-  if not Approved(Approval, Args.Path, Instance.Name + '.' + string(Prop.Name) + ': ' +
-    PropText(Editor, Instance, Prop) + ' -> ' + Args.Value, Problem) then
+  if not Approved(Approval, Args.Path, Instance.Name + '.' + Args.PropName + ' -> ' + Args.Value,
+    Problem) then
     Exit;
   { The dialog pumps messages; the component may be gone. }
   if FindNative(Editor, Args.Component) <> Instance then
@@ -100,7 +149,7 @@ begin
     Exit;
   end;
   try
-    SetPropValue(Instance, Prop, Args.Value);
+    AssignValue(Editor, Target, Prop, Args.Value);
   except
     on E: Exception do
     begin
@@ -159,9 +208,15 @@ begin
     Problem := '컴포넌트를 만들지 못했습니다: ' + Args.ClassName;
     Exit;
   end;
-  { CreateComponent does not honour X,Y for controls (it cascades); place it explicitly. }
+  { CreateComponent does not honour X,Y for controls (it cascades); place it explicitly.
+    FMX controls have no VCL TControl ancestor; their Position object takes X and Y. }
   if Native is TControl then
-    TControl(Native).SetBounds(Args.Left, Args.Top, TControl(Native).Width, TControl(Native).Height);
+    TControl(Native).SetBounds(Args.Left, Args.Top, TControl(Native).Width, TControl(Native).Height)
+  else if (GetPropInfo(Native, 'Position') <> nil) and (GetObjectProp(Native, 'Position') <> nil) then
+  begin
+    SetFloatProp(GetObjectProp(Native, 'Position'), 'X', Args.Left);
+    SetFloatProp(GetObjectProp(Native, 'Position'), 'Y', Args.Top);
+  end;
   if Args.Name <> '' then
   try
     Native.Name := Args.Name;

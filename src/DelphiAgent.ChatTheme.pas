@@ -99,7 +99,7 @@ begin
   Result.Fg := Style.GetSystemColor(clWindowText);
   Result.Accent := Style.GetSystemColor(clHighlight);
   Result.Muted := Blend(Result.Fg, Result.Bg, 0.45);
-  Result.UserBg := Blend(Result.Bg, Result.Accent, 0.22);
+  Result.UserBg := Blend(Result.Bg, Result.Fg, 0.1);
   Result.AssistantBg := Result.Bg;
   Result.CodeBg := Blend(Result.Bg, Result.Fg, 0.07);
   Result.Border := Blend(Result.Bg, Result.Fg, 0.2);

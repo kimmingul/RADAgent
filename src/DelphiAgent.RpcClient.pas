@@ -2,7 +2,8 @@
 { omp --mode rpc child. The read thread never calls ToolsAPI. }
 interface
 uses
-  System.Classes, System.SysUtils, DelphiAgent.RpcDispatch, DelphiAgent.RpcEvents;
+  System.Classes, System.SysUtils, DelphiAgent.RpcDispatch, DelphiAgent.RpcEvents,
+  DelphiAgent.HostToolDefs;
 type
   TRpcLogEvent = reference to procedure(const Text: string);
   TRpcStatusEvent = procedure of object;
@@ -39,6 +40,7 @@ type
     FEvents: TRpcDispatch;
     FLinkError: string;
     FStopping: Boolean;
+    FToolProfile: TToolProfile;
     procedure WriteFrame(const Frame, FrameType: string);
     procedure QueueFrame(const Frame, FrameType: string);
     procedure QueueHost(const CallId, ToolName, Args: string);
@@ -55,12 +57,13 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    function Start(const Executable, WorkDir, ConfigOverlay, ExtraArgs: string): Boolean;
+    function Start(const Executable, WorkDir: string; const Configs: array of string; const AppendPrompt, ExtraArgs: string): Boolean;
     procedure Stop;
-    function SendPrompt(const Message: string): Boolean;
+    function SendPrompt(const Message: string; const ImagesJson: string = ''): Boolean;
     procedure SendAbort;
     procedure SendRaw(const FrameType, Frame: string);
     procedure SendHostResult(const CallId, Text: string; IsError: Boolean);
+    procedure ResendHostTools(const Profile: TToolProfile);
     function WasCancelled(const CallId: string): Boolean;
     property Ready: Boolean read FReady;
     property HostToolsSent: Boolean read FHostToolsSent;
@@ -74,13 +77,13 @@ type
     property OnAgentEvent: TRpcAgentEvent read FOnAgentEvent write FOnAgentEvent;
     property OnUi: TRpcLogEvent read FOnUi write FOnUi;
     property LinkError: string read FLinkError;
+    property ToolProfile: TToolProfile read FToolProfile write FToolProfile;
   end;
 procedure ShutdownActiveClient;
 implementation
 uses
   System.JSON, System.SyncObjs, Winapi.Windows,
-  DelphiAgent.Options, DelphiAgent.RpcProtocol, DelphiAgent.ChatCommand,
-  DelphiAgent.HostToolDefs;
+  DelphiAgent.Options, DelphiAgent.RpcProtocol, DelphiAgent.ChatCommand;
 var
   GActive: TAgentRpcClient;
   GGate: TCriticalSection;
@@ -105,6 +108,7 @@ begin
   FLock := TCriticalSection.Create;
   FCancel := TStringList.Create;
   FAlive := True;
+  FToolProfile := DefaultToolProfile;
 end;
 destructor TAgentRpcClient.Destroy;
 begin
@@ -209,7 +213,7 @@ end;
 procedure TAgentRpcClient.SendHostTools;
 begin
   if FHostToolsSent or not FReady then Exit;
-  WriteFrame(BuildSetHostToolsFrame(NewRequestId(FNextId)), 'set_host_tools');
+  WriteFrame(BuildSetHostToolsFrame(NewRequestId(FNextId), FToolProfile), 'set_host_tools');
   WriteFrame(BuildIdTypeFrame(NewRequestId(FNextId), 'get_state'), 'get_state');
   WriteFrame(BuildIdTypeFrame(NewRequestId(FNextId), 'get_available_commands'), 'get_available_commands');
   FHostToolsSent := True;
@@ -263,7 +267,8 @@ begin
     Handle := 0;
   end;
 end;
-function TAgentRpcClient.Start(const Executable, WorkDir, ConfigOverlay, ExtraArgs: string): Boolean;
+function TAgentRpcClient.Start(const Executable, WorkDir: string; const Configs: array of string;
+  const AppendPrompt, ExtraArgs: string): Boolean;
 var
   Pipes: TRpcPipes;
 begin
@@ -271,7 +276,7 @@ begin
   if FProcess <> 0 then
     Exit(True);
   ForceDirectories(AgentTempRoot);
-  if not SpawnRpcProcess(BuildOmpCommandLine(Executable, WorkDir, ConfigOverlay, ExtraArgs),
+  if not SpawnRpcProcess(BuildOmpCommandLine(Executable, WorkDir, Configs, AppendPrompt, ExtraArgs),
     WorkDir, OmpStderrLog, Pipes) then
     Exit;
   FStdIn := Pipes.StdIn;
@@ -338,12 +343,12 @@ begin
   if FAlive and Assigned(FOnStatus) then
     FOnStatus();
 end;
-function TAgentRpcClient.SendPrompt(const Message: string): Boolean;
+function TAgentRpcClient.SendPrompt(const Message, ImagesJson: string): Boolean;
 var
   Id, Frame: string;
 begin
   Id := NewRequestId(FNextId);
-  Result := TryBuildPromptFrame(FReady, FHostToolsSent, Id, Message, Frame);
+  Result := TryBuildPromptFrame(FReady, FHostToolsSent, Id, Message, Frame, ImagesJson);
   if not Result then
   begin
     Dec(FNextId);
@@ -380,6 +385,12 @@ begin
   if not FReady or WasCancelled(CallId) then
     Exit;
   WriteFrame(BuildHostToolResultFrame(CallId, Text, IsError), 'host_tool_result');
+end;
+{ The rad.* tools again for a changed project, e.g. after its first form. }
+procedure TAgentRpcClient.ResendHostTools(const Profile: TToolProfile);
+begin
+  FToolProfile := Profile;
+  if FHostToolsSent then WriteFrame(BuildSetHostToolsFrame(NewRequestId(FNextId), FToolProfile), 'set_host_tools');
 end;
 initialization
   GGate := TCriticalSection.Create;

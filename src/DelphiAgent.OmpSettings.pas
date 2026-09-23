@@ -28,6 +28,9 @@ type
     procedure SetOverlayText(const Key, Value: string);
     function Toggles: TArray<TToggleItem>;
     procedure ApplyToggles(const Items: TArray<TToggleItem>);
+    { One disabledExtensions id (e.g. extension-module:foo) on or off for this project. }
+    function IsDisabled(const Id: string): Boolean;
+    procedure SetDisabled(const Id: string; Disabled: Boolean);
     procedure Save;
     property ProjectDir: string read FProjectDir;
   end;
@@ -206,6 +209,26 @@ begin
       Result[Index].Enabled := not ContainsText(Disabled, ToggleIdPrefix[Result[Index].Kind] + Result[Index].Name);
     Result[Index].GloballyOff := (Result[Index].Kind = tkSkill) and ContainsText(Ignored, Result[Index].Name);
   end;
+end;
+
+function TOmpProjectSettings.IsDisabled(const Id: string): Boolean;
+begin
+  Result := ContainsText(EffectiveList('disabledExtensions'), Id);
+end;
+
+procedure TOmpProjectSettings.SetDisabled(const Id: string; Disabled: Boolean);
+var
+  Items, Kept: TArray<string>;
+  Item: string;
+begin
+  Items := EffectiveList('disabledExtensions');
+  Kept := nil;
+  for Item in Items do
+    if not SameText(Item, Id) then
+      Kept := Kept + [Item];
+  if Disabled then
+    Kept := Kept + [Id];
+  SetList('disabledExtensions', Kept);
 end;
 
 procedure TOmpProjectSettings.ApplyToggles(const Items: TArray<TToggleItem>);

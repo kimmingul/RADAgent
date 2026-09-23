@@ -85,8 +85,8 @@ procedure TProjectPages.BuildToggles(Page: TWinControl);
 var
   Item: TToggleItem;
   Row: TListItem;
-  Servers: TArray<string>;
-  Server: string;
+  Servers: TArray<TMcpServer>;
+  Server: TMcpServer;
   List: TListBox;
 begin
   AddNote(Page, '체크를 끄면 이 프로젝트에서 omp가 불러오지 않습니다. 전역 설정에서 제외한 스킬은 ' +
@@ -108,11 +108,14 @@ begin
   AddStacked(Page, List);
   Servers := DiscoverMcpServers(FSettings.ProjectDir);
   for Server in Servers do
-    List.Items.Add(Server);
+    if Server.Enabled then
+      List.Items.Add(Server.Name + ' — ' + Server.Source)
+    else
+      List.Items.Add(Server.Name + ' — ' + Server.Source + ' · 꺼짐');
   if Length(Servers) = 0 then
     List.Items.Add('설정된 MCP 서버가 없습니다.');
-  AddNote(Page, 'MCP 서버 켜고 끄기는 omp가 사용자 설정에만 저장하므로 여기서 바꾸지 않습니다. ' +
-    '채팅에서 /mcp enable 이름 또는 /mcp disable 이름을 쓰세요.');
+  AddNote(Page, 'MCP 서버(커넥터) 켜고 끄기는 입력 상자 왼쪽 아래 + → 커넥터에서 합니다. omp의 /mcp ' +
+    '명령으로 바꾸므로 프로젝트 파일에 정의된 서버는 그 파일에, 나머지는 사용자 설정에 저장됩니다.');
 end;
 
 procedure TProjectPages.ToggleChanging(Sender: TObject; Item: TListItem; Change: TItemChange;

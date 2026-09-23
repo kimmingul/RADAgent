@@ -195,18 +195,20 @@
         continue;
       }
 
-      // Fenced code block
-      const codeMatch = line.match(/^```\s*([a-zA-Z0-9_\-+]*)\s*$/);
+      // Fenced code block; list items indent theirs, so up to 4 leading spaces count.
+      const codeMatch = line.match(/^( {0,4})```\s*([a-zA-Z0-9_\-+]*)\s*$/);
       if (codeMatch) {
-        const lang = codeMatch[1].toLowerCase();
+        const indent = codeMatch[1].length;
+        const lang = codeMatch[2].toLowerCase();
         const codeLines = [];
         idx++;
         while (idx < lines.length) {
-          if (/^```\s*$/.test(lines[idx])) {
+          if (/^ {0,4}```\s*$/.test(lines[idx])) {
             idx++;
             break;
           }
-          codeLines.push(lines[idx]);
+          const raw = lines[idx];
+          codeLines.push(raw.slice(Math.min(indent, raw.length - raw.trimStart().length)));
           idx++;
         }
         const rawCode = codeLines.join('\n');
@@ -276,11 +278,14 @@
       while (idx < lines.length) {
         const pLine = lines[idx];
         if (!pLine.trim()) break;
-        if (pLine.startsWith('```') || /^#{1,6}\s+/.test(pLine) || /^>\s?/.test(pLine) ||
-            /^\s*([-*+]|\d+\.)\s+/.test(pLine) || /^(?:---|\*\*\*|___)\s*$/.test(pLine)) {
+        // The first line is always taken: a line no block accepted ("# " while streaming) must
+        // still move idx forward, or render() never returns.
+        if (paraLines.length && (pLine.trimStart().startsWith('```') || /^#{1,6}\s+/.test(pLine) ||
+            /^>\s?/.test(pLine) || /^\s*([-*+]|\d+\.)\s+/.test(pLine) || /^(?:---|\*\*\*|___)\s*$/.test(pLine))) {
           break;
         }
-        if (pLine.includes('|') && idx + 1 < lines.length && /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/.test(lines[idx + 1])) {
+        if (paraLines.length && pLine.includes('|') && idx + 1 < lines.length &&
+            /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/.test(lines[idx + 1])) {
           break;
         }
         paraLines.push(pLine);

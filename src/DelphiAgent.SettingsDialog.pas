@@ -6,7 +6,8 @@
 
 interface
 
-procedure ShowSettings;
+{ Page: tab to show first (0 채팅 표시, 1 계정·모델, 2 역할별 모델, 3 확장, 4 고급). }
+procedure ShowSettings(Page: Integer = 0);
 
 implementation
 
@@ -194,6 +195,9 @@ begin
     if FileExists(OverlayPath(FProject.ProjectDir)) then
       After := TFile.ReadAllText(OverlayPath(FProject.ProjectDir));
     Restart := Restart or (Before <> After);
+    { The + menu edits the same file through the catalog's copy; keep it current. }
+    if Before <> After then
+      ChatSession.Catalog.LoadProject(OmpCommand, FProject.ProjectDir);
   end;
   ChatSession.ThemeChanged;
   ChatSession.DisplayChanged;
@@ -211,12 +215,14 @@ begin
     ChatSession.Notice('info', 'omp 설정을 저장했습니다. omp를 다시 시작하면 반영됩니다.');
 end;
 
-procedure ShowSettings;
+procedure ShowSettings(Page: Integer);
 var
   Form: TSettingsForm;
 begin
   Form := TSettingsForm.CreateDialog;
   try
+    if (Page >= 0) and (Page < Form.FPages.PageCount) then
+      Form.FPages.ActivePageIndex := Page;
     Form.ShowModal;
   finally
     Form.Free;

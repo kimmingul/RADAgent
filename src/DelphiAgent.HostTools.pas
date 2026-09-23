@@ -18,7 +18,8 @@ uses
   System.SysUtils, System.IOUtils, System.JSON, Winapi.Windows, ToolsAPI,
   DelphiAgent.IdeContext, DelphiAgent.Compile, DelphiAgent.BufferEdits,
   DelphiAgent.HostToolDefs, DelphiAgent.DebugTools, DelphiAgent.DebugControl,
-  DelphiAgent.FormEdits, DelphiAgent.FormTools;
+  DelphiAgent.FormEdits, DelphiAgent.FormTools, DelphiAgent.ProjectProfile,
+  DelphiAgent.ModuleCreator, DelphiAgent.ChatPlan;
 
 function ArgText(const ArgumentsJson, Name: string): string;
 var
@@ -131,6 +132,27 @@ begin
   end;
 end;
 
+{ "12| text" per line: edits address lines by these numbers, so the model must not count. }
+function NumberedLines(const Text: string): string;
+var
+  Lines: TArray<string>;
+  Builder: TStringBuilder;
+  Index: Integer;
+begin
+  Lines := Text.Replace(#13#10, #10).Split([#10]);
+  { A final line break does not start another line. }
+  if (Length(Lines) > 0) and (Lines[High(Lines)] = '') then
+    SetLength(Lines, Length(Lines) - 1);
+  Builder := TStringBuilder.Create;
+  try
+    for Index := 0 to High(Lines) do
+      Builder.Append(Index + 1).Append('| ').Append(Lines[Index]).Append(#10);
+    Result := Builder.ToString;
+  finally
+    Builder.Free;
+  end;
+end;
+
 function ReadBufferText(const Path: string; out Text, Problem: string): Boolean;
 begin
   Text := '';
@@ -143,9 +165,12 @@ begin
   end;
   Text := BufferText(Path);
   if Text = '' then
-    Problem := '열린 버퍼가 없습니다.'
-  else
-    Result := True;
+  begin
+    Problem := '열린 버퍼가 없습니다.';
+    Exit;
+  end;
+  Text := NumberedLines(Text);
+  Result := True;
 end;
 
 function FormArgs(const ArgumentsJson: string): TFormToolArgs;
@@ -162,6 +187,44 @@ begin
   Result.NewName := ArgText(ArgumentsJson, 'newName');
   Result.Event := ArgText(ArgumentsJson, 'event');
   Result.Handler := ArgText(ArgumentsJson, 'handler');
+end;
+
+function EditsFrom(const ArgumentsJson: string): TArray<TBufferEdit>;
+var
+  Value, Item: TJSONValue;
+  Obj: TJSONObject;
+  Edit: TBufferEdit;
+begin
+  Result := nil;
+  Value := TJSONObject.ParseJSONValue(ArgumentsJson);
+  try
+    if not (Value is TJSONObject) or not (TJSONObject(Value).GetValue('edits') is TJSONArray) then
+      Exit;
+    for Item in TJSONArray(TJSONObject(Value).GetValue('edits')) do
+      if Item is TJSONObject then
+      begin
+        Obj := TJSONObject(Item);
+        Edit.Path := Obj.GetValue<string>('path', '');
+        Edit.Content := Obj.GetValue<string>('content', '');
+        Edit.NewText := Obj.GetValue<string>('newText', '');
+        Edit.StartLine := Obj.GetValue<Integer>('startLine', 0);
+        Edit.EndLine := Obj.GetValue<Integer>('endLine', 0);
+        Result := Result + [Edit];
+      end;
+  finally
+    Value.Free;
+  end;
+end;
+
+{ Approved-or-cancelled results; a cancel is not an error. }
+procedure Outcome(Ok: Boolean; const OkText, Problem: string; out ResultText: string;
+  out IsError: Boolean);
+begin
+  if Ok then
+    ResultText := OkText
+  else
+    ResultText := Problem;
+  IsError := not Ok and (Problem <> SEditCancelled);
 end;
 
 function DebugControlArgs(const ArgumentsJson: string): TDebugControlArgs;
@@ -222,6 +285,27 @@ begin
     else
       ResultText := Problem;
   end
+  else if ToolName = ToolApplyEdits then
+    Outcome(ApplyEdits(EditsFrom(ArgumentsJson), Approval, Problem), '{"ok":true}', Problem,
+      ResultText, IsError)
+  else if ToolName = ToolSubmitPlan then
+    IsError := not SubmitPlan(ArgumentsJson, ResultText)
+  else if ToolName = ToolProjectInfo then
+  begin
+    ResultText := ProjectInfoJson;
+    IsError := ResultText.Contains('"ok":false');
+  end
+  else if ToolName = ToolSetBuildConfig then
+    IsError := not SetBuildConfig(ArgText(ArgumentsJson, 'config'), ArgText(ArgumentsJson, 'platform'),
+      Approval, ResultText)
+  else if ToolName = ToolNewModule then
+    IsError := not NewModule(ArgText(ArgumentsJson, 'kind'), ArgText(ArgumentsJson, 'name'),
+      Approval, ResultText)
+  else if ToolName = ToolListComponents then
+  begin
+    ResultText := ComponentsJson(ArgText(ArgumentsJson, 'filter'));
+    IsError := False;
+  end
   else if ToolName = ToolOpenBuffer then
   begin
     if OpenBuffer(ArgText(ArgumentsJson, 'file'), Problem) then
@@ -247,7 +331,7 @@ begin
   else if IsDebugControlTool(ToolName) then
     ExecuteDebugControl(ToolName, DebugControlArgs(ArgumentsJson), Approval, ResultText, IsError)
   else if IsFormTool(ToolName) then
-    ExecuteFormTool(ToolName, FormArgs(ArgumentsJson), Approval, ResultText, IsError)
+    ExecuteFormTool(ToolName, FormArgs(ArgumentsJson), ArgumentsJson, Approval, ResultText, IsError)
   else
     ResultText := 'unknown host tool';
 end;

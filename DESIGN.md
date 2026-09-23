@@ -34,16 +34,29 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | 모듈 | 책임 |
 | --- | --- |
 | Wizard | `IOTAWizard`. 패키지 `Register`에서 등록하고 IDE 종료 시 해제한다. |
-| DockForm | `INTACustomDockableForm`의 Chat 프레임. 세션의 뷰일 뿐이다: 도구 막대, WebView2 기록, 문맥 줄, 입력, 두 줄 상태. |
+| DockForm | `INTACustomDockableForm`의 Chat 프레임. WebView2 한 장만 담고 상태를 페이지에 보내며 페이지 요청을 처리한다. WebView2를 못 띄우면 글자 기록과 VCL 입력칸으로 대신한다. |
+| ChatStatus | 위 막대와 입력 상자용 상태 메시지(연결, 모델, 생각 수준, 승인 방식, 컨텍스트, 하는 일, 세션 제목, 활성 파일·선택, 명령 목록). |
+| ChatPageCommands | 페이지 요청(보내기, 중지, 승인 카드 답, 계획 진행, `@` 파일 목록, 세션, 내보내기, 설정, 컴파일, 파일 경로, 모델·생각 수준·승인 방식 변경, 링크) 처리. |
+| ProjectProfile | 활성 프로젝트의 언어(Delphi, C++Builder), 프레임워크(VCL, FMX, 없음), 폼 목록. `rad.project_info`, `rad.set_build_config`, `rad.list_components`. |
+| OmpLaunch | omp를 띄우기 전에 쓰는 파일: rad.* 문서를 시스템 프롬프트에 넣는 `omp-host.yml`(`tools.xdevInlineDevices`), 프로젝트 안내 `project-guide.md`(`--append-system-prompt`), Delphi 프로젝트의 `.omp/lsp.json`. |
+| HostToolDefs | 프로필에 맞춘 rad.* 목록: 폼이 있을 때만 폼 도구, VCL/FMX와 Delphi/C++ 문구. |
+| FormBatch / ModuleCreator | `rad.form_apply`(폼 변경 묶음, 승인 한 번), `rad.new_module`(폼·프레임·데이터 모듈·유닛 추가). |
+| ChatExtensions | 입력 상자 `＋` 메뉴의 IDE 쪽: 첨부 파일·사진(prompt images), 작업 폴더 추가, 커넥터(MCP)와 플러그인 목록과 켜기/끄기. |
+| ChatApproval | 채팅의 승인 계약 구현: 승인 카드(페이지가 없으면 승인 창), 충돌 알림, 버퍼에 반영된 편집의 파일 카드. |
+| ChatApprovalCard | 채팅 안 승인 카드: diff 메시지를 보내고 답이 올 때까지 메시지를 돌린다. 중지하면 모두 거부. |
+| ChatPlan | 계획 모드: 들어가기·나오기(omp 재시작), `rad.submit_plan`으로 `docs\plans` 계획서 작성, `docs` 파일 프로젝트 추가, 진행 후속 프롬프트. |
+| ChatBtw | `/btw` 곁가지 질문: 질문마다 별도 omp 자식을 띄우고(타이머로 읽음) 채팅 카드와 메모 목록 메시지를 보낸다. 본 대화와 섞지 않는다. |
+| BtwRunner | 곁가지 질문 omp 자식 하나: `--mode rpc --no-tools`, 대화 `--fork` 또는 주제 `--resume`, 프롬프트 하나, 중지는 abort 프레임. 막히지 않는 읽기. ToolsAPI 없음. |
+| BtwStore | 곁가지 질문 메모(주제별 JSON과 주제 세션)를 `%LOCALAPPDATA%\DelphiAgent\btw\<프로젝트>`에 읽고 쓴다. |
 | ChatSession | IDE당 대화 하나. omp 자식과 진행 상태를 가진다. 창을 닫거나 레이아웃이 바뀌어도 살아 있다. 설정을 바꾸면 같은 세션 파일로 omp를 다시 시작한다. 승인 계약을 구현한다. |
 | ChatStream | 에이전트 이벤트를 페이지 메시지로 바꾸고 기록(재표시용)을 가진다: 답, 생각, 도구 입력·중간 출력·결과, 하위 에이전트, 작업 목록, 알림. |
 | ChatCatalog | 설정 창용 모델, 생각 수준, 로그인 공급자 목록(RPC 응답). |
 | ChatActions | 보내기(스냅샷, 선택 영역 첨부), 컴파일, 새 세션, 세션 전환과 기록 불러오기, 내보내기, host-tool 실행, 상태줄 문구. |
 | ChatActivity | RPC 이벤트로 지금 하는 일(생각, 답 작성, 도구 실행, 압축)과 경과 시간을 정한다. |
-| ChatPageMessages | 채팅 페이지(`src\chat`)로 보내는 JSON 메시지. |
+| ChatPageMessages | 채팅 페이지(`src\chat`)로 보내는 JSON 메시지. 페이지는 `chat.js`(기록), `tools.js`(도구 묶음·파일 카드), `activity.js`(생각·입력·하위 에이전트·작업 목록), `topbar.js`, `composer.js`(입력 상자와 아래 줄)로 나뉜다. |
 | WebView2Host / WebView2Handlers | rtl `Winapi.WebView2`와 BPL 옆 `WebView2Loader.dll`로 WebView2를 띄운다. 가상 호스트로 페이지를 싣고, 페이지 밖 이동과 새 창을 막는다. |
 | ChatFallback | WebView2를 못 띄울 때의 글자 기록. |
-| ChatInput | 여러 줄 입력, 보낸 문장 기록, `/` 명령 목록. |
+| ChatInput | WebView2 대체 화면의 VCL 입력칸: 여러 줄, 보낸 문장 기록, `/` 명령 목록. |
 | ChatTheme | IDE 테마 색(IOTAIDEThemingServices), 고대비·글자 크기 반영, 테마 변경 통지. |
 | AgentSettings | DelphiAgent 자체 설정(IDE 레지스트리 키): 채팅 표시 항목, 글자 크기, 고대비, omp 경로·추가 인자, 스냅샷 여부. |
 | SettingsDialog / SettingsUi / SettingsAccount / SettingsProject | 설정 창. 채팅 표시, 계정·모델(RPC로 바로 적용), 역할별 모델·확장·고급(프로젝트 omp 설정). |

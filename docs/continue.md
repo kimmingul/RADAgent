@@ -21,13 +21,19 @@ stdin에는 JSONL만 쓴다. 일반 텍스트 한 줄이면 omp가 죽는다. `@
 
 - 32/64-bit IDE에서 Tools 또는 View의 DelphiAgent 도킹 창. 대화와 omp는 `ChatSession`이 가지고, 창은 뷰다. 창을 닫거나 디버그 레이아웃으로 바뀌어도 omp pid와 기록이 그대로이고, 다시 열면 기록을 다시 그린다.
 - `omp --mode rpc`. `ready` 뒤에만 명령. 응답은 WebView2 페이지(`src\chat`)에 마크다운으로 스트리밍. 도구 실행은 접힌 줄(✓/✗, 시간, 결과), 파일 위치는 에디터로 가는 링크.
-- 상태줄 두 줄: `● 연결됨 · 모델 · 컨텍스트 % · 지금 하는 일 · 경과`와 `프로젝트 · pid · 폴더`. 중지는 턴이 돌 때만.
-- 입력: 여러 줄, Enter 보내기, Shift+Enter 줄바꿈, ↑ 기록, `/` 명령 목록(`get_available_commands`). Esc는 목록만 닫는다(도킹 폼이 Esc로 숨는 것을 막음).
-- 문맥 줄: 활성 파일, 선택 줄, 저장 안 한 파일 수. `선택 영역 포함`이면 선택 코드를 프롬프트에 붙인다.
-- 도구 막대: 새 세션, 세션 목록(`switch_session` 후 `get_messages_page`로 기록 표시), 내보내기(`export_html`), 설정. 색은 IDE 테마를 따르고 테마 변경 통지를 받는다.
+- 채팅 창 전체가 WebView2 페이지다: 위 막대(세션 제목·프로젝트·새 세션·내보내기·설정), 가운데 한 칸 기록, 입력 상자와 아래 줄(첨부·승인 방식·모델·생각 수준·컨텍스트·연결). 프레임은 `ChatStatus`로 상태를 보내고 `ChatPageCommands`로 요청을 처리한다. 작업 중에는 보내기가 중지로 바뀌고 기록 끝에 `✳ 하는 일 · 경과`가 보인다.
+- 입력(`composer.js`): 여러 줄, Enter 보내기(한글 조합 중 제외), Shift+Enter 줄바꿈, ↑ 기록, `/` 명령 목록(`get_available_commands`). Esc는 목록만 닫고 도킹 창은 숨지 않는다.
+- 입력 위 칩: 활성 파일, `+ 선택 N–M줄`(켜면 선택 코드를 프롬프트에 붙임), 저장 안 한 파일 수.
+- 도구 묶음(`tools.js`): 답 사이의 생각·도구·하위 에이전트를 `도구 N개 사용 · 실패 N ›` 한 줄로. 파일 카드: `IAgentApproval.ChangeApplied`가 반영된 편집의 `+N -M`과 첫 변경 줄을 보낸다.
+- `＋` 메뉴(`plusmenu.js`, `DelphiAgent.ChatExtensions`): 파일·사진(600KB 이하 사진은 prompt `images`, v1 프레임 1MiB 한도), 폴더(`/add-dir`), 커넥터(MCP, `/mcp enable|disable`), 플러그인(`omp plugin enable|disable`, 확장 모듈은 프로젝트 `disabledExtensions` + omp 재시작).
+- 승인 방식 선택은 IDE 변경 승인도 정한다(항상 묻기 = 변경마다, 쓰기 허용 = 턴마다 한 번, 권한 무시 = 묻지 않음, 처음 값 권한 무시). `tools.approvalMode`를 `<프로젝트>\.omp\delphiagent.yml`에 쓰고 omp를 같은 세션으로 다시 시작한다(RPC에 바꾸는 명령이 없음).
+- 위 막대: 세션 제목(세션 목록, `switch_session` 후 `get_messages_page`로 기록 표시), 새 세션, 내보내기(`export_html`), 설정. 색은 IDE 테마를 따르고 테마 변경 통지를 받는다.
 - 진행 표시: 생각(`thinking_delta`), 도구 입력(`toolcall_delta`), 도구 중간 출력(`tool_execution_update`, 250ms 간격, 끝 8000자), 하위 에이전트(`set_subagent_subscription progress`), 작업 목록(`todo` 도구 뒤 `get_state.todoPhases`), 재시도·모델 대체. 페이지가 `display` 메시지로 항목별로 숨긴다.
 - 설정 창: 채팅 표시·글자 크기·고대비(레지스트리), 모델·생각 수준·OAuth 로그인(RPC), 역할별 모델·스킬/확장/하위 에이전트·omp 도구 승인·기본 생각 수준(`<프로젝트>\.omp\delphiagent.yml`, `--config`), omp 경로·추가 인자·스냅샷 여부. omp 설정이 바뀌면 같은 세션 파일로 다시 시작(`switch_session`). 턴이 도는 중이면 턴이 끝난 뒤 다시 시작한다.
-- 승인 창은 줄 diff(앞뒤 3줄). IDE가 뒤에 있으면 승인 요청과 턴 끝에 작업 표시줄이 깜빡인다.
+- 승인은 채팅 안 카드(`approval.js`, `DelphiAgent.ChatApprovalCard`)로 묻는다. 줄 diff(앞뒤 3줄), 중지 시 모두 거부. WebView2가 없으면 모달 승인 창.
+- 계획 모드(`DelphiAgent.ChatPlan`): 승인 방식 `계획`, `rad.submit_plan` → `docs\plans\yyyy-mm-dd-hhnn-<slug>.md`, 계획 카드의 진행 → 이전 방식으로 omp 재시작 후 `@계획서` 프롬프트. `docs` 파일은 `Project.AddFile`로 Project Manager에 보인다.
+- `@` 파일 메뉴(`composer.js`, `ChatStatus.PageFiles`), 더티 버퍼 `@경로` → 스냅샷 경로. 하위 에이전트는 안내문으로 읽기 전용. IDE가 뒤에 있으면 승인 요청과 턴 끝에 작업 표시줄이 깜빡인다.
+- `/btw` 곁가지 질문(`DelphiAgent.ChatBtw`, `BtwRunner`, `BtwStore`, `btw.js`): 질문마다 `omp --mode rpc --no-tools --fork <대화>`(이어 묻기는 `--resume <주제 세션>`), 채팅 접힌 카드 + 위 막대 `BTW` 메모 창. 저장 위치 `%LOCALAPPDATA%\DelphiAgent\btw\<프로젝트>\`.
 - 에디터 오른쪽 클릭 `DelphiAgent: 선택 영역 설명/고치기`, 메시지 창 오른쪽 클릭 `DelphiAgent: 빌드 오류 고치기`.
 - WebView2는 rtl `Winapi.WebView2`와 BPL 옆 `DelphiAgent\WebView2Loader.dll`로 띄운다. 실패하면 글자 기록으로 계속한다. 배포는 `docs/install.md`.
 - 프로젝트 해석: 프로젝트 그룹, 열린 모듈, 에디터 옆 `.dproj`, 마지막 캐시. 없으면 `프로젝트=없음`.
@@ -63,14 +69,14 @@ stdin에는 JSONL만 쓴다. 일반 텍스트 한 줄이면 omp가 죽는다. `@
 
 | 내용 | 위치 |
 | --- | --- |
-| 상태줄 문구 | `DelphiAgent.ChatActions.SessionStatusLine`, `SessionDetailLine` |
+| 페이지 상태·요청 | `DelphiAgent.ChatStatus`, `DelphiAgent.ChatPageCommands` |
 | 대화, omp | `DelphiAgent.ChatSession` |
 | 이벤트 → 페이지 메시지, 기록 | `DelphiAgent.ChatStream` |
 | 설정 창 | `DelphiAgent.SettingsDialog`, `SettingsAccount`, `SettingsProject` |
 | 프로젝트 omp 설정 | `DelphiAgent.OmpSettings`, `OmpCatalog` |
 | 보내기, 세션, 내보내기, host-tool 실행 | `DelphiAgent.ChatActions` |
 | RPC 이벤트 해석 | `DelphiAgent.RpcEvents.ParseAgentEvent` |
-| 채팅 페이지 | `src\chat\chat.js`, `markdown.js`, `activity.js`(진행 표시), 메시지는 `DelphiAgent.ChatPageMessages` |
+| 채팅 페이지 | `src\chat\chat.js`, `tools.js`, `activity.js`, `topbar.js`, `composer.js`, `markdown.js`, 스타일 `chat.css`·`activity.css`·`chrome.css`, 메시지는 `DelphiAgent.ChatPageMessages` |
 | WebView2 | `DelphiAgent.WebView2Host` |
 | 오른쪽 클릭 메뉴 | `DelphiAgent.IdeMenus` |
 | 프로젝트 해석 | `DelphiAgent.IdeContext.CurrentProject`, `ActiveProjectFile` |
@@ -125,6 +131,12 @@ Ghost Text, `IOTAAIPlugin`, KAI, 터미널 임베드는 하지 않았다. KAI와
 | 채팅 UI (WebView2) | 64-bit IDE: 마크다운 표·코드 강조·복사, 도구 줄(✓, 시간), 파일 링크 → 에디터 14줄 이동, 상태줄 진행 표시(`도구 실행 중: rad.apply_edit · 8초`)와 중지/보내기 활성, 선택 영역 첨부(24–31줄), 승인 diff 창, `/mo` 명령 목록과 Enter 선택, Shift+Enter 여러 줄, 에디터·메시지 창 오른쪽 클릭 메뉴(빌드 오류를 고쳐 37줄 복구), 세션 목록 전환과 기록 표시, HTML 내보내기, 고대비, 디버그 레이아웃에서 창과 omp pid 유지. 32-bit IDE: WebView2(x86 로더) 렌더링, 명령 목록이 입력 위에 뜸, Esc로 창이 숨지 않음, 창을 닫았다 열어도 같은 pid와 기록, 고대비. IDE 종료 시 오류 창 없음. IDE 테마 전환 통지는 코드만 있고 테마를 실제로 바꿔 보지는 않았다 |
 | 진행 표시·설정 창 | 64-bit IDE: 작업 목록 패널(2/2), 도구 줄의 `입력` 칸, bash 출력, 생각(162자) 접힘 줄, 하위 에이전트 줄(`✓ scout LineCounter … completed`). 설정 창 5개 탭, 역할별 전역 값 힌트, 스킬 끄기 → `delphiagent.yml`에 `skill:find-skills` → 다시 시작 후 `--config`로 뜬 omp의 명령 목록에서 빠짐, 전역에서 제외된 스킬은 체크되지 않음, 다시 켜면 파일 삭제. 다시 시작 후 같은 세션 기록(메시지 2개) 복원. 생각 끄기 후 턴에 생각 줄 없음. 32-bit IDE: 작업 목록·도구 줄, 설정 창, 한글 확인 창. 오류 창 없음 |
 | 로그인 | 원인: `SendRaw`가 `extension_ui_response`의 `id`까지 새 요청 id로 바꿔 omp가 답을 버렸다(모든 확인·선택·입력 답이 무시됨). 첫 로그인이 코드 입력을 10분 기다리는 동안 omp가 다른 명령에 답하지 않아 다음 로그인들이 멈췄다. 고친 뒤: 답은 요청 id 유지, 로그인 중에는 버튼이 `로그인 취소: 이름`, 입력 창 취소나 이 버튼은 omp를 같은 세션으로 다시 시작(omp는 취소해도 코드를 다시 묻고 로그인 중단 명령이 없음). OpenRouter 취소 뒤 Kimi Code 로그인에서 브라우저가 다시 열림, Kimi 장치 코드 로그인 취소 후 다시 로그인도 열림 |
+| Claude Desktop형 화면 | 64-bit IDE: 위 막대(새 대화·Smoke·아이콘), 입력 상자·아래 줄, `MainForm.pas` 칩, bash와 `rad.apply_edit`을 쓰는 턴에서 `도구 10개 사용 실패 1 ›` 묶음(펼치면 생각 2개와 도구 8개), 작업 중 `✳ 응답 기다리는 중 · 24초`와 중지 단추, 승인 후 파일 카드 `MainForm.pas +1 -0`. `/mo` 명령 목록, 입력에서 Esc 뒤에도 도킹 창 유지. 승인 방식을 쓰기 허용으로 바꾸면 `delphiagent.yml`에 `tools.approvalMode: write`, omp pid가 바뀌고 같은 세션 기록 복원, 권한 무시로 되돌리면 파일 삭제. 목록 안 들여쓴 코드 블록이 코드로 보임. 32-bit IDE: 같은 배치, 도구 묶음, 코드 블록. 오류 창 없음 |
+| + 메뉴 | 64-bit IDE: 파일 또는 사진 추가·폴더 추가·커넥터›·플러그인›·프로젝트 컴파일. 커넥터: 시험용 `demo-docs`(프로젝트 `.omp\mcp.json`)를 끄자 `/mcp disable demo-docs`로 그 파일에 `enabled: false`, 켜자 다시 지워짐. 플러그인: `orca-prefill` 끄기 → `delphiagent.yml`에 `extension-module:orca-prefill`, omp 재시작, 다시 켜면 파일 삭제. 사진 `red.png` 첨부 → prompt 프레임에 `images`, 답 "흰 배경 위에 가로로 긴 빨간색 직사각형". 폴더 추가 → omp `command_output` "Added …". 32-bit IDE: 메뉴와 커넥터 목록. 오류 창 없음 |
+| 프로젝트 맞춤 도구 | 64-bit IDE, VCL Smoke: 명령줄에 `--config omp-host.yml --append-system-prompt project-guide.md`, `.omp/lsp.json` 생성, 도구 28개(폼 도구 포함). "메모장 UI" 요청 → `rad.form_apply`로 Memo1·MainMenu1, 메뉴 항목, `rad.apply_edits`로 핸들러, 컴파일 오류 0. 여기서 찾은 ShortCut 텍스트(`Ctrl+N`) 변환 실패를 고쳤다. FMX 프로젝트: 안내에 `Framework: FMX`, "계산기 UI" 요청이 턴마다 한 번 승인으로 승인 1번, 31초, `form_apply`로 TEdit 3개·TButton, 컴파일 오류 0, 파일 카드 `Unit1.pas +10 -2`. 콘솔 프로젝트: 폼 도구 없이 등록, `project_info` → `set_build_config`(Release) → `new_module kind=form`(IDE가 VCL 프레임워크를 켤지 물음) → 폼 도구 8개가 다시 등록되고 `form_apply`로 Button1. 32-bit IDE: FMX 프로젝트에서 도구 28개, 안내 `Framework: FMX`. C++Builder 프로젝트는 확인하지 않음 |
+| /btw 곁가지 질문 | 64-bit IDE, Smoke: 본 턴(`rad.read_buffer` 표 정리)이 도는 중에 `/btw` → 본 턴 `agent_end` 전에 별도 자식(`--no-tools --fork`)이 대화 요약으로 답, 본 대화 프롬프트에 btw 없음. 카드 이어 묻기 → `--resume`으로 앞 답을 기억. 메모 창: 목록·펼침·삭제 확인·새 질문, 스트리밍 중 머리글 `중지` → abort 프레임, 0.7초 뒤 `agent_end`, 부분 답 `중지됨`. IDE 다시 시작 후 메모 유지, 채팅 창 다시 열면 카드 재표시. `# `으로 시작하는 스트리밍 답에서 `markdown.js`가 멈추던 문제 고침. 32-bit IDE: `/b` 메뉴에 `/btw <질문>`, 답 카드. |
+| 채팅 승인·계획·@ 파일 | 64-bit IDE, Smoke: `@Ma` → `MainForm.dfm/.pas` 목록, 선택 후 질문에 도구 없이 답. 더티 `MainForm.pas`의 `@MainForm.pas`가 `@...\snap-0-MainForm.pas`로 바뀌고 저장 안 한 주석을 읽음. 항상 묻기에서 `rad.apply_edits` 승인 카드 → 승인(`✓ 승인됨`, 파일 카드), 거부(`{"ok":false,"cancelled":true}`), 중지로 떠 있는 카드 거부와 abort. 계획 모드: `docs\plans\2026-09-24-0130-add-clear-button.md`(여섯 절), 계획 카드, Project Manager에 `docs`, 진행 → 항상 묻기로 돌아가 `rad.form_apply` 승인 카드. 오류 대화상자 없음. 32-bit IDE: `@Sm` 목록, 권한 무시 편집 반영. |
+| 승인 방식 통합 | 64-bit IDE, Smoke: 권한 무시에서 `rad.apply_edits`가 승인 창 없이 반영. 항상 묻기로 바꾸자 `delphiagent.yml`에 `approvalMode: always-ask`, 편집 두 번에 DelphiAgent 승인 창 두 번(omp의 `Allow tool: write` 창은 자동 통과). 쓰기 허용에서 편집 두 번에 승인 창 한 번. 권한 무시로 되돌리자 파일 삭제. 마지막 줄 편집마다 파일 끝에 빈 줄이 늘던 문제(버퍼 전체를 다시 쓰면 IDE가 마지막 줄바꿈을 남김)와 모델이 줄 번호를 잘못 세던 문제를 고쳐, 두 턴 뒤에도 `end.` 뒤 빈 줄 없이 정확한 위치에 들어감(`rad.read_buffer`가 `N|` 줄 번호를 줌). 컴파일 오류 0 |
 | Kai 종료 AV | 아래 절 참고. DelphiAgent 원인이 아니다. Kai를 PC에서 삭제한 뒤에는 재현되지 않는다 |
 
 ### Kai 종료 AV
@@ -187,16 +199,15 @@ AGENTS.md 범위 조건이다. 폼 디자이너는 이것이 통과한 뒤에 �
 
 각 단계는 **할 일**, **입력할 문장**, **통과 조건**으로 되어 있다. 통과 조건과 다르면 거기서 멈추고, 단계 번호와 화면에 보인 내용을 알려 준다. 원인은 `%TEMP%\DelphiAgent\rpc.log`에서 찾는다.
 
-입력할 문장은 DelphiAgent 창 아래 입력칸에 그대로 붙여 넣고 **보내기**를 누른다. 경로 `C:\Users\kimmi\AppData\Local\Temp\DelphiAgentSmoke`는 이 PC의 `%TEMP%\DelphiAgentSmoke`다. 다른 PC에서는 그 PC의 경로로 바꾼다.
+입력할 문장은 DelphiAgent 창 아래 입력 상자에 그대로 붙여 넣고 Enter(또는 오른쪽 ↑)를 누른다. 경로 `C:\Users\kimmi\AppData\Local\Temp\DelphiAgentSmoke`는 이 PC의 `%TEMP%\DelphiAgentSmoke`다. 다른 PC에서는 그 PC의 경로로 바꾼다.
 
 ### 화면 설명
 
 DelphiAgent 창의 구성은 다음과 같다.
 
-- 위: 도구 막대(**새 세션**, **세션 목록**, **내보내기**, **설정**).
-- 가운데: 채팅 기록. 보낸 문장은 오른쪽 `나` 말풍선이다.
-- 아래: 문맥 줄, 입력칸, 그리고 **보내기**, **중지**, **컴파일**, **파일** 버튼.
-- 맨 아래: 상태줄 두 줄.
+- 위 막대: 세션 제목(누르면 세션 목록), 프로젝트 이름, **＋**(새 세션), **⤓**(내보내기), **⚙**(설정).
+- 가운데: 채팅 기록. 보낸 문장은 오른쪽 말풍선이다.
+- 아래: 입력 상자(오른쪽 ↑가 보내기, 작업 중에는 ■ 중지). 그 아래 줄에 **＋**(파일 경로 넣기, 컴파일), 승인 방식, 모델, 생각 수준, 컨텍스트 원, 연결 점.
 
 omp가 IDE 도구(`rad.*`)를 부르면 채팅에 접힌 도구 줄로 보인다. 로그에서 확인하려면 PowerShell에서 다음을 실행한다.
 
@@ -242,8 +253,8 @@ Select-String -Path "$env:TEMP\DelphiAgent\rpc.log" -Pattern '"toolName":"rad\.[
 
 - **할 일:** 창을 연 뒤 5~20초 기다린다.
 - **통과 조건:**
-  - 상태줄 첫째 줄이 `● 연결됨 · <모델명> · 컨텍스트 N%`, 둘째 줄이 `프로젝트 Smoke · pid <0이 아닌 숫자> · ...\DelphiAgentSmoke`이다.
-  - **보내기** 버튼이 눌린다.
+  - 입력 아래 줄 오른쪽 점이 초록이고 모델 이름이 보인다. 위 막대 제목에 마우스를 올리면 `프로젝트 Smoke · pid <0이 아닌 숫자> · ...\DelphiAgentSmoke`가 보인다.
+  - 입력 상자에 글자를 넣으면 ↑ 단추가 켜진다.
   - 이 pid를 적어 둔다. 9단계에서 비교한다.
 
 ### 2. 일반 질문
@@ -319,7 +330,7 @@ Select-String -Path "$env:TEMP\DelphiAgent\rpc.log" -Pattern '"toolName":"rad\.[
 
 ### 7. 컴파일 성공이 메시지 뷰에 보인다
 
-- **할 일:** DelphiAgent 창의 **컴파일** 버튼을 누른다. 컴파일 진행 창은 뜨지 않을 수 있다.
+- **할 일:** 입력 아래 줄의 **＋** → **프로젝트 컴파일**을 누른다. 컴파일 진행 창은 뜨지 않을 수 있다.
 - **통과 조건:**
   - 채팅에 `컴파일 성공`이 찍힌다.
   - Messages 창(View → Messages)에 `DelphiAgent` 도구 이름으로 `빌드 성공` 줄이 있다.
@@ -334,7 +345,7 @@ Select-String -Path "$env:TEMP\DelphiAgent\rpc.log" -Pattern '"toolName":"rad\.[
 
 ### 8. 컴파일 오류 위치가 메시지 뷰와 같다
 
-- **할 일:** 37줄의 `Total(10)`을 `Totl(10)`로 고치고 **컴파일** 버튼을 누른다.
+- **할 일:** 37줄의 `Total(10)`을 `Totl(10)`로 고치고 **＋** → **프로젝트 컴파일**을 누른다.
 - **통과 조건:**
   - 채팅에 `컴파일 실패. 오류는 메시지 창에 있습니다.`가 찍힌다.
   - Messages 창에 `[dcc64 Error]`(32-bit 프로젝트면 `[dcc32 Error]`) `MainForm.pas(37): E2003 Undeclared identifier: 'Totl'` 같은 줄과 DelphiAgent의 `빌드 실패` 줄이 있다.
@@ -355,10 +366,10 @@ Select-String -Path "$env:TEMP\DelphiAgent\rpc.log" -Pattern '"toolName":"rad\.[
   1부터 100까지 숫자마다 그 숫자의 특징을 한 줄씩 써줘.
   ```
 
-- **할 일:** 답이 흘러나오기 시작하면 **중지**를 누른다.
+- **할 일:** 답이 흘러나오기 시작하면 입력 상자 오른쪽 ■(중지)를 누른다.
 - **통과 조건:**
   - 몇 초 안에 출력이 멈춘다.
-  - 상태줄의 pid가 1단계에서 적어 둔 값과 같다.
+  - 위 막대 제목의 툴팁 pid가 1단계에서 적어 둔 값과 같다.
   - 이어서 `안녕`을 보내면 답이 온다.
 
 ### 10. 디버거 도구는 읽기만 한다

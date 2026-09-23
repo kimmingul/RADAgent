@@ -24,13 +24,14 @@ function IsReadyFrame(const Line: string): Boolean;
 function CanSendPrompt(Ready, HostToolsSent: Boolean; const Message: string): Boolean;
 function AllowOutbound(Ready: Boolean; const FrameType: string): Boolean;
 function NewRequestId(var NextId: Integer): string;
-function BuildPromptFrame(const Id, Message: string): string;
+{ ImagesJson: optional ImageContent[] (objects with type "image", data, mimeType). }
+function BuildPromptFrame(const Id, Message: string; const ImagesJson: string = ''): string;
 function BuildAbortFrame(const Id: string): string;
 function BuildHostToolResultFrame(const Id, Text: string; IsError: Boolean): string;
 function BuildExtensionUiResponse(const RequestLine: string): string;
 function MessageWithSnapshots(const Message: string; const Paths: TArray<string>): string;
 function TryBuildPromptFrame(Ready, HostToolsSent: Boolean; const Id, Message: string;
-  out Frame: string): Boolean;
+  out Frame: string; const ImagesJson: string = ''): Boolean;
 function BuildCompileResultJson(Ok: Boolean; const ConfigName, PlatformName: string;
   const Errors: TArray<TAgentCompileError>): string;
 
@@ -86,15 +87,24 @@ begin
   Result := 'req-' + IntToStr(NextId);
 end;
 
-function BuildPromptFrame(const Id, Message: string): string;
+function BuildPromptFrame(const Id, Message: string; const ImagesJson: string): string;
 var
   Obj: TJSONObject;
+  Images: TJSONValue;
 begin
   Obj := TJSONObject.Create;
   try
     Obj.AddPair('id', Id);
     Obj.AddPair('type', 'prompt');
     Obj.AddPair('message', Message);
+    if ImagesJson <> '' then
+    begin
+      Images := TJSONObject.ParseJSONValue(ImagesJson);
+      if Images is TJSONArray then
+        Obj.AddPair('images', Images)
+      else
+        Images.Free;
+    end;
     Result := Obj.ToJSON;
   finally
     Obj.Free;
@@ -192,7 +202,7 @@ begin
     Result := Result + sLineBreak + Paths[Index];
 end;
 function TryBuildPromptFrame(Ready, HostToolsSent: Boolean; const Id, Message: string;
-  out Frame: string): Boolean;
+  out Frame: string; const ImagesJson: string): Boolean;
 begin
   Frame := '';
   Result := CanSendPrompt(Ready, HostToolsSent, Message);
@@ -203,7 +213,7 @@ begin
     Result := False;
     Exit;
   end;
-  Frame := BuildPromptFrame(Id, Message);
+  Frame := BuildPromptFrame(Id, Message, ImagesJson);
 end;
 function BuildCompileResultJson(Ok: Boolean; const ConfigName, PlatformName: string;
   const Errors: TArray<TAgentCompileError>): string;

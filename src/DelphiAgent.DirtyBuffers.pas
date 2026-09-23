@@ -11,6 +11,8 @@ function SnapshotFileName(const TempRoot, SourceFile: string; Index: Integer): s
 function WriteSnapshots(const TempRoot: string; const Files, Texts: TArray<string>): TArray<string>;
 procedure RememberSnapshots(const Files, Texts: TArray<string>);
 function SnapshotConflicts(const FileName, CurrentText: string): Boolean;
+{ After an approved change by DelphiAgent itself: the new buffer text is not a user edit. }
+procedure UpdateSnapshot(const FileName, Text: string);
 
 implementation
 
@@ -76,6 +78,12 @@ begin
   if (GSnapshotText = nil) or not GSnapshotText.TryGetValue(SnapshotKey(FileName), Saved) then
     Exit;
   Result := Saved <> CurrentText;
+end;
+
+procedure UpdateSnapshot(const FileName, Text: string);
+begin
+  if (GSnapshotText <> nil) and GSnapshotText.ContainsKey(SnapshotKey(FileName)) then
+    GSnapshotText.AddOrSetValue(SnapshotKey(FileName), Text);
 end;
 
 initialization

@@ -8,8 +8,12 @@ function OmpExecutable: string;
 function AgentTempRoot: string;
 function OmpStderrLog: string;
 procedure AppendRpcLog(const Line: string);
-{ ConfigOverlay: optional --config file; ExtraArgs: appended verbatim. }
-function BuildOmpCommandLine(const Executable, WorkDir, ConfigOverlay, ExtraArgs: string): string;
+{ One command-line argument in quotes, safe for a trailing backslash (C:\dir\). }
+function QuoteArg(const Value: string): string;
+{ Configs: --config files in order (empty entries skipped); AppendPrompt: file whose text omp
+  appends to its system prompt; ExtraArgs: appended verbatim. }
+function BuildOmpCommandLine(const Executable, WorkDir: string; const Configs: array of string;
+  const AppendPrompt, ExtraArgs: string): string;
 
 implementation
 
@@ -69,15 +73,27 @@ begin
 end;
 
 function QuoteArg(const Value: string): string;
+var
+  Body: string;
 begin
-  Result := '"' + StringReplace(Value, '"', '\"', [rfReplaceAll]) + '"';
+  Body := StringReplace(Value, '"', '\"', [rfReplaceAll]);
+  { A backslash right before the closing quote would escape it. }
+  if Body.EndsWith('\') then
+    Body := Body + '\';
+  Result := '"' + Body + '"';
 end;
 
-function BuildOmpCommandLine(const Executable, WorkDir, ConfigOverlay, ExtraArgs: string): string;
+function BuildOmpCommandLine(const Executable, WorkDir: string; const Configs: array of string;
+  const AppendPrompt, ExtraArgs: string): string;
+var
+  Config: string;
 begin
   Result := QuoteArg(Executable) + ' --mode rpc --cwd ' + QuoteArg(WorkDir);
-  if ConfigOverlay <> '' then
-    Result := Result + ' --config ' + QuoteArg(ConfigOverlay);
+  for Config in Configs do
+    if Config <> '' then
+      Result := Result + ' --config ' + QuoteArg(Config);
+  if AppendPrompt <> '' then
+    Result := Result + ' --append-system-prompt ' + QuoteArg(AppendPrompt);
   if Trim(ExtraArgs) <> '' then
     Result := Result + ' ' + Trim(ExtraArgs);
 end;

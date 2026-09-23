@@ -26,7 +26,7 @@ implementation
 
 uses
   Winapi.Windows, Winapi.ShellAPI, Vcl.Forms, Vcl.StdCtrls, Vcl.Controls, Vcl.Graphics, Vcl.Dialogs,
-  DelphiAgent.ChatCommand, DelphiAgent.RpcProtocol;
+  DelphiAgent.ChatCommand, DelphiAgent.RpcProtocol, DelphiAgent.ChatPlan;
 
 const
   SOk = #$D655#$C778;
@@ -238,6 +238,18 @@ begin
   end
   else if Ui.Method = 'confirm' then
     Reply := BuildUiReply(Ui.Id, '', AskYes(Ui.Title, Ui.Message), False)
+  else if (Ui.Method = 'select') and Ui.Title.Contains('Path: xd://rad.') and
+    (Length(Ui.Options) > 0) and (Ui.Options[0] = 'Approve') then
+    { omp gates its write tool, which also carries rad.* calls. DelphiAgent asks for those
+      itself (per the same approval mode), so a second omp prompt would only repeat it. }
+    Reply := BuildUiReply(Ui.Id, 'Approve', False, False)
+  else if (Ui.Method = 'select') and PlanActive and Ui.Title.StartsWith('Allow tool') and
+    (Length(Ui.Options) > 1) and (Ui.Options[1] = 'Deny') then
+  begin
+    { Plan mode: omp may read and search, not write, edit or run commands. }
+    Reply := BuildUiReply(Ui.Id, 'Deny', False, False);
+    Notice := '계획 모드라서 omp 도구 실행을 거부했습니다: ' + Copy(Ui.Title, 1, Pos(#10, Ui.Title + #10) - 1);
+  end
   else if Ui.Method = 'select' then
   begin
     Items := TStringList.Create;

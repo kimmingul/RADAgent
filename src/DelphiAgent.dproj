@@ -124,6 +124,19 @@
     <DCCReference Include="DelphiAgent.SettingsAccount.pas"/>
     <DCCReference Include="DelphiAgent.SettingsProject.pas"/>
     <DCCReference Include="DelphiAgent.SettingsDialog.pas"/>
+    <DCCReference Include="DelphiAgent.ChatApproval.pas"/>
+    <DCCReference Include="DelphiAgent.ChatStatus.pas"/>
+    <DCCReference Include="DelphiAgent.ChatPageCommands.pas"/>
+    <DCCReference Include="DelphiAgent.ChatExtensions.pas"/>
+    <DCCReference Include="DelphiAgent.ProjectProfile.pas"/>
+    <DCCReference Include="DelphiAgent.ModuleCreator.pas"/>
+    <DCCReference Include="DelphiAgent.FormBatch.pas"/>
+    <DCCReference Include="DelphiAgent.OmpLaunch.pas"/>
+    <DCCReference Include="DelphiAgent.ChatPlan.pas"/>
+    <DCCReference Include="DelphiAgent.ChatApprovalCard.pas"/>
+    <DCCReference Include="DelphiAgent.BtwStore.pas"/>
+    <DCCReference Include="DelphiAgent.BtwRunner.pas"/>
+    <DCCReference Include="DelphiAgent.ChatBtw.pas"/>
     <DCCReference Include="DelphiAgent.DockForm.pas"/>
     <DCCReference Include="DelphiAgent.Wizard.pas"/>
   </ItemGroup>

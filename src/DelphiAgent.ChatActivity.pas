@@ -26,6 +26,8 @@ type
     { Korean one-liner for the status bar, e.g. 도구 실행 중: rad.compile · 4초 }
     function Text: string;
     property State: TActivity read FState;
+    { Tick the current turn started; identifies the turn while Busy. }
+    property StartTick: UInt64 read FStartTick;
   end;
 
 implementation

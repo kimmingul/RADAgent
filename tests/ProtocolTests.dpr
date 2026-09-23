@@ -54,12 +54,15 @@ procedure TestCommandLine;
 var
   Command: string;
 begin
-  Command := BuildOmpCommandLine('omp', 'D:\work', '', '');
+  Command := BuildOmpCommandLine('omp', 'D:\work', [], '', '');
   Check(Command.Contains('--mode rpc'), 'command has rpc mode');
   Check(Command.Contains('--cwd'), 'command has cwd');
   Check(not Command.Contains('--config'), 'command omits empty overlay');
-  Command := BuildOmpCommandLine('omp', 'D:\work', 'D:\work\.omp\delphiagent.yml', '--no-lsp');
-  Check(Command.Contains('--config "D:\work\.omp\delphiagent.yml"'), 'command passes overlay');
+  Command := BuildOmpCommandLine('omp', 'D:\work', ['C:\t\host.yml', '', 'D:\work\.omp\delphiagent.yml'],
+    'C:\t\guide.md', '--no-lsp');
+  Check(Command.Contains('--config "C:\t\host.yml" --config "D:\work\.omp\delphiagent.yml"'),
+    'command passes every overlay in order, skipping empty ones');
+  Check(Command.Contains('--append-system-prompt "C:\t\guide.md"'), 'command passes the project guide');
   Check(Command.EndsWith(' --no-lsp'), 'command appends extra args');
   Check(SameText(ExtractFileName(OmpExecutable), 'omp.exe') or (OmpExecutable = 'omp'),
     'default executable is omp');
@@ -97,47 +100,63 @@ begin
   Check(not AllowOutbound(False, 'prompt'), 'outbound blocked before ready');
 end;
 
-procedure TestHostToolsAndCompileJson;
+function ToolNames(const Frame: string; out SchemaOk: Boolean): string;
 var
   Obj, Item, Params: TJSONObject;
-  Tools, Errors, Required: TJSONArray;
-  List: TArray<TAgentCompileError>;
-  Names, Name: string;
+  Tools, Required: TJSONArray;
   Index: Integer;
-  SchemaOk: Boolean;
 begin
-  Obj := Parse(BuildSetHostToolsFrame('req-3'));
+  Obj := Parse(Frame);
   try
-    Check(Obj.GetValue<string>('type') = 'set_host_tools', 'host tools type');
     Tools := Obj.GetValue('tools') as TJSONArray;
-    Names := '';
-    SchemaOk := True;
+    Result := ' ';
+    SchemaOk := Obj.GetValue<string>('type') = 'set_host_tools';
     for Index := 0 to Tools.Count - 1 do
     begin
       Item := Tools.Items[Index] as TJSONObject;
-      Name := Item.GetValue<string>('name');
-      Names := Names + Name + ' ';
+      Result := Result + Item.GetValue<string>('name') + ' ';
       Params := Item.GetValue('parameters') as TJSONObject;
-      if (Item.GetValue<string>('description') = '') or
+      if (Item.GetValue<string>('description') = '') or (Params = nil) or
         (Params.GetValue<string>('type') <> 'object') then
-        SchemaOk := False;
-      Required := Params.GetValue('required') as TJSONArray;
-      if (Required <> nil) and ((Params.GetValue('properties') as TJSONObject)
-        .GetValue(Required.Items[0].Value) = nil) then
-        SchemaOk := False;
+        SchemaOk := False
+      else
+      begin
+        Required := Params.GetValue('required') as TJSONArray;
+        if (Required <> nil) and ((Params.GetValue('properties') as TJSONObject)
+          .GetValue(Required.Items[0].Value) = nil) then
+          SchemaOk := False;
+      end;
     end;
-    Check(Names = ToolCompile + ' ' + ToolOpenBuffer + ' ' + ToolInsertAtCaret + ' ' +
-      ToolListDirty + ' ' + ToolReadBuffer + ' ' + ToolApplyEdit + ' ' + ToolDebugState + ' ' +
-      ToolDebugStack + ' ' + ToolDebugEvaluate + ' ' + ToolDebugBreakpoints + ' ' +
-      ToolFormComponents + ' ' + ToolFormProperties + ' ' + ToolFormSetProperty + ' ' +
-      ToolFormAddComponent + ' ' + ToolFormDeleteComponent + ' ' + ToolFormRenameComponent + ' ' +
-      ToolFormSetEvent + ' ' + ToolDebugRun + ' ' + ToolDebugStep + ' ' + ToolDebugPause + ' ' +
-      ToolDebugReset + ' ' + ToolDebugAddBreakpoint + ' ',
-      'all host tools declared');
-    Check(SchemaOk, 'every tool schema is an object with a declared required field');
   finally
     Obj.Free;
   end;
+end;
+
+procedure TestHostToolsAndCompileJson;
+var
+  Obj, Item: TJSONObject;
+  Errors: TJSONArray;
+  List: TArray<TAgentCompileError>;
+  Names, Frame: string;
+  SchemaOk: Boolean;
+  Profile: TToolProfile;
+begin
+  Names := ToolNames(BuildSetHostToolsFrame('req-3'), SchemaOk);
+  Check(SchemaOk, 'every tool schema is an object with a declared required field');
+  Check(Names.Contains(' ' + ToolFormApply + ' ') and Names.Contains(' ' + ToolApplyEdits + ' '),
+    'project with forms offers batch form and edit tools');
+  Profile := DefaultToolProfile;
+  Profile.HasForms := False;
+  Names := ToolNames(BuildSetHostToolsFrame('req-4', Profile), SchemaOk);
+  Check(not Names.Contains('rad.form_') and Names.Contains(' ' + ToolNewModule + ' '),
+    'project without forms offers no form tools but can add a form');
+  Profile := DefaultToolProfile;
+  Profile.Framework := 'FMX';
+  Frame := BuildSetHostToolsFrame('req-5', Profile);
+  Check(Frame.Contains('Position.X') and not Frame.Contains('alClient'), 'FMX form docs use FMX layout');
+  Profile.Language := 'cpp';
+  Frame := BuildSetHostToolsFrame('req-6', Profile);
+  Check(Frame.Contains('C++Builder') and Frame.Contains('.cpp'), 'C++ project docs name C++Builder');
   SetLength(List, 1);
   List[0].FileName := 'Unit1.pas';
   List[0].Line := 12;
@@ -255,7 +274,7 @@ begin
   ForceDirectories(Dir);
   Client := TAgentRpcClient.Create;
   try
-    Check(Client.Start(OmpExecutable, Dir, '', ''), 'omp process starts');
+    Check(Client.Start(OmpExecutable, Dir, [], '', ''), 'omp process starts');
     Deadline := GetTickCount64 + 25000;
     while (not Client.HostToolsSent) and (GetTickCount64 < Deadline) do
       CheckSynchronize(100);
