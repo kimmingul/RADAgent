@@ -4,7 +4,7 @@
 *.bpi
 *.dcp
 *.res
-!src/DelphiAgent.res
+!src/RADAgent.res
 *.identcache
 *.local
 *.dproj.local

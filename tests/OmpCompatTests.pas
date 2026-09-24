@@ -1,6 +1,6 @@
 ﻿unit OmpCompatTests;
 
-{ What keeps DelphiAgent working across omp updates: protocol choice and v2 chunk reassembly on the
+{ What keeps RADAgent working across omp updates: protocol choice and v2 chunk reassembly on the
   real stdout reader, approval prompts matched by meaning, local slash commands ending the turn,
   and (live) the probe against the installed omp. }
 
@@ -17,8 +17,8 @@ implementation
 
 uses
   System.SysUtils, System.Classes, System.JSON, System.NetEncoding, Winapi.Windows,
-  DelphiAgent.RpcProtocol, DelphiAgent.RpcDispatch, DelphiAgent.RpcEvents, DelphiAgent.ChatCommand,
-  DelphiAgent.OmpProbe, DelphiAgent.Options;
+  RADAgent.RpcProtocol, RADAgent.RpcDispatch, RADAgent.RpcEvents, RADAgent.ChatCommand,
+  RADAgent.OmpProbe, RADAgent.Options;
 
 type
   TLineSink = class

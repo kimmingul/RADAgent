@@ -11,6 +11,10 @@
   const items = new Map();    // id -> panel item refs
   let panel, list, search, onlyHere, badge, newInput;
   let shownIds = null;   // ids in the list, in order; same list = update in place
+  function T(key, ...args) {
+    return global.T ? global.T(key, ...args) : key;
+  }
+
 
   function $(id) { return document.getElementById(id); }
 
@@ -28,9 +32,9 @@
   }
 
   function stateText(turn) {
-    if (turn.state === 'running') return '답 받는 중…';
-    if (turn.state === 'error') return '오류';
-    if (turn.state === 'stopped') return '중지됨';
+    if (turn.state === 'running') return T('page.btw.receiving');
+    if (turn.state === 'error') return T('page.btw.error');
+    if (turn.state === 'stopped') return T('page.btw.stopped');
     return '';
   }
 
@@ -41,10 +45,10 @@
       body.innerHTML = global.Markdown.render(turn.a);
       box.appendChild(body);
     } else if (turn.state === 'running') {
-      box.appendChild(el('div', 'btw-wait', '답을 기다리는 중…'));
+      box.appendChild(el('div', 'btw-wait', T('page.btw.waiting')));
     }
     if (turn.error) box.appendChild(el('div', 'btw-error', turn.error));
-    else if (turn.state === 'stopped' && !turn.a) box.appendChild(el('div', 'btw-wait', '(중지됨)'));
+    else if (turn.state === 'stopped' && !turn.a) box.appendChild(el('div', 'btw-wait', T('page.btw.stoppedParens')));
     return box;
   }
 
@@ -53,7 +57,7 @@
     const box = el('div', 'btw-follow');
     const input = el('textarea');
     input.rows = 1;
-    input.placeholder = placeholder || '이어서 묻기 (Enter로 보내기)';
+    input.placeholder = placeholder || T('page.btw.followPlaceholder');
     const send = () => {
       const text = input.value.trim();
       if (!text) return;
@@ -67,7 +71,7 @@
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
     });
     box.appendChild(input);
-    box.appendChild(button('보내기', send));
+    box.appendChild(button(T('page.btw.send'), send));
     return box;
   }
 
@@ -87,12 +91,12 @@
       const wasNear = ctx.isNearBottom();
       c = { root: el('details', 'btw-card') };
       const sum = el('summary');
-      sum.appendChild(el('span', 'btw-tag', turnIndex ? 'BTW 이어서' : 'BTW'));
+      sum.appendChild(el('span', 'btw-tag', turnIndex ? T('page.btw.tagFollow') : T('page.btw.tag')));
       sum.appendChild(el('span', 'btw-q', turn.q));
       c.state = el('span', 'btw-state');
       sum.appendChild(c.state);
       // In the header, so it stays put while the answer streams below it.
-      c.stop = button('중지', () => ctx.post({ t: 'btwStop', id: t.id }));
+      c.stop = button(T('page.btw.stop'), () => ctx.post({ t: 'btwStop', id: t.id }));
       c.stop.classList.add('btw-stop');
       sum.appendChild(c.stop);
       c.root.appendChild(sum);
@@ -101,12 +105,12 @@
       c.actions = el('div', 'card-actions');
       c.follow = followBox(t.id);
       c.follow.hidden = true;
-      c.actions.appendChild(button('이어 묻기', () => {
+      c.actions.appendChild(button(T('page.btw.follow'), () => {
         c.follow.hidden = !c.follow.hidden;
         if (!c.follow.hidden) c.follow.firstChild.focus();
       }));
-      c.actions.appendChild(button('복사', () => copyTopic(topics.get(t.id) || t, turnIndex)));
-      c.actions.appendChild(button('메모에서 보기', () => open(t.id)));
+      c.actions.appendChild(button(T('page.btw.copy'), () => copyTopic(topics.get(t.id) || t, turnIndex)));
+      c.actions.appendChild(button(T('page.btw.viewInNotes'), () => open(t.id)));
       c.root.appendChild(c.actions);
       c.root.appendChild(c.follow);
       ctx.appendLog(c.root);
@@ -137,7 +141,7 @@
       const sum = el('summary');
       it.title = el('div', 'btw-q');
       it.meta = el('div', 'btw-meta');
-      it.stop = button('중지', () => ctx.post({ t: 'btwStop', id: t.id }));
+      it.stop = button(T('page.btw.stop'), () => ctx.post({ t: 'btwStop', id: t.id }));
       it.stop.classList.add('btw-stop');
       const head = el('div', 'btw-topic-head');
       head.appendChild(it.title);
@@ -150,20 +154,20 @@
       it.follow = followBox(t.id);
       it.root.appendChild(it.follow);
       const actions = el('div', 'card-actions');
-      actions.appendChild(button('복사', () => copyTopic(topics.get(t.id) || t)));
-      actions.appendChild(button('삭제', b => {
+      actions.appendChild(button(T('page.btw.copy'), () => copyTopic(topics.get(t.id) || t)));
+      actions.appendChild(button(T('page.btw.delete'), b => {
         if (b.dataset.armed) { ctx.post({ t: 'btwDelete', id: t.id }); return; }
         b.dataset.armed = '1';
-        b.textContent = '삭제 확인';
-        setTimeout(() => { delete b.dataset.armed; b.textContent = '삭제'; }, 3000);
+        b.textContent = T('page.btw.deleteConfirm');
+        setTimeout(() => { delete b.dataset.armed; b.textContent = T('page.btw.delete'); }, 3000);
       }));
       it.root.appendChild(actions);
       items.set(t.id, it);
     }
     const running = t.turns.some(x => x.state === 'running');
     it.title.textContent = t.turns[0].q;
-    it.meta.textContent = [t.created, t.mainTitle || '제목 없는 대화',
-      t.turns.length > 1 ? '질문 ' + t.turns.length + '개' : '', stateText(t.turns[t.turns.length - 1])]
+    it.meta.textContent = [t.created, t.mainTitle || T('page.btw.untitled'),
+      t.turns.length > 1 ? T('page.btw.questionCount', t.turns.length) : '', stateText(t.turns[t.turns.length - 1])]
       .filter(Boolean).join(' · ');
     it.stop.hidden = !running;
     it.root.classList.toggle('here', t.mainSession === mainSession);
@@ -192,7 +196,7 @@
     shownIds = ids;
     list.replaceChildren(...shown.map(t => renderItem(t).root));
     if (!shown.length) list.appendChild(el('div', 'btw-empty',
-      topics.size ? '찾는 메모가 없습니다.' : '아직 곁가지 질문이 없습니다. 아래 입력이나 /btw <질문>으로 물어보세요.'));
+      topics.size ? T('page.btw.noMatch') : T('page.btw.empty')));
   }
 
   function open(focusId) {

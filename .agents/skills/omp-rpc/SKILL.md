@@ -31,7 +31,7 @@ DelphiLSP는 이 프로세스에 붙이지 않는다. omp가 `.omp/lsp.json`으�
 {"type":"ready","protocolVersion":1,"supportedProtocolVersions":[1,2],"maxFrameBytes":1048576,"maxReassembledFrameBytes":67108864}
 ```
 
-`supportedProtocolVersions`에 2가 있으면 첫 명령으로 `negotiate_protocol`(v2)을 보낸다. 그 뒤 1MiB가 넘는 객체는 `rpc_chunk` 조각으로 오고, `DelphiAgent.RpcChunks`가 `ReadStdoutLines` 안에서 원래 줄로 되돌린다(재조립 한도 64MiB). 목록이 없으면 v1, 1도 2도 없으면 연결하지 않는다. 물리 프레임 한도는 1MiB다.
+`supportedProtocolVersions`에 2가 있으면 첫 명령으로 `negotiate_protocol`(v2)을 보낸다. 그 뒤 1MiB가 넘는 객체는 `rpc_chunk` 조각으로 오고, `RADAgent.RpcChunks`가 `ReadStdoutLines` 안에서 원래 줄로 되돌린다(재조립 한도 64MiB). 목록이 없으면 v1, 1도 2도 없으면 연결하지 않는다. 물리 프레임 한도는 1MiB다.
 
 ## prompt
 

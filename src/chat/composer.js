@@ -18,6 +18,10 @@
   let withSelection = false;
   let selection = '';
   let attachments = [];
+  function T(key, ...args) {
+    return global.T ? global.T(key, ...args) : key;
+  }
+
 
   function $(id) { return document.getElementById(id); }
   function post(msg) { global.chatPost(msg); }
@@ -30,7 +34,7 @@
   function refreshSend() {
     sendBtn.classList.toggle('stop', state.busy);
     sendBtn.textContent = state.busy ? '■' : '↑';
-    sendBtn.title = state.busy ? '중지' : '보내기 (Enter)';
+    sendBtn.title = state.busy ? T('page.composer.stopTitle') : T('page.composer.sendTitle');
     sendBtn.disabled = state.busy ? false : !(input.value.trim().startsWith('/btw') ||
       (state.connected && (input.value.trim() || attachments.length)));
   }
@@ -45,7 +49,7 @@
       return;
     }
     if ((!text && !attachments.length) || state.busy || !state.connected) return;
-    if (!text) text = '첨부한 파일을 봐 줘.';
+    if (!text) text = T('page.composer.defaultAttachmentPrompt');
     post({ t: 'submit', text, withSelection: withSelection && !!selection,
       attachments: attachments.map(a => a.path) });
   }
@@ -183,8 +187,8 @@
     if (selection) {
       const sel = document.createElement('button');
       sel.className = 'ctx-chip' + (withSelection ? ' on' : '');
-      sel.textContent = (withSelection ? '✓ ' : '+ ') + '선택 ' + selection + '줄';
-      sel.title = withSelection ? '선택 영역을 프롬프트에 붙입니다' : '누르면 선택 영역을 프롬프트에 붙입니다';
+      sel.textContent = (withSelection ? '✓ ' : '+ ') + T('page.composer.selectionLines', selection);
+      sel.title = withSelection ? T('page.composer.selectionTitleOn') : T('page.composer.selectionTitleOff');
       sel.addEventListener('click', () => { withSelection = !withSelection; renderChips(lastContext); input.focus(); });
       chips.appendChild(sel);
     } else {
@@ -209,8 +213,8 @@
     if (ctx.unsaved > 0) {
       const un = document.createElement('span');
       un.className = 'ctx-chip';
-      un.textContent = '저장 안 한 파일 ' + ctx.unsaved + '개';
-      un.title = '보낼 때 스냅샷으로 omp에 넘깁니다. 저장하지 않습니다.';
+      un.textContent = T('page.composer.unsavedCount', ctx.unsaved);
+      un.title = T('page.composer.unsavedTitle');
       chips.appendChild(un);
     }
   }
@@ -218,7 +222,8 @@
   function fillSelect(sel, values, current, labelFn) {
     const known = values.slice();
     if (current && !known.includes(current)) known.unshift(current);
-    const key = known.join('\n');
+    // Labels are translated, so a language change must rebuild the options too.
+    const key = document.documentElement.lang + '\n' + known.join('\n');
     if (sel.dataset.key !== key) {
       sel.innerHTML = '';
       for (const v of known) {
@@ -237,7 +242,7 @@
     state = msg;
     const idle = msg.connected && !msg.busy;
     fillSelect($('model-select'), catalog.models, msg.model, v => v.split('/').pop());
-    fillSelect($('thinking-select'), catalog.levels, msg.thinking, v => '생각 ' + v);
+    fillSelect($('thinking-select'), catalog.levels, msg.thinking, v => T('page.composer.thinkingLevel', v));
     $('model-select').disabled = !idle;
     $('thinking-select').disabled = !idle;
     const approval = $('approval-select');
@@ -247,7 +252,7 @@
     approval.disabled = !msg.connected;
     const pct = msg.context >= 0 ? Math.min(100, msg.context) : 0;
     $('ctx-arc').setAttribute('stroke-dasharray', (pct / 100 * 50.3).toFixed(1) + ' 50.3');
-    $('ctx-ring').setAttribute('title', msg.context >= 0 ? '컨텍스트 ' + pct.toFixed(0) + '%' : '컨텍스트 정보 없음');
+    $('ctx-ring').setAttribute('title', msg.context >= 0 ? T('page.composer.contextPct', pct.toFixed(0)) : T('page.composer.noContext'));
     const dot = $('conn-dot');
     dot.className = msg.error ? 'error' : msg.connected ? '' : 'off';
     dot.title = msg.state || '';

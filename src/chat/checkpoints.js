@@ -4,6 +4,10 @@
   // Every user message has a git checkpoint of the project just before it (IDE side). Hovering a
   // message offers going back to that state (files and conversation) or a git branch from there.
   let post = null;
+  function T(key, ...args) {
+    return global.T ? global.T(key, ...args) : key;
+  }
+
 
   function actions(turn, seq) {
     if (!turn || turn.querySelector('.cp-actions')) return;
@@ -18,8 +22,8 @@
       b.addEventListener('click', () => post({ t: 'restore', seq, branch }));
       bar.appendChild(b);
     };
-    add('↶ 여기로 되돌리기', '이 메시지를 보내기 전 상태로 파일과 대화를 되돌립니다', false);
-    add('⑂ 여기서 브랜치', '이 메시지를 보내기 전 상태에서 새 git 브랜치를 만듭니다', true);
+    add(T('page.checkpoints.revertLabel'), T('page.checkpoints.revertTitle'), false);
+    add(T('page.checkpoints.branchLabel'), T('page.checkpoints.branchTitle'), true);
     turn.appendChild(bar);
   }
 

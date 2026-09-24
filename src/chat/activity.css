@@ -1,5 +1,5 @@
 /* omp progress shown in the chat: thinking, tool input, live output, subagents, todos.
-   body.hide-<kind> classes come from the "display" message (DelphiAgent settings). */
+   body.hide-<kind> classes come from the "display" message (RADAgent settings). */
 
 .activity-row {
   border: 1px dashed var(--border);
@@ -49,7 +49,7 @@
   color: var(--muted);
   border-bottom: 1px dashed var(--border);
 }
-.tool-input::before { content: "입력"; display: block; font-family: var(--font); font-weight: 600; margin-bottom: 2px; }
+.tool-input::before { content: attr(data-label); display: block; font-family: var(--font); font-weight: 600; margin-bottom: 2px; }
 
 .subagent-row {
   display: flex;

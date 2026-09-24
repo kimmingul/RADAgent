@@ -6,6 +6,10 @@
   let menu, sub, button;
   let data = { connectors: [], plugins: [] };
   let openSub = '';
+  function T(key, ...args) {
+    return global.T ? global.T(key, ...args) : key;
+  }
+
 
   function el(tag, cls, text) {
     const node = document.createElement(tag);
@@ -51,13 +55,13 @@
     if (!openSub) return;
     sub.innerHTML = '';
     const isConnectors = openSub === 'connectors';
-    const manage = el('div', 'popup-item', isConnectors ? '⚙ 커넥터 관리' : '⚙ 플러그인 관리');
+    const manage = el('div', 'popup-item', isConnectors ? T('page.plusmenu.manageConnectors') : T('page.plusmenu.managePlugins'));
     manage.addEventListener('click', () => { close(); post({ t: 'manageExtensions' }); });
     sub.appendChild(manage);
     sub.appendChild(el('div', 'popup-sep'));
     const items = isConnectors ? data.connectors : data.plugins;
     if (!items.length) {
-      sub.appendChild(el('div', 'popup-empty', isConnectors ? '설정된 커넥터가 없습니다' : '설치된 플러그인이 없습니다'));
+      sub.appendChild(el('div', 'popup-empty', isConnectors ? T('page.plusmenu.emptyConnectors') : T('page.plusmenu.emptyPlugins')));
     }
     for (const item of items) {
       sub.appendChild(switchRow(item, it => post(isConnectors
@@ -65,7 +69,7 @@
         : { t: 'togglePlugin', id: it.id, kind: it.kind, enabled: it.enabled })));
     }
     if (!isConnectors && items.length) {
-      sub.appendChild(el('div', 'popup-empty', '바꾸면 omp를 같은 세션으로 다시 시작합니다'));
+      sub.appendChild(el('div', 'popup-empty', T('page.plusmenu.restartHint')));
     }
     const row = menu.querySelector('[data-sub="' + openSub + '"]');
     // Both popups sit above the composer; align the submenu's bottom with the chosen row.

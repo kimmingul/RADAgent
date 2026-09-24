@@ -24,7 +24,7 @@ omp가 별도 DelphiLSP 프로세스를 띄운다. `bds.exe` 안에 이미 있�
 
 ## omp 설정
 
-DelphiAgent는 omp를 띄울 때 활성 Delphi 프로젝트 옆에 `<Project>.delphilsp.json`이 있으면 아래 규칙으로 `.omp/lsp.json`을 직접 쓴다(`DelphiAgent.OmpLaunch.EnsureDelphiLsp`). 손으로 만들 필요는 이 저장소를 고칠 때뿐이다.
+RADAgent는 omp를 띄울 때 활성 Delphi 프로젝트 옆에 `<Project>.delphilsp.json`이 있으면 아래 규칙으로 `.omp/lsp.json`을 직접 쓴다(`RADAgent.OmpLaunch.EnsureDelphiLsp`). 손으로 만들 필요는 이 저장소를 고칠 때뿐이다.
 
 
 스키마의 원본은 `templates/omp.lsp.json`이다. 활성 `.dproj` 디렉터리의 `.omp/lsp.json`으로 펼친다. `.omp/`는 세션 산물이므로 커밋하지 않는다.

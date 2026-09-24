@@ -149,8 +149,8 @@ button.ctx-chip.on { color: var(--fg); border-color: var(--accent); }
 #send-btn.stop { background: var(--muted); }
 .composer-footer {
   display: flex;
-  flex-wrap: wrap;
-  row-gap: 2px;
+  /* One line at any width and in any language: the selects shrink instead of wrapping. */
+  flex-wrap: nowrap;
   align-items: center;
   gap: 4px;
   margin-top: 6px;
@@ -167,12 +167,16 @@ button.ctx-chip.on { color: var(--fg); border-color: var(--accent); }
   border-radius: 6px;
   cursor: pointer;
   max-width: 150px;
+  min-width: 0;
+  flex: 0 1 auto;
+  text-overflow: ellipsis;
 }
 .composer-footer select:hover:not(:disabled) { color: var(--fg); background: rgba(127, 127, 127, 0.15); }
 .composer-footer select option { background: var(--bg); color: var(--fg); }
+#approval-select { flex-shrink: 0; }
 #approval-select.yolo { color: var(--warn); }
-#ctx-ring { width: 16px; height: 16px; }
-#conn-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+#ctx-ring { width: 16px; height: 16px; flex: none; }
+#conn-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); flex: none; }
 #conn-dot.off { background: var(--muted); }
 #conn-dot.error { background: var(--error); }
 

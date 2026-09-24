@@ -6,8 +6,8 @@ design-time BPL이다. Requires는 `rtl`, `vcl`, `designide`뿐이다. designide
 
 | IDE | 출력 | Known Packages |
 | --- | --- | --- |
-| 32-bit `%BDS%\bin\bds.exe` | `$(BDSCOMMONDIR)\Bpl\DelphiAgent370.bpl` | `HKCU\Software\Embarcadero\BDS\37.0\Known Packages` |
-| 64-bit `%BDS%\bin64\bds.exe` | `$(BDSCOMMONDIR)\Bpl\Win64\DelphiAgent370.bpl` | `HKCU\Software\Embarcadero\BDS\37.0\Known Packages x64` |
+| 32-bit `%BDS%\bin\bds.exe` | `$(BDSCOMMONDIR)\Bpl\RADAgent370.bpl` | `HKCU\Software\Embarcadero\BDS\37.0\Known Packages` |
+| 64-bit `%BDS%\bin64\bds.exe` | `$(BDSCOMMONDIR)\Bpl\Win64\RADAgent370.bpl` | `HKCU\Software\Embarcadero\BDS\37.0\Known Packages x64` |
 
 `%BDS%` 기본값: `C:\Program Files (x86)\Embarcadero\Studio\37.0`
 
@@ -26,29 +26,29 @@ scripts\build-win64.cmd
 
 채팅 기록은 Edge WebView2로 그린다. 패키지 Requires는 그대로 `rtl`, `vcl`, `designide`이고, `vcledge`(TEdgeBrowser)는 쓰지 않는다. rtl의 `Winapi.WebView2`로 직접 띄운다.
 
-- 빌드 스크립트가 BPL 옆 `DelphiAgent\` 폴더에 `chat\`(src\chat의 HTML/CSS/JS)과 그 비트의 `WebView2Loader.dll`을 복사한다. Win32는 `Bpl\DelphiAgent\`, Win64는 `Bpl\Win64\DelphiAgent\`다.
+- 빌드 스크립트가 BPL 옆 `RADAgent\` 폴더에 `chat\`(src\chat의 HTML/CSS/JS)과 그 비트의 `WebView2Loader.dll`을 복사한다. Win32는 `Bpl\RADAgent\`, Win64는 `Bpl\Win64\RADAgent\`다.
 - `WebView2Loader.dll`은 `scripts\fetch-webview2.ps1`이 NuGet의 `Microsoft.Web.WebView2` 고정 버전에서 한 번 받아 `third_party\webview2\`에 둔다. Microsoft 서명을 확인하고, 저장소에는 넣지 않는다(`.gitignore`).
 - 실행하는 PC에는 Edge WebView2 런타임이 있어야 한다. Windows 11에는 기본으로 있다.
-- 브라우저 데이터는 `%LOCALAPPDATA%\DelphiAgent\WebView2`에 둔다.
+- 브라우저 데이터는 `%LOCALAPPDATA%\RADAgent\WebView2`에 둔다.
 - WebView2를 띄우지 못하면 채팅 창은 이유를 적고 글자만 보여 주는 화면으로 계속 동작한다.
 
 ## 64-bit IDE
 
-1. `scripts\build-win64.cmd`로 `$(BDSCOMMONDIR)\Bpl\Win64\DelphiAgent370.bpl`을 만든다.
+1. `scripts\build-win64.cmd`로 `$(BDSCOMMONDIR)\Bpl\Win64\RADAgent370.bpl`을 만든다.
 2. `%BDS%\bin64\bds.exe`만 실행한다.
 3. Component → Install Packages 를 연다.
 4. Add 로 Win64 BPL만 고른다. 이 키는 `Known Packages x64`다.
-5. 확인한 뒤 Tools 또는 View → DelphiAgent 로 도킹 Chat을 연다. View 메뉴 컴포넌트 이름은 `ViewsMenu`다.
+5. 확인한 뒤 Tools 또는 View → RADAgent 로 도킹 Chat을 연다. View 메뉴 컴포넌트 이름은 `ViewsMenu`다.
 
 Win32 BPL을 이 대화상자에 넣지 않는다.
 
 ## 32-bit IDE
 
-1. `scripts\build-win32.cmd`로 `$(BDSCOMMONDIR)\Bpl\DelphiAgent370.bpl`을 만든다.
+1. `scripts\build-win32.cmd`로 `$(BDSCOMMONDIR)\Bpl\RADAgent370.bpl`을 만든다.
 2. `%BDS%\bin\bds.exe`만 실행한다.
 3. Component → Install Packages 를 연다.
 4. Add 로 Win32 BPL만 고른다. 이 키는 `Known Packages`다.
-5. 확인한 뒤 Tools 또는 View → DelphiAgent 로 도킹 Chat을 연다.
+5. 확인한 뒤 Tools 또는 View → RADAgent 로 도킹 Chat을 연다.
 
 Win64 BPL을 이 대화상자에 넣지 않는다.
 

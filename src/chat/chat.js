@@ -10,6 +10,47 @@
       global.__outbox.push(msg);
     }
   }
+  let stringDict = {};
+
+  const has = key => Object.prototype.hasOwnProperty.call(stringDict, key);
+  // "<key>.one" is the wording for a first value of 1 ("1 tool used" against "{0} tools used").
+  global.T = function (key, ...args) {
+    if (args.length > 0 && Number(args[0]) === 1 && has(key + '.one')) key += '.one';
+    let str = has(key) ? stringDict[key] : key;
+    if (args.length > 0) {
+      args.forEach((arg, i) => {
+        str = str.split('{' + i + '}').join(arg);
+      });
+    }
+    return str;
+  };
+
+  function applyStrings() {
+    if (typeof document === 'undefined') return;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      el.textContent = global.T(el.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+      el.setAttribute('title', global.T(el.getAttribute('data-i18n-title')));
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      el.setAttribute('placeholder', global.T(el.getAttribute('data-i18n-placeholder')));
+    });
+    document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
+      el.setAttribute('aria-label', global.T(el.getAttribute('data-i18n-aria-label')));
+    });
+  }
+
+  function handleStrings(msg) {
+    if (msg.items && typeof msg.items === 'object') {
+      stringDict = msg.items;
+    }
+    if (msg.lang && document.documentElement) {
+      document.documentElement.lang = msg.lang;
+    }
+    applyStrings();
+  }
+
 
   let logEl = null;
   let scrollBtn = null;
@@ -195,6 +236,7 @@
   function handle(msg) {
     if (!msg || typeof msg !== 'object') return;
     switch (msg.t) {
+      case 'strings': handleStrings(msg); break;
       case 'theme': handleTheme(msg.vars); break;
       case 'user': handleUser(msg.text); break;
       case 'assistantDelta': handleAssistantDelta(msg.text); break;
@@ -258,8 +300,8 @@
         navigator.clipboard.writeText(code).catch(() => {});
       }
       postHost({ t: 'copy', text: code });
-      copyBtn.textContent = '복사됨';
-      setTimeout(() => { copyBtn.textContent = '복사'; }, 1500);
+      copyBtn.textContent = global.T('page.chat.copied');
+      setTimeout(() => { copyBtn.textContent = global.T('page.chat.copy'); }, 1500);
       return;
     }
 
@@ -276,6 +318,7 @@
   });
 
   window.addEventListener('DOMContentLoaded', () => {
+    applyStrings();
     logEl = document.getElementById('log');
     const ctx = {
       isNearBottom, newContent: handleNewContent, ensureTurn: ensureAssistantTurn,

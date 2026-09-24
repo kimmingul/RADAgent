@@ -1,11 +1,15 @@
 (function (global) {
   'use strict';
 
-  // Tool rows, grouped per stretch of activity between two answer blocks ("도구 3개 사용 ›"),
+  // Tool rows, grouped per stretch of activity between two answer blocks ("3 tools used ›"),
   // and file cards for edits that reached an IDE buffer. chat.js owns turns.
   let ctx = null;
   let group = null;
   const active = new Map();
+  function T(key, ...args) {
+    return global.T ? global.T(key, ...args) : key;
+  }
+
 
   function el(tag, cls, text) {
     const node = document.createElement(tag);
@@ -16,13 +20,13 @@
 
   function label(g) {
     const parts = [];
-    if (g.tools) parts.push('도구 ' + g.tools + '개 사용');
-    if (g.subagents.size) parts.push('하위 에이전트 ' + g.subagents.size);
-    if (!parts.length) parts.push(g.thinking ? '생각' : '작업');
+    if (g.tools) parts.push(T('page.tools.toolsUsed', g.tools));
+    if (g.subagents.size) parts.push(T('page.tools.subagentsCount', g.subagents.size));
+    if (!parts.length) parts.push(g.thinking ? T('page.tools.thinking') : T('page.tools.working'));
     let text = parts.join(' · ');
-    if (g.running.size) text += ' · ' + Array.from(g.running.values()).pop() + ' 실행 중';
+    if (g.running.size) text += ' · ' + T('page.tools.running', Array.from(g.running.values()).pop());
     g.labelEl.textContent = text;
-    g.failEl.textContent = g.failed ? '실패 ' + g.failed : '';
+    g.failEl.textContent = g.failed ? T('page.tools.failed', g.failed) : '';
     g.el.classList.toggle('only-thinking', !g.tools && !g.subagents.size);
   }
 
@@ -84,7 +88,8 @@
 
   function duration(ms) {
     if (typeof ms !== 'number' || ms < 0) return '';
-    return ms >= 10000 ? Math.round(ms / 1000) + '초' : (ms / 1000).toFixed(1) + '초';
+    const sec = ms >= 10000 ? Math.round(ms / 1000) : (ms / 1000).toFixed(1);
+    return T('page.tools.seconds', sec);
   }
 
   function end(id, ok, ms, result) {
@@ -96,7 +101,7 @@
     tool.metaSpan.textContent = duration(ms);
     const lines = (result || '').split('\n');
     const shown = lines.length > 200
-      ? lines.slice(0, 200).join('\n') + '\n\n… (' + (lines.length - 200) + '줄 더)' : (result || '');
+      ? lines.slice(0, 200).join('\n') + '\n\n' + T('page.tools.moreLines', lines.length - 200) : (result || '');
     tool.resultPre.innerHTML = global.Markdown.linkFileRefs(global.Markdown.escapeHtml(shown));
     tool.group.running.delete(id);
     if (!ok) tool.group.failed++;
@@ -109,7 +114,7 @@
   function endTurn() {
     for (const tool of active.values()) {
       tool.iconSpan.innerHTML = '<span class="tool-warn">!</span>';
-      tool.metaSpan.textContent = '중단됨';
+      tool.metaSpan.textContent = T('page.tools.interrupted');
       tool.row.classList.remove('running');
       tool.group.running.clear();
       label(tool.group);
@@ -137,7 +142,7 @@
       row.appendChild(el('span', 'file-add'));
       row.appendChild(el('span', 'file-del'));
       row.appendChild(el('span', 'file-open', '›'));
-      row.title = msg.path + ' — 에디터에서 열기';
+      row.title = T('page.tools.openInEditor', msg.path);
       card.appendChild(row);
     }
     row.dataset.added = String(+row.dataset.added + (msg.added || 0));

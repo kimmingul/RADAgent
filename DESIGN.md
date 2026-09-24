@@ -1,4 +1,4 @@
-﻿# DelphiAgent 설계
+﻿# RADAgent 설계
 
 design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자식 프로세스에 JSONL RPC로 프롬프트를 넘긴다. 에이전트 루프, 도구 실행, LSP 세션은 omp가 소유한다.
 
@@ -6,7 +6,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 
 ```
 +-------------------- bds.exe (32-bit 또는 64-bit, 하나만) --------------------+
-| DelphiAgent BPL (그 IDE와 같은 비트)                                          |
+| RADAgent BPL (그 IDE와 같은 비트)                                          |
 |                                                                              |
 |  Wizard                                                                      |
 |    Register 시 DockForm 등록                                                 |
@@ -47,7 +47,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | ChatPlan | 계획 모드: 들어가기·나오기(omp 재시작), `rad.submit_plan`으로 `docs\plans` 계획서 작성, `docs` 파일 프로젝트 추가, 진행 후속 프롬프트. |
 | ChatBtw | `/btw` 곁가지 질문: 질문마다 별도 omp 자식을 띄우고(타이머로 읽음) 채팅 카드와 메모 목록 메시지를 보낸다. 본 대화와 섞지 않는다. |
 | BtwRunner | 곁가지 질문 omp 자식 하나: `--mode rpc --no-tools`, 대화 `--fork` 또는 주제 `--resume`, 프롬프트 하나, 중지는 abort 프레임. 막히지 않는 읽기. ToolsAPI 없음. |
-| BtwStore | 곁가지 질문 메모(주제별 JSON과 주제 세션)를 `%LOCALAPPDATA%\DelphiAgent\btw\<프로젝트>`에 읽고 쓴다. |
+| BtwStore | 곁가지 질문 메모(주제별 JSON과 주제 세션)를 `%LOCALAPPDATA%\RADAgent\btw\<프로젝트>`에 읽고 쓴다. |
 | ChatSession | IDE당 대화 하나. omp 자식과 진행 상태를 가진다. 창을 닫거나 레이아웃이 바뀌어도 살아 있다. 설정을 바꾸면 같은 세션 파일로 omp를 다시 시작한다. 승인 계약을 구현한다. |
 | ChatStream | 에이전트 이벤트를 페이지 메시지로 바꾸고 기록(재표시용)을 가진다: 답, 생각, 도구 입력·중간 출력·결과, 하위 에이전트, 작업 목록, 알림. |
 | ChatCatalog | 설정 창용 모델, 생각 수준, 로그인 공급자 목록(RPC 응답). |
@@ -58,9 +58,11 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | ChatFallback | WebView2를 못 띄울 때의 글자 기록. |
 | ChatInput | WebView2 대체 화면의 VCL 입력칸: 여러 줄, 보낸 문장 기록, `/` 명령 목록. |
 | ChatTheme | IDE 테마 색(IOTAIDEThemingServices), 고대비·글자 크기 반영, 테마 변경 통지. |
-| AgentSettings | DelphiAgent 자체 설정(IDE 레지스트리 키): 채팅 표시 항목, 글자 크기, 고대비, omp 경로·추가 인자. |
+| AgentSettings | RADAgent 자체 설정(IDE 레지스트리 키): 채팅 표시 항목, 글자 크기, 고대비, 화면 언어, omp 경로·추가 인자. |
+| Lang | 화면 문자열: English, 日本語, Deutsch, Français, 한국어. `src\lang\<코드>.json`을 `RADAgentResources.rc`로 RCDATA에 넣고 `Tr`/`TrF`로 부른다. 없는 키는 영어, 그다음 키 이름. `<키>.one`은 첫 값이 1일 때의 문구. 채팅 페이지에는 `page.*` 키를 `strings` 메시지로 보내고 페이지는 `T()`와 `data-i18n`으로 쓴다. 처음 값은 Windows 표시 언어(없으면 영어). omp가 읽는 글은 번역하지 않고 영어로 둔다. ToolsAPI 없음. |
+| LegacyNames | 옛 이름 DelphiAgent로 남은 설정을 한 번 옮긴다: IDE 레지스트리 키, `.omp\delphiagent.yml`, `/btw` 메모 폴더, `refs/delphiagent/` 체크포인트. ToolsAPI 없음. |
 | SettingsDialog / SettingsUi / SettingsAccount / SettingsProject | 설정 창. 채팅 표시, 계정·모델(RPC로 바로 적용), 역할별 모델·확장·고급(프로젝트 omp 설정). |
-| OmpSettings / OmpCatalog / OmpCli | 프로젝트 omp 설정 파일 `<프로젝트>\.omp\delphiagent.yml`(`--config`로 전달)과 omp가 읽는 스킬·확장·하위 에이전트·MCP 목록. `omp config list`를 읽기만 하고 전역 설정은 쓰지 않는다. |
+| OmpSettings / OmpCatalog / OmpCli | 프로젝트 omp 설정 파일 `<프로젝트>\.omp\radagent.yml`(`--config`로 전달)과 omp가 읽는 스킬·확장·하위 에이전트·MCP 목록. `omp config list`를 읽기만 하고 전역 설정은 쓰지 않는다. |
 | EditorContext | 활성 파일, 선택 영역, 저장 안 한 파일 수, 링크로 파일 열기. |
 | Sessions | 같은 프로젝트의 omp 세션 파일 목록과 선택. |
 | ChatAttention | IDE가 뒤에 있을 때 작업 표시줄 깜빡임. |
@@ -74,15 +76,15 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | RpcDispatch | stdout 줄을 프레임 종류별로 나눠 이벤트로 넘긴다. ToolsAPI 없음. |
 | ChatCommand | 채팅 입력을 기존 omp RPC 프레임으로 분류한다. 새 명령 `type`을 만들지 않는다. |
 | AskDialog | `extension_ui_request`와 슬래시 명령 선택 모달. |
-| Options | omp 실행 파일, 명령줄(인자 인용), `%TEMP%\DelphiAgent` 로그 경로, 자식이 일찍 끝난 이유(stderr 마지막 줄), 공통 `--config` 내용. |
+| Options | omp 실행 파일, 명령줄(인자 인용), `%TEMP%\RADAgent` 로그 경로, 자식이 일찍 끝난 이유(stderr 마지막 줄), 공통 `--config` 내용. |
 | RpcChunks | RPC v2 `rpc_chunk` 조각을 원래 프레임으로 되돌린다(순서·크기·끊김 검사). |
 | OmpProbe | 설치된 omp 호환성 검사: 버전, 명령줄 옵션, RPC 시작·프로토콜, `rad.*` 등록과 xd:// 연결, 응답 필드, `config list`. 모델 호출 없음. 시험과 IDE가 같이 쓴다. |
 | OmpCheck | omp 버전이 바뀌면 첫 시작 때 OmpProbe를 뒤에서 돌려 채팅에 알리고, 설정 창에서 바로 돌린다. |
-| MenuIcon | `resources\MenuIcon-16/32.png`(RCDATA)를 IDE 이미지 목록에 넣어 View 메뉴 항목 아이콘으로 쓴다. |
+| MenuIcon | `resources\MenuIcon-16/32.png`(`RADAgentResources.rc`의 RCDATA)를 IDE 이미지 목록에 넣어 View 메뉴 항목 아이콘으로 쓴다. |
 | IdeContext | 활성 `.dproj` 경로, 열린 모듈, 에디터 버퍼 위치. |
 | IdeFiles | 프로젝트 모듈 저장, 디스크에서 바뀐 모듈 다시 읽기(`Refresh`), 사용자가 고치던 모듈은 충돌로 돌려준다. 지워진 파일의 모듈은 닫는다. |
 | ChatDiskSync | 프롬프트 전·`rad.*` 변경 후 저장, omp 도구가 끝날 때와 턴 끝에 다시 읽기, 충돌 알림. |
-| GitRepo | git 실행, `git init`과 `.gitignore`, 별도 index로 만드는 체크포인트 커밋(`refs/delphiagent/`), 되돌리기, 체크포인트에서 브랜치. ToolsAPI 없음. |
+| GitRepo | git 실행, `git init`과 `.gitignore`, 별도 index로 만드는 체크포인트 커밋(`refs/radagent/`), 되돌리기, 체크포인트에서 브랜치. ToolsAPI 없음. |
 | ChatCheckpoints | 프로젝트 저장소 보장, 메시지마다 체크포인트, 채팅의 되돌리기·브랜치(파일은 git, 대화는 omp `get_entries`/`branch`). |
 | Compile | 활성 프로젝트 빌드와 완료 통지. 결과는 메시지 뷰로 보낸다. |
 | HostToolDefs | host-tool 이름과 `set_host_tools` 스키마. ToolsAPI 없음. |
@@ -110,8 +112,8 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 
 - 디스크가 기준이다. 프롬프트 직전과 `rad.*` 변경 직후에 저장한다.
 - omp가 바꾼 파일은 IDE에 다시 읽힌다. 사용자가 그 사이 고친 모듈은 덮어쓰지 않고 충돌로 알린다.
-- 메시지마다 체크포인트 커밋(`refs/delphiagent/cp/NNNNNN`, 부모는 HEAD, 트리는 작업 폴더 전체)을 남긴다. 사용자 브랜치 기록은 바뀌지 않는다.
-- 되돌리기: 지금 상태를 `refs/delphiagent/before-restore/`에 남기고, 체크포인트의 파일을 쓰고 그 뒤에 생긴 파일을 지운 뒤 IDE에 다시 읽힌다. 대화는 omp `branch`로 그 메시지 앞에서 갈라지고, 메시지는 입력칸으로 돌아온다. 브랜치는 여기에 `git branch`와 HEAD 전환을 더한다.
+- 메시지마다 체크포인트 커밋(`refs/radagent/cp/NNNNNN`, 부모는 HEAD, 트리는 작업 폴더 전체)을 남긴다. 사용자 브랜치 기록은 바뀌지 않는다.
+- 되돌리기: 지금 상태를 `refs/radagent/before-restore/`에 남기고, 체크포인트의 파일을 쓰고 그 뒤에 생긴 파일을 지운 뒤 IDE에 다시 읽힌다. 대화는 omp `branch`로 그 메시지 앞에서 갈라지고, 메시지는 입력칸으로 돌아온다. 브랜치는 여기에 `git branch`와 HEAD 전환을 더한다.
 
 ## 비범위
 

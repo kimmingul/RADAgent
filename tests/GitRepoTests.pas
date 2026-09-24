@@ -13,7 +13,7 @@ procedure RunGitRepoTests(const Check: TCheckProc);
 implementation
 
 uses
-  System.SysUtils, System.IOUtils, Winapi.Windows, DelphiAgent.GitRepo, DelphiAgent.Options;
+  System.SysUtils, System.IOUtils, Winapi.Windows, RADAgent.GitRepo, RADAgent.Options;
 
 procedure RunGitRepoTests(const Check: TCheckProc);
 var
@@ -55,8 +55,8 @@ begin
     Check(RestoreCheckpoint(Root, Current, Commit, Problem) and
       TFile.ReadAllText(TPath.Combine(Dir, 'Unit1.pas'), TEncoding.UTF8).Contains('// v2') and
       FileExists(TPath.Combine(Dir, 'Unit2.pas')), 'going back can itself be undone');
-    Check(BranchAtCheckpoint(Root, Commit, 'delphiagent/test', Problem) and
-      TFile.ReadAllText(TPath.Combine(Dir, '.git\HEAD')).Contains('refs/heads/delphiagent/test'),
+    Check(BranchAtCheckpoint(Root, Commit, 'radagent/test', Problem) and
+      TFile.ReadAllText(TPath.Combine(Dir, '.git\HEAD')).Contains('refs/heads/radagent/test'),
       'a branch at the checkpoint becomes the current branch: ' + Problem);
   finally
     { git object files are read-only. }

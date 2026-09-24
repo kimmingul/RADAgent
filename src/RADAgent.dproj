@@ -1,0 +1,183 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectGuid>{4C1E8A2B-9D57-4F63-A1E0-7B2C6D8E9F10}</ProjectGuid>
+    <MainSource>RADAgent.dpk</MainSource>
+    <ProjectVersion>20.3</ProjectVersion>
+    <FrameworkType>VCL</FrameworkType>
+    <Base>True</Base>
+    <Config Condition="'$(Config)'==''">Release</Config>
+    <Platform Condition="'$(Platform)'==''">Win32</Platform>
+    <TargetedPlatforms>3</TargetedPlatforms>
+    <AppType>Package</AppType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+    <Base>true</Base>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_Release)'!=''">
+    <Cfg_Release>true</Cfg_Release>
+    <CfgParent>Base</CfgParent>
+    <Base>true</Base>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_Debug)'!=''">
+    <Cfg_Debug>true</Cfg_Debug>
+    <CfgParent>Base</CfgParent>
+    <Base>true</Base>
+  </PropertyGroup>
+  <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
+    <Base_Win32>true</Base_Win32>
+    <CfgParent>Base</CfgParent>
+    <Base>true</Base>
+  </PropertyGroup>
+  <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
+    <Base_Win64>true</Base_Win64>
+    <CfgParent>Base</CfgParent>
+    <Base>true</Base>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Base)'!=''">
+    <DCC_DesignPackage>true</DCC_DesignPackage>
+    <GenPackage>true</GenPackage>
+    <GenDll>true</GenDll>
+    <DCC_DcuOutput>.\$(Platform)\$(Config)</DCC_DcuOutput>
+    <DCC_BplOutput>$(BDSCOMMONDIR)\Bpl</DCC_BplOutput>
+    <DCC_DcpOutput>$(BDSCOMMONDIR)\Dcp</DCC_DcpOutput>
+    <DCC_Description>RADAgent — an agentic coding assistant for Delphi, powered by oh-my-pi</DCC_Description>
+    <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;$(DCC_Namespace)</DCC_Namespace>
+    <SanitizedProjectName>RADAgent370</SanitizedProjectName>
+    <OutputName>RADAgent370</OutputName>
+    <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+    <VerInfo_MajorVer>1</VerInfo_MajorVer>
+    <VerInfo_Keys>CompanyName=;FileDescription=RADAgent — an agentic coding assistant for Delphi, powered by oh-my-pi;FileVersion=1.0.0.0;InternalName=RADAgent370;LegalCopyright=;LegalTrademarks=;OriginalFilename=RADAgent370.bpl;ProductName=RADAgent;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+    <Debugger_Parameters>-pDelphi</Debugger_Parameters>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)'=='Win32'">
+    <DCC_BplOutput>$(BDSCOMMONDIR)\Bpl</DCC_BplOutput>
+    <DCC_DcpOutput>$(BDSCOMMONDIR)\Dcp</DCC_DcpOutput>
+    <Debugger_HostApplication>$(BDS)\bin\bds.exe</Debugger_HostApplication>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)'=='Win64'">
+    <DCC_BplOutput>$(BDSCOMMONDIR)\Bpl\Win64</DCC_BplOutput>
+    <DCC_DcpOutput>$(BDSCOMMONDIR)\Dcp\Win64</DCC_DcpOutput>
+    <DCC_Namespace>System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
+    <Debugger_HostApplication>$(BDS)\bin64\bds.exe</Debugger_HostApplication>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Cfg_Release)'!=''">
+    <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
+    <DCC_DebugInformation>0</DCC_DebugInformation>
+    <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
+    <DCC_Optimize>true</DCC_Optimize>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Cfg_Debug)'!=''">
+    <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
+    <DCC_Optimize>false</DCC_Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <DelphiCompile Include="RADAgent.dpk">
+      <MainSource>MainSource</MainSource>
+    </DelphiCompile>
+    <DCCReference Include="rtl.dcp"/>
+    <DCCReference Include="vcl.dcp"/>
+    <DCCReference Include="designide.dcp"/>
+    <DCCReference Include="RADAgent.Options.pas"/>
+    <DCCReference Include="RADAgent.LegacyNames.pas"/>
+    <DCCReference Include="RADAgent.Lang.pas"/>
+    <DCCReference Include="RADAgent.RpcProtocol.pas"/>
+    <DCCReference Include="RADAgent.HostToolDefs.pas"/>
+    <DCCReference Include="RADAgent.ChatCommand.pas"/>
+    <DCCReference Include="RADAgent.AskDialog.pas"/>
+    <DCCReference Include="RADAgent.RpcEvents.pas"/>
+    <DCCReference Include="RADAgent.RpcChunks.pas"/>
+    <DCCReference Include="RADAgent.RpcDispatch.pas"/>
+    <DCCReference Include="RADAgent.RpcClient.pas"/>
+    <DCCReference Include="RADAgent.IdeContext.pas"/>
+    <DCCReference Include="RADAgent.Compile.pas"/>
+    <DCCReference Include="RADAgent.Approval.pas"/>
+    <DCCReference Include="RADAgent.LineDiff.pas"/>
+    <DCCReference Include="RADAgent.ApprovalDialog.pas"/>
+    <DCCReference Include="RADAgent.BufferEdits.pas"/>
+    <DCCReference Include="RADAgent.DebugTools.pas"/>
+    <DCCReference Include="RADAgent.DebugControl.pas"/>
+    <DCCReference Include="RADAgent.FormDesigner.pas"/>
+    <DCCReference Include="RADAgent.FormEdits.pas"/>
+    <DCCReference Include="RADAgent.FormTools.pas"/>
+    <DCCReference Include="RADAgent.HostTools.pas"/>
+    <DCCReference Include="RADAgent.ChatActivity.pas"/>
+    <DCCReference Include="RADAgent.ChatTheme.pas"/>
+    <DCCReference Include="RADAgent.EditorContext.pas"/>
+    <DCCReference Include="RADAgent.ChatInput.pas"/>
+    <DCCReference Include="RADAgent.WebView2Handlers.pas"/>
+    <DCCReference Include="RADAgent.WebView2Host.pas"/>
+    <DCCReference Include="RADAgent.ChatPageMessages.pas"/>
+    <DCCReference Include="RADAgent.ChatFallback.pas"/>
+    <DCCReference Include="RADAgent.Sessions.pas"/>
+    <DCCReference Include="RADAgent.ChatAttention.pas"/>
+    <DCCReference Include="RADAgent.ChatActions.pas"/>
+    <DCCReference Include="RADAgent.ChatSession.pas"/>
+    <DCCReference Include="RADAgent.IdeMenus.pas"/>
+    <DCCReference Include="RADAgent.DockKeeper.pas"/>
+    <DCCReference Include="RADAgent.RpcJson.pas"/>
+    <DCCReference Include="RADAgent.RpcResponses.pas"/>
+    <DCCReference Include="RADAgent.AgentSettings.pas"/>
+    <DCCReference Include="RADAgent.OmpCli.pas"/>
+    <DCCReference Include="RADAgent.OmpCatalog.pas"/>
+    <DCCReference Include="RADAgent.OmpSettings.pas"/>
+    <DCCReference Include="RADAgent.ChatStream.pas"/>
+    <DCCReference Include="RADAgent.ChatCatalog.pas"/>
+    <DCCReference Include="RADAgent.SettingsUi.pas"/>
+    <DCCReference Include="RADAgent.SettingsAccount.pas"/>
+    <DCCReference Include="RADAgent.SettingsProject.pas"/>
+    <DCCReference Include="RADAgent.SettingsDialog.pas"/>
+    <DCCReference Include="RADAgent.ChatApproval.pas"/>
+    <DCCReference Include="RADAgent.ChatStatus.pas"/>
+    <DCCReference Include="RADAgent.ChatPageCommands.pas"/>
+    <DCCReference Include="RADAgent.ChatExtensions.pas"/>
+    <DCCReference Include="RADAgent.ProjectProfile.pas"/>
+    <DCCReference Include="RADAgent.ModuleCreator.pas"/>
+    <DCCReference Include="RADAgent.FormBatch.pas"/>
+    <DCCReference Include="RADAgent.OmpLaunch.pas"/>
+    <DCCReference Include="RADAgent.ChatPlan.pas"/>
+    <DCCReference Include="RADAgent.ChatApprovalCard.pas"/>
+    <DCCReference Include="RADAgent.BtwStore.pas"/>
+    <DCCReference Include="RADAgent.BtwRunner.pas"/>
+    <DCCReference Include="RADAgent.ChatBtw.pas"/>
+    <DCCReference Include="RADAgent.OmpProbe.pas"/>
+    <DCCReference Include="RADAgent.OmpCheck.pas"/>
+    <DCCReference Include="RADAgent.IdeFiles.pas"/>
+    <DCCReference Include="RADAgent.GitRepo.pas"/>
+    <DCCReference Include="RADAgent.ChatDiskSync.pas"/>
+    <DCCReference Include="RADAgent.ChatCheckpoints.pas"/>
+    <DCCReference Include="RADAgent.MenuIcon.pas"/>
+    <RcCompile Include="RADAgentResources.rc">
+      <Form>RADAgentResources.res</Form>
+    </RcCompile>
+    <DCCReference Include="RADAgent.DockForm.pas"/>
+    <DCCReference Include="RADAgent.Wizard.pas"/>
+  </ItemGroup>
+  <Import Project="$(BDS)\Bin\CodeGear.Delphi.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')"/>
+  <Import Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj" Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')"/>
+  <Target Name="NameRADAgentBpl" AfterTargets="Make;Build">
+    <PropertyGroup>
+      <_Src>$(DCC_BplOutput)RADAgent.bpl</_Src>
+      <_Dst>$(DCC_BplOutput)RADAgent370.bpl</_Dst>
+    </PropertyGroup>
+    <Copy SourceFiles="$(_Src)" DestinationFiles="$(_Dst)" Condition="Exists('$(_Src)')"/>
+    <Delete Files="$(_Src)" Condition="Exists('$(_Src)')"/>
+    <Error Text="RADAgent370.bpl was not written to $(_Dst)" Condition="!Exists('$(_Dst)')"/>
+    <Error Text="RADAgent.bpl was left at $(_Src)" Condition="Exists('$(_Src)')"/>
+  </Target>
+  <ProjectExtensions>
+    <Borland.Personality>Delphi.Personality.12</Borland.Personality>
+    <Borland.ProjectType>Package</Borland.ProjectType>
+    <BorlandProject>
+      <Delphi.Personality>
+        <Source>
+          <Source Name="MainSource">RADAgent.dpk</Source>
+        </Source>
+      </Delphi.Personality>
+      <Platforms>
+        <Platform value="Win32">True</Platform>
+        <Platform value="Win64">True</Platform>
+      </Platforms>
+    </BorlandProject>
+    <ProjectFileVersion>12</ProjectFileVersion>
+  </ProjectExtensions>
+</Project>

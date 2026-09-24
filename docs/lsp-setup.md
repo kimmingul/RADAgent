@@ -35,6 +35,6 @@ BPL을 띄우지 않고, 활성 프로젝트 디렉터리에서 `omp --mode rpc`
 
 `.dproj`가 `src/`에 있고 omp는 저장소 루트에서 뜬다. `rootMarkers`는 cwd만 보므로 이 저장소에서는 `["src"]`를 쓴다. 두 파일 모두 기계마다 경로가 달라서 커밋하지 않는다. `.gitignore`가 `.omp/`와 `*.delphilsp.json`을 무시한다.
 
-1. 저장소 루트의 `.omp/lsp.json`에 템플릿을 펼친다. `rootMarkers`만 `["src"]`로 바꾸고, `settingsFile`은 `file:///D:/repo/DelphiAgent/src/DelphiAgent.delphilsp.json`처럼 적는다.
-2. `src/DelphiAgent.delphilsp.json`은 IDE에서 `src\DelphiAgent.dproj`를 Generate LSP Config를 켠 채로 열면 생긴다. 2026-09-23에 있는 파일은 다른 프로젝트의 생성본에서 `project`, `projectFiles`, `-TX.bpl`, `-LUrtl;vcl;designide`, `-$D+ -$L+ -$Y+`만 바꿔 손으로 만든 것이다. IDE가 새로 만들면 그 파일로 덮어쓴다.
+1. 저장소 루트의 `.omp/lsp.json`에 템플릿을 펼친다. `rootMarkers`만 `["src"]`로 바꾸고, `settingsFile`은 `file:///D:/repo/RADAgent/src/RADAgent.delphilsp.json`처럼 적는다.
+2. `src/RADAgent.delphilsp.json`은 IDE에서 `src\RADAgent.dproj`를 Generate LSP Config를 켠 채로 열면 생긴다. 2026-09-23에 있는 파일은 다른 프로젝트의 생성본에서 `project`, `projectFiles`, `-TX.bpl`, `-LUrtl;vcl;designide`, `-$D+ -$L+ -$Y+`만 바꿔 손으로 만든 것이다. IDE가 새로 만들면 그 파일로 덮어쓴다.
 3. omp에서 `lsp reload`를 실행한 뒤, definition으로 동작을 확인한다.

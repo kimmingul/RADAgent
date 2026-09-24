@@ -1,4 +1,4 @@
-# DelphiAgent 프로젝트 공유 설정.
+# RADAgent 프로젝트 공유 설정.
 # API 키, 토큰, 프로바이더 시크릿을 이 파일에 넣지 않는다.
 #
 # 프로젝트 .grok/config.toml 이 실제로 반영하는 구간은

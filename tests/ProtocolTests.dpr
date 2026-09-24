@@ -8,25 +8,29 @@ uses
   System.IOUtils,
   System.JSON,
   Winapi.Windows,
-  DelphiAgent.Options in '..\src\DelphiAgent.Options.pas',
-  DelphiAgent.RpcProtocol in '..\src\DelphiAgent.RpcProtocol.pas',
-  DelphiAgent.HostToolDefs in '..\src\DelphiAgent.HostToolDefs.pas',
-  DelphiAgent.ChatCommand in '..\src\DelphiAgent.ChatCommand.pas',
-  DelphiAgent.RpcDispatch in '..\src\DelphiAgent.RpcDispatch.pas',
-  DelphiAgent.RpcClient in '..\src\DelphiAgent.RpcClient.pas',
-  DelphiAgent.RpcJson in '..\src\DelphiAgent.RpcJson.pas',
-  DelphiAgent.RpcEvents in '..\src\DelphiAgent.RpcEvents.pas',
-  DelphiAgent.RpcResponses in '..\src\DelphiAgent.RpcResponses.pas',
-  DelphiAgent.LineDiff in '..\src\DelphiAgent.LineDiff.pas',
-  DelphiAgent.RpcChunks in '..\src\DelphiAgent.RpcChunks.pas',
-  DelphiAgent.OmpCli in '..\src\DelphiAgent.OmpCli.pas',
-  DelphiAgent.OmpProbe in '..\src\DelphiAgent.OmpProbe.pas',
-  DelphiAgent.GitRepo in '..\src\DelphiAgent.GitRepo.pas',
+  RADAgent.Options in '..\src\RADAgent.Options.pas',
+  RADAgent.RpcProtocol in '..\src\RADAgent.RpcProtocol.pas',
+  RADAgent.HostToolDefs in '..\src\RADAgent.HostToolDefs.pas',
+  RADAgent.ChatCommand in '..\src\RADAgent.ChatCommand.pas',
+  RADAgent.RpcDispatch in '..\src\RADAgent.RpcDispatch.pas',
+  RADAgent.RpcClient in '..\src\RADAgent.RpcClient.pas',
+  RADAgent.RpcJson in '..\src\RADAgent.RpcJson.pas',
+  RADAgent.RpcEvents in '..\src\RADAgent.RpcEvents.pas',
+  RADAgent.RpcResponses in '..\src\RADAgent.RpcResponses.pas',
+  RADAgent.LineDiff in '..\src\RADAgent.LineDiff.pas',
+  RADAgent.RpcChunks in '..\src\RADAgent.RpcChunks.pas',
+  RADAgent.OmpCli in '..\src\RADAgent.OmpCli.pas',
+  RADAgent.OmpProbe in '..\src\RADAgent.OmpProbe.pas',
+  RADAgent.GitRepo in '..\src\RADAgent.GitRepo.pas',
+  RADAgent.Lang in '..\src\RADAgent.Lang.pas',
   TestCheck in 'TestCheck.pas',
   RpcEventsTests in 'RpcEventsTests.pas',
   LineDiffTests in 'LineDiffTests.pas',
   OmpCompatTests in 'OmpCompatTests.pas',
-  GitRepoTests in 'GitRepoTests.pas';
+  GitRepoTests in 'GitRepoTests.pas',
+  LangTests in 'LangTests.pas';
+
+{$R '..\src\RADAgentResources.res' '..\src\RADAgentResources.rc'}
 
 var
   GFailures: Integer;
@@ -63,9 +67,9 @@ begin
   Check(Command.Contains('--mode rpc'), 'command has rpc mode');
   Check(Command.Contains('--cwd'), 'command has cwd');
   Check(not Command.Contains('--config'), 'command omits empty overlay');
-  Command := BuildOmpCommandLine('omp', 'D:\work', ['C:\t\host.yml', '', 'D:\work\.omp\delphiagent.yml'],
+  Command := BuildOmpCommandLine('omp', 'D:\work', ['C:\t\host.yml', '', 'D:\work\.omp\radagent.yml'],
     'C:\t\guide.md', '--no-lsp');
-  Check(Command.Contains('--config "C:\t\host.yml" --config "D:\work\.omp\delphiagent.yml"'),
+  Check(Command.Contains('--config "C:\t\host.yml" --config "D:\work\.omp\radagent.yml"'),
     'command passes every overlay in order, skipping empty ones');
   Check(Command.Contains('--append-system-prompt "C:\t\guide.md"'), 'command passes the project guide');
   Check(Command.EndsWith(' --no-lsp'), 'command appends extra args');
@@ -284,6 +288,7 @@ begin
     RunLineDiffTests(Check);
     RunOmpCompatTests(Check);
     RunGitRepoTests(Check);
+    RunLangTests(Check);
     TestLiveReady;
     RunLiveOmpProbe(Check);
   except

@@ -1,6 +1,6 @@
 unit LineDiffTests;
 
-{ Tests for DelphiAgent.LineDiff. }
+{ Tests for RADAgent.LineDiff. }
 
 interface
 
@@ -12,7 +12,7 @@ procedure RunLineDiffTests(const Check: TCheckProc);
 implementation
 
 uses
-  System.SysUtils, System.Diagnostics, DelphiAgent.LineDiff;
+  System.SysUtils, System.Diagnostics, RADAgent.LineDiff;
 
 procedure TestIdentical(const Check: TCheckProc);
 var

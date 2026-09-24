@@ -10,7 +10,7 @@ procedure RunRpcEventsTests(const Check: TCheckProc);
 implementation
 
 uses
-  System.SysUtils, System.Math, DelphiAgent.RpcEvents, DelphiAgent.RpcResponses;
+  System.SysUtils, System.Math, RADAgent.RpcEvents, RADAgent.RpcResponses;
 
 procedure TestTextDelta(const Check: TCheckProc);
 var Ev: TAgentEvent;

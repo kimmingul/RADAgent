@@ -1,9 +1,9 @@
 ﻿---
 name: delphi-toolsapi
-description: RAD Studio 13.2 ToolsAPI로 DelphiAgent design-time BPL을 만들 때 따른다. IOTAWizard, 도킹 Chat, IOTAEditorServices, IOTAProjectBuilder, IOTACompileNotifier, IOTAMessageServices, 32/64 BPL 등록. Use when editing the BPL, ToolsAPI, dock form, compile, or message view.
+description: RAD Studio 13.2 ToolsAPI로 RADAgent design-time BPL을 만들 때 따른다. IOTAWizard, 도킹 Chat, IOTAEditorServices, IOTAProjectBuilder, IOTACompileNotifier, IOTAMessageServices, 32/64 BPL 등록. Use when editing the BPL, ToolsAPI, dock form, compile, or message view.
 ---
 
-# DelphiAgent ToolsAPI
+# RADAgent ToolsAPI
 
 대상은 BDS 37.0 design-time 패키지다. 공개 ToolsAPI만 사용한다. 비공개 IDE 유닛, KAI 패키지, designide 재배포는 하지 않는다.
 
@@ -12,8 +12,8 @@ description: RAD Studio 13.2 ToolsAPI로 DelphiAgent design-time BPL을 만들 �
 1. design-time 패키지. `Requires`: `rtl`, `vcl`, `designide`.
 2. 플랫폼은 Win32와 Win64. 다른 플랫폼은 추가하지 않는다.
 3. 출력:
-   - Win32 → `$(BDSCOMMONDIR)\Bpl\DelphiAgent370.bpl`
-   - Win64 → `$(BDSCOMMONDIR)\Bpl\Win64\DelphiAgent370.bpl`
+   - Win32 → `$(BDSCOMMONDIR)\Bpl\RADAgent370.bpl`
+   - Win64 → `$(BDSCOMMONDIR)\Bpl\Win64\RADAgent370.bpl`
 4. BPL은 패키지다. IDE가 `Register`를 호출한다. 같은 코드를 일반 DLL로 빼지 않는다.
 5. 32-bit IDE는 `Known Packages`에 Win32 BPL만 둔다. 64-bit IDE는 `Known Packages x64`에 Win64 BPL만 둔다. 한 파일을 양쪽에 등록하지 않는다.
    - `HKCU\Software\Embarcadero\BDS\37.0\Known Packages`
@@ -47,7 +47,7 @@ description: RAD Studio 13.2 ToolsAPI로 DelphiAgent design-time BPL을 만들 �
 - 호출: `(GetActiveProject as IOTAProject).ProjectBuilder.BuildProject(cmOTABuild, True)`.
 - `True`는 빌드가 끝날 때까지 기다린다는 뜻이다.
 - 결과 통지: `IOTACompileNotifier.ProjectCompileFinished`. 그룹 빌드는 `ProjectGroupCompileFinished`.
-- 메시지 뷰: `IOTAMessageServices.AddTitleMessage`, `AddToolMessage`. 도구 접두사는 `DelphiAgent`.
+- 메시지 뷰: `IOTAMessageServices.AddTitleMessage`, `AddToolMessage`. 도구 접두사는 `RADAgent`.
 - 컴파일 메시지를 지울 때는 `ClearCompilerMessages`만 쓴다. `ClearAllMessages`로 다른 도구 출력을 지우지 않는다.
 
 ## 디버거 host-tool

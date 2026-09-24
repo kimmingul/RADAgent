@@ -1,4 +1,4 @@
-﻿# DelphiAgent
+﻿# RADAgent
 
 RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp이고 검증 버전은 18.2.11이다. Delphi로 다시 구현하지 않는다.
 
@@ -15,7 +15,7 @@ RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp이고 검
 - 유닛 하나는 책임 하나. `DESIGN.md`의 모듈을 한 유닛에 합치지 않는다.
 - 한 파일은 400줄을 넘기지 않는다. 넘기면 같은 책임 안에서 유닛을 나눈다.
 - 식별자, 유닛 이름, 파일 이름은 ASCII Pascal.
-- 사용자가 보는 문자열은 한글. 로그 접두사와 프로토콜 필드 이름은 영어.
+- 사용자가 보는 문자열은 코드에 직접 쓰지 않는다. `RADAgent.Lang`의 `Tr`/`TrF`(채팅 페이지는 `T()`, `data-i18n`)로 부르고 `src\lang\en.json`, `ja.json`, `de.json`, `fr.json`, `ko.json` 다섯 언어에 모두 넣는다. omp가 읽는 글(도구 결과, 안내문, 도구 설명), 로그 접두사, 프로토콜 필드 이름은 영어 그대로 쓴다.
 - 문자열은 `UnicodeString`. IDE 버퍼를 `AnsiString`으로 왕복하지 않는다.
 - 시크릿과 API 키를 소스, DFM, 프로젝트 설정, 커밋에 넣지 않는다.
 
@@ -24,8 +24,8 @@ RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp이고 검
 - design-time BPL. `Requires`: `rtl`, `vcl`, `designide`.
 - 다른 패키지를 Requires에 넣지 않는다. designide는 IDE에 있는 것을 참조만 한다. 재배포하지 않는다.
 - Win32와 Win64를 각각 빌드한다. 출력 경로를 같이 쓰지 않는다.
-  - Win32 → `$(BDSCOMMONDIR)\Bpl\DelphiAgent370.bpl`
-  - Win64 → `$(BDSCOMMONDIR)\Bpl\Win64\DelphiAgent370.bpl`
+  - Win32 → `$(BDSCOMMONDIR)\Bpl\RADAgent370.bpl`
+  - Win64 → `$(BDSCOMMONDIR)\Bpl\Win64\RADAgent370.bpl`
 - Win32 BPL은 `%BDS%\bin\bds.exe`에만 등록한다.
 - Win64 BPL은 `%BDS%\bin64\bds.exe`에만 등록한다.
 - 한 BPL을 양쪽 Known Packages에 넣지 않는다. 비트가 다른 BPL은 그 IDE가 로드하지 못한다.
@@ -54,7 +54,7 @@ RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp이고 검
 - 중단은 `abort` 프레임이다. 프로세스를 바로 죽이는 것이 중단의 기본 동작이 아니다.
 - IDE 상태 변경은 host-tools 콜백으로만 한다. omp 도구가 IDE 메모리를 직접 쓰지 않는다.
 - `/btw` 곁가지 질문은 도구 없는 별도 omp 자식(`--fork` 대화 또는 `--resume` 주제 세션)이 답한다. 본 대화에 넣지 않는다.
-- omp 버전에 기대는 곳(옵션, 프레임 필드, 설정 키, 승인 문구)을 새로 쓰면 `DelphiAgent.OmpProbe` 검사나 `tests\OmpCompatTests.pas`에도 넣는다. 사람이 읽는 문구는 위치나 정확한 낱말이 아니라 뜻으로 맞춘다.
+- omp 버전에 기대는 곳(옵션, 프레임 필드, 설정 키, 승인 문구)을 새로 쓰면 `RADAgent.OmpProbe` 검사나 `tests\OmpCompatTests.pas`에도 넣는다. 사람이 읽는 문구는 위치나 정확한 낱말이 아니라 뜻으로 맞춘다.
 - 프레임 필드와 순서는 omp-rpc 스킬을 따른다. 여기에 프로토콜을 복붙하지 않는다.
 
 ## DelphiLSP
@@ -74,7 +74,7 @@ RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp이고 검
 - 폼(`.dfm`/`.fmx`)과 프로젝트 파일은 텍스트로 고치지 않는다. 폼은 `rad.form_*`, 모듈은 `rad.new_module`로만 바꾼다.
 - IDE 변경과 omp 도구의 승인은 입력 아래 승인 방식(omp `tools.approvalMode`)을 따른다: 항상 묻기 = 변경마다, 쓰기 허용 = 턴마다 한 번, 권한 무시 = 묻지 않음. 처음 값은 권한 무시다. 승인은 채팅 안 카드로 묻는다. `계획` 방식은 아무것도 바꾸지 않고 `docs\plans`에 계획서만 쓴다.
 - 프로젝트 폴더는 항상 git 저장소다. 없으면 `git init`과 Delphi `.gitignore`, 첫 커밋을 만든다.
-- 사용자 메시지마다 보내기 직전 상태를 체크포인트로 남긴다. 체크포인트는 사용자의 index, HEAD, 브랜치를 건드리지 않는다(별도 index, `refs/delphiagent/cp/`). 되돌리기는 파일과 omp 대화를 함께 되돌리고, 되돌리기 전 상태도 `refs/delphiagent/before-restore/`에 남긴다.
+- 사용자 메시지마다 보내기 직전 상태를 체크포인트로 남긴다. 체크포인트는 사용자의 index, HEAD, 브랜치를 건드리지 않는다(별도 index, `refs/radagent/cp/`). 되돌리기는 파일과 omp 대화를 함께 되돌리고, 되돌리기 전 상태도 `refs/radagent/before-restore/`에 남긴다.
 
 ## 범위
 

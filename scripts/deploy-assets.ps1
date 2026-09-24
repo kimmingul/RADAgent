@@ -1,5 +1,5 @@
 ﻿# Copies the chat page (src\chat) and the matching WebView2Loader.dll next to the built BPL:
-#   <BplDir>\DelphiAgent\chat\*  and  <BplDir>\DelphiAgent\WebView2Loader.dll
+#   <BplDir>\RADAgent\chat\*  and  <BplDir>\RADAgent\WebView2Loader.dll
 # The BPL loads both from its own folder at run time.
 param(
   [Parameter(Mandatory = $true)][string]$BplDir,
@@ -8,7 +8,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 & (Join-Path $PSScriptRoot 'fetch-webview2.ps1')
-$out = Join-Path $BplDir 'DelphiAgent'
+$out = Join-Path $BplDir 'RADAgent'
 $chat = Join-Path $out 'chat'
 New-Item -ItemType Directory -Force -Path $chat | Out-Null
 Copy-Item -Force -Path (Join-Path $root 'src\chat\*') -Destination $chat
@@ -21,4 +21,4 @@ try {
   if (-not (Test-Path $dst) -or
       (Get-FileHash $dst).Hash -ne (Get-FileHash $loader).Hash) { throw }
 }
-Write-Host "[DelphiAgent] 채팅 페이지와 WebView2 로더 배치: $out"
+Write-Host "[RADAgent] 채팅 페이지와 WebView2 로더 배치: $out"

@@ -216,10 +216,11 @@
           ? highlightPascal(rawCode)
           : linkFileRefs(escapeHtml(rawCode));
 
+        const copyLabel = typeof global.T === 'function' ? global.T('page.markdown.copy') : 'Copy';
         html += `<div class="code-block">` +
           `<div class="code-header">` +
             `<span class="code-lang">${escapeHtml(lang || 'text')}</span>` +
-            `<button class="code-copy-btn" data-code="${escapeAttr(rawCode)}" aria-label="복사">복사</button>` +
+            `<button class="code-copy-btn" data-code="${escapeAttr(rawCode)}" aria-label="${escapeAttr(copyLabel)}">${escapeHtml(copyLabel)}</button>` +
           `</div>` +
           `<pre><code>${highlighted}</code></pre>` +
         `</div>`;

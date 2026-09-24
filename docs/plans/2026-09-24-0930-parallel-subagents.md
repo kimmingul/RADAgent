@@ -1,9 +1,9 @@
 # 하위 에이전트 여러 개로 동시에 코딩하기
 
 - 작성: 2026-09-24
-- 대상: DelphiAgent (omp 18.2.11, RAD Studio 13.2)
+- 대상: RADAgent (omp 18.2.11, RAD Studio 13.2)
 - 상태: 조사 끝, 구현 전
-- 갱신(2026-09-24): DelphiAgent가 디스크 기준(저장 후 omp가 디스크 편집, IDE가 다시 읽기)과 메시지별 git 체크포인트로 바뀌었다. 그래서 아래 "IDE 버퍼가 기준" 조건은 더 이상 없다. 지금은 서로 다른 `.pas` 파일을 맡은 하위 에이전트의 디스크 편집을 안내문으로 허용한다. 같은 파일 충돌을 막는 B의 버전 토큰과 소유권, C의 격리는 여전히 다음 단계 후보다.
+- 갱신(2026-09-24): RADAgent가 디스크 기준(저장 후 omp가 디스크 편집, IDE가 다시 읽기)과 메시지별 git 체크포인트로 바뀌었다. 그래서 아래 "IDE 버퍼가 기준" 조건은 더 이상 없다. 지금은 서로 다른 `.pas` 파일을 맡은 하위 에이전트의 디스크 편집을 안내문으로 허용한다. 같은 파일 충돌을 막는 B의 버전 토큰과 소유권, C의 격리는 여전히 다음 단계 후보다.
 
 ## 목표
 
@@ -16,7 +16,7 @@ omp 메인 세션이 일을 나눠 하위 에이전트 여러 개에 맡기고, 
 
 ## 현재 상태
 
-### DelphiAgent
+### RADAgent
 
 - 하위 에이전트는 읽기 전용 조사에만 쓴다. 프로젝트 안내문(`OmpLaunch.WriteProjectGuide`)이 그렇게 지시한다.
 - IDE 도구 `rad.*`는 RPC `set_host_tools`로 메인 세션에만 등록된다.
@@ -25,7 +25,7 @@ omp 메인 세션이 일을 나눠 하위 에이전트 여러 개에 맡기고, 
 ### omp가 제공하는 것 (문서)
 
 - `task` 도구는 같은 omp 프로세스 안에 자식 세션을 만든다. 동시 실행 수는 `task.maxConcurrency`(기본 32)로 제한한다 (omp://tools/task.md, omp://tools/eval.md).
-- 하위 에이전트는 헤드리스라 `tools.approvalMode: yolo`로 돈다. 사용자 `tools.approval.<tool>` 설정만 적용된다 (omp://approval-mode.md "Subagents"). 그래서 하위 에이전트가 디스크에 쓰는 것은 DelphiAgent 승인을 거치지 않는다.
+- 하위 에이전트는 헤드리스라 `tools.approvalMode: yolo`로 돈다. 사용자 `tools.approval.<tool>` 설정만 적용된다 (omp://approval-mode.md "Subagents"). 그래서 하위 에이전트가 디스크에 쓰는 것은 RADAgent 승인을 거치지 않는다.
 - 격리: `task.isolation.enabled`를 켜면 하위 에이전트가 저장소 복사본에서 일한다.
   - 결과는 패치로 적용되거나, `omp/task/<id>` 브랜치로 커밋된 뒤 cherry-pick된다.
   - git 저장소가 필요하다.
@@ -54,7 +54,7 @@ omp 메인 세션이 일을 나눠 하위 에이전트 여러 개에 맡기고, 
 | 방안 | 동시 편집 | IDE 버퍼 기준 | 승인 | 컴파일 확인 | 조건 | 판단 |
 | --- | --- | --- | --- | --- | --- | --- |
 | A. 지금처럼 조사만 병렬 | 없음 | 지킴 | 지킴 | 메인 `rad.compile` | 없음 | 기준선 |
-| B. `ide://` 호스트 URI 다리 | 파일 단위 | 지킴 | DelphiAgent가 처리 | IDE 컴파일(직렬) | 없음 | **1단계 추천** |
+| B. `ide://` 호스트 URI 다리 | 파일 단위 | 지킴 | RADAgent가 처리 | IDE 컴파일(직렬) | 없음 | **1단계 추천** |
 | C. omp 격리(`task.isolation`) + 디스크→버퍼 동기화 | 복사본 단위 | 병합 뒤 동기화 | 병합 시점에 한 번 | 복사본마다 msbuild | git 필요, ProjFS 또는 복사 | 2단계, 큰 독립 작업용 |
 | D. 최상위 세션 여러 개(탭) + worktree | 세션 단위 | 활성 세션만 | 세션마다 | 세션마다 msbuild | git 필요, UI 큼 | 보류 |
 | E. MCP 서버로 `rad.*`를 하위 에이전트에 공개 | 도구 단위 | 지킴 | 지킴 | 가능 | 별도 프로세스와 IPC | 파일 밖 도구가 필요할 때만 |
@@ -62,7 +62,7 @@ omp 메인 세션이 일을 나눠 하위 에이전트 여러 개에 맡기고, 
 ### B를 1단계로 고르는 이유
 
 - 하위 에이전트가 IDE와 통하는 길 중에 실험으로 확인한 것이 호스트 URI뿐이다. 이미 쓰는 RPC 연결 하나로 되고, 새 프로세스가 필요 없다.
-- 쓰기가 DelphiAgent로 돌아오므로 지금의 승인, 충돌 검사, 버퍼 반영(`BufferEdits`), 파일 카드를 그대로 쓴다. 하위 에이전트가 yolo로 돌아도 IDE 변경은 사용자의 승인 방식을 따른다.
+- 쓰기가 RADAgent로 돌아오므로 지금의 승인, 충돌 검사, 버퍼 반영(`BufferEdits`), 파일 카드를 그대로 쓴다. 하위 에이전트가 yolo로 돌아도 IDE 변경은 사용자의 승인 방식을 따른다.
 - git이 없는 Delphi 프로젝트에서도 된다.
 
 ### B의 동작
@@ -76,7 +76,7 @@ omp 메인 세션이 일을 나눠 하위 에이전트 여러 개에 맡기고, 
   - N이 지금 버전과 다르면 거절하고 다시 읽으라고 답한다. 이것은 낙관적 동시성이다: 요청에 에이전트 식별자가 없어도, 같은 파일을 여러 에이전트가 고칠 때 덮어쓰기를 막는다.
 - **쓰기 반영**: `ReplaceChanged` 또는 `ApplyEdits`로 버퍼에 반영하고 저장하지 않는다. 사용자가 고친 버퍼는 충돌로 거절한다.
 - **컴파일** `ide://build` 읽기: IDE 컴파일을 메인 스레드에서 직렬로 돌리고 오류 JSON을 돌려준다. 다른 에이전트가 고치는 중인 파일의 오류도 섞이므로, 오류마다 파일 경로를 붙인다.
-- **소유권**: 메인 세션이 작업을 나눌 때 각 하위 에이전트의 파일 목록을 `task` context에 적는다. 하위 에이전트는 `ide://w/<이름>/<경로>` 형식으로 써서 자기 이름을 밝힌다. DelphiAgent는 파일마다 처음 쓴 이름을 기억하고, 다른 이름의 쓰기는 거절한다. 파일 카드에 에이전트 이름을 붙인다.
+- **소유권**: 메인 세션이 작업을 나눌 때 각 하위 에이전트의 파일 목록을 `task` context에 적는다. 하위 에이전트는 `ide://w/<이름>/<경로>` 형식으로 써서 자기 이름을 밝힌다. RADAgent는 파일마다 처음 쓴 이름을 기억하고, 다른 이름의 쓰기는 거절한다. 파일 카드에 에이전트 이름을 붙인다.
 - **승인**:
   - 권한 무시: 바로 반영한다.
   - 쓰기 허용: 턴마다 한 번 묻는다. 하위 에이전트의 쓰기도 메인 턴 안이다.
@@ -108,11 +108,11 @@ omp 메인 세션이 일을 나눠 하위 에이전트 여러 개에 맡기고, 
 
 ## 바뀔 파일
 
-- 새 파일: `src/DelphiAgent.IdeUri.pas`, `src/DelphiAgent.HostUriQueue.pas`(가칭)
-- `src/DelphiAgent.RpcClient.pas`, `src/DelphiAgent.RpcDispatch.pas`: 호스트 URI 프레임
-- `src/DelphiAgent.ChatApprovalCard.pas`, `src/DelphiAgent.ChatApproval.pas`: 승인 큐
-- `src/DelphiAgent.BufferEdits.pas`: 버전 표
-- `src/DelphiAgent.OmpLaunch.pas`: 안내문
+- 새 파일: `src/RADAgent.IdeUri.pas`, `src/RADAgent.HostUriQueue.pas`(가칭)
+- `src/RADAgent.RpcClient.pas`, `src/RADAgent.RpcDispatch.pas`: 호스트 URI 프레임
+- `src/RADAgent.ChatApprovalCard.pas`, `src/RADAgent.ChatApproval.pas`: 승인 큐
+- `src/RADAgent.BufferEdits.pas`: 버전 표
+- `src/RADAgent.OmpLaunch.pas`: 안내문
 - `src/chat/activity.js`, `src/chat/tools.js`: 에이전트별 파일 표시
 - `tests/`: 버전 충돌, 경로 탈출, 소유권 거절 단위 시험, 하위 에이전트 `ide://` 실시험
 - `README.md`, `DESIGN.md`, `docs/continue.md`

@@ -4,14 +4,21 @@
   // Top bar (session title, project, new/export/settings), the connection banner and the
   // "working" line at the end of the transcript. State arrives as "status" messages.
   let working = null;
+  function T(key, ...args) {
+    return global.T ? global.T(key, ...args) : key;
+  }
+
 
   function $(id) { return document.getElementById(id); }
 
   function status(msg) {
     const title = $('title-btn');
-    title.textContent = msg.title || '새 대화';
-    title.title = '세션 목록 · ' + [msg.project && '프로젝트 ' + msg.project,
-      msg.pid ? 'pid ' + msg.pid : '', msg.cwd].filter(Boolean).join(' · ');
+    title.textContent = msg.title || T('page.topbar.newChat');
+    title.title = T('page.topbar.sessionListTitle') + ' · ' + [
+      msg.project && T('page.topbar.projectLabel', msg.project),
+      msg.pid ? 'pid ' + msg.pid : '',
+      msg.cwd
+    ].filter(Boolean).join(' · ');
     const chip = $('project-chip');
     chip.textContent = msg.project || '';
     chip.hidden = !msg.project;

@@ -17,8 +17,15 @@
     if (text !== undefined) node.textContent = text;
     return node;
   }
+  function T(key, ...args) {
+    return global.T ? global.T(key, ...args) : key;
+  }
 
-  function chars(n) { return n.toLocaleString('ko-KR') + '자'; }
+
+  function chars(n) {
+    const lang = (typeof document !== 'undefined' && document.documentElement && document.documentElement.lang) || undefined;
+    return T('page.activity.chars', n.toLocaleString(lang));
+  }
 
   // Coalesce text updates to one per frame; thinking arrives dozens of times per second.
   function schedule(item) {
@@ -53,7 +60,7 @@
   function thinkingDelta(text) {
     if (!thinking) {
       ctx.closeAssistant();
-      thinking = activityRow('thinking-row live', '생각 중');
+      thinking = activityRow('thinking-row live', T('page.activity.thinkingLive'));
       ctx.ensureGroup('thinking').appendChild(thinking.row);
     }
     thinking.text += text || '';
@@ -63,13 +70,13 @@
   function thinkingEnd() {
     if (!thinking) return;
     thinking.row.classList.remove('live');
-    thinking.labelEl.textContent = '생각';
+    thinking.labelEl.textContent = T('page.activity.thinking');
     thinking = null;
   }
 
   // Replayed transcript: one finished block.
   function thinkingBlock(text) {
-    const item = activityRow('thinking-row', '생각');
+    const item = activityRow('thinking-row', T('page.activity.thinking'));
     item.text = text || '';
     item.pre.textContent = item.text;
     item.meta.textContent = chars(item.text.length);
@@ -80,7 +87,7 @@
     let item = drafts.get(id);
     if (!item) {
       ctx.closeAssistant();
-      item = activityRow('tool-input-row', '✎ ' + (name || '도구') + ' 입력 작성 중');
+      item = activityRow('tool-input-row', T('page.activity.writingInput', name || T('page.activity.toolDefault')));
       ctx.ensureGroup('input').appendChild(item.row);
       drafts.set(id, item);
     }
@@ -100,6 +107,7 @@
   function attachInput(row, resultPre, input) {
     if (!input) return;
     const pre = el('pre', 'tool-input', input);
+    pre.dataset.label = T('page.activity.input');
     row.insertBefore(pre, resultPre);
   }
 
@@ -132,7 +140,7 @@
     row.children[1].textContent = parts.join(' · ');
     row.children[1].title = row.children[1].textContent;
     const tools = parseInt(msg.tools || '0', 10);
-    row.children[2].textContent = (tools > 0 ? '도구 ' + tools + '개 · ' : '') + (status || '');
+    row.children[2].textContent = (tools > 0 ? T('page.activity.toolCount', tools) : '') + (status || '');
     ctx.newContent(wasNear);
   }
 
@@ -148,7 +156,7 @@
       return;
     }
     const doneCount = items.filter(i => i.status === 'completed').length;
-    todoPanel.appendChild(el('div', 'todo-title', '작업 목록 ' + doneCount + '/' + items.length));
+    todoPanel.appendChild(el('div', 'todo-title', T('page.activity.todoTitle', doneCount, items.length)));
     let phase = null;
     for (const item of items) {
       if (item.phase && item.phase !== phase) {

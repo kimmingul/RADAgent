@@ -10,11 +10,11 @@ $dest = Join-Path $root 'third_party\webview2'
 $want = @{ 'x86' = (Join-Path $dest 'x86\WebView2Loader.dll'); 'x64' = (Join-Path $dest 'x64\WebView2Loader.dll') }
 if ((Test-Path $want['x86']) -and (Test-Path $want['x64'])) { exit 0 }
 
-$tmp = Join-Path $env:TEMP ("DelphiAgentWebView2-" + $Version)
+$tmp = Join-Path $env:TEMP ("RADAgentWebView2-" + $Version)
 New-Item -ItemType Directory -Force -Path $tmp | Out-Null
 $pkg = Join-Path $tmp 'webview2.zip'
 $url = "https://api.nuget.org/v3-flatcontainer/microsoft.web.webview2/$Version/microsoft.web.webview2.$Version.nupkg"
-Write-Host "[DelphiAgent] WebView2 SDK $Version 받는 중: $url"
+Write-Host "[RADAgent] WebView2 SDK $Version 받는 중: $url"
 Invoke-WebRequest -Uri $url -OutFile $pkg -UseBasicParsing
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zip = [System.IO.Compression.ZipFile]::OpenRead($pkg)
@@ -32,7 +32,7 @@ try {
       Remove-Item -Force $target
       throw "서명이 올바르지 않습니다: $target ($($sig.Status))"
     }
-    Write-Host "[DelphiAgent] $arch 로더: $target"
+    Write-Host "[RADAgent] $arch 로더: $target"
   }
 } finally {
   $zip.Dispose()

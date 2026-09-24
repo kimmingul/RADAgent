@@ -14,9 +14,9 @@ set "RESULT=%ERRORLEVEL%"
 popd
 exit /b %RESULT%
 :nobds
-echo [DelphiAgent] BDS를 찾지 못했습니다. 가정한 경로: C:\Program Files (x86)\Embarcadero\Studio\37.0
+echo [RADAgent] BDS를 찾지 못했습니다. 가정한 경로: C:\Program Files (x86)\Embarcadero\Studio\37.0
 exit /b 1
 :fail
 popd
-echo [DelphiAgent] 테스트 빌드 실패: dcc64 tests\ProtocolTests.dpr
+echo [RADAgent] 테스트 빌드 실패: dcc64 tests\ProtocolTests.dpr
 exit /b 1
