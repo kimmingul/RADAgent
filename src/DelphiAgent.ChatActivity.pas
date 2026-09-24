@@ -92,8 +92,8 @@ begin
     aekCompactionEnd, aekRetryEnd:
       if FState <> acIdle then
         FState := acWaiting;
-    aekError:
-      { A rejected prompt never starts a turn. }
+    aekError, aekPromptLocal:
+      { A rejected prompt, or a slash command omp handled itself, never starts a turn. }
       if FState = acWaiting then
         Reset;
   end;

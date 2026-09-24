@@ -17,7 +17,6 @@ type
     FApprovedTurn: UInt64;
   public
     function ApproveChange(const Target, Before, After: string): Boolean;
-    procedure ShowConflict(const FileName: string);
     procedure ChangeApplied(const FileName, Before, After: string; Line: Integer);
   end;
 
@@ -49,11 +48,6 @@ begin
     Result := AskApprovalDiff(Caption, Before, After);
   if Result and PerTurn then
     FApprovedTurn := Session.Activity.StartTick;
-end;
-
-procedure TChatApproval.ShowConflict(const FileName: string);
-begin
-  ChatSession.Notice('warn', '충돌: 스냅샷 이후 버퍼가 바뀌어 반영하지 않았습니다. ' + FileName);
 end;
 
 procedure TChatApproval.ChangeApplied(const FileName, Before, After: string; Line: Integer);

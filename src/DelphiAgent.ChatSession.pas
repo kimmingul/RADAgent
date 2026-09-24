@@ -87,7 +87,8 @@ uses
   System.JSON, Winapi.Windows, DelphiAgent.Options, DelphiAgent.ChatCommand,
   DelphiAgent.ChatApproval, DelphiAgent.IdeContext, DelphiAgent.ChatTheme,
   DelphiAgent.ChatPageMessages, DelphiAgent.ChatAttention, DelphiAgent.ChatActions,
-  DelphiAgent.AgentSettings, DelphiAgent.OmpSettings, DelphiAgent.OmpLaunch, DelphiAgent.ProjectProfile;
+  DelphiAgent.AgentSettings, DelphiAgent.OmpSettings, DelphiAgent.OmpLaunch, DelphiAgent.ProjectProfile,
+  DelphiAgent.ChatDiskSync;
 
 const
   SNoProject = '활성 프로젝트가 없습니다. 프로젝트를 열면 그 폴더에서 omp를 시작합니다.';
@@ -338,7 +339,7 @@ procedure TChatSession.ClientEvent(const Event: TAgentEvent);
 begin
   FActivity.Apply(Event);
   if not FStream.Apply(Event) then
-    if (Event.Kind = aekAgentEnd) and Event.IsTerminal then
+    if ((Event.Kind = aekAgentEnd) and Event.IsTerminal) or (Event.Kind = aekPromptLocal) then
     begin
       Emit(PageTurnEnd);
       RequestAttention;
@@ -347,8 +348,8 @@ begin
       else
         SendCommand('get_state', BuildIdTypeFrame('req', 'get_state'));
     end;
-  if (Event.Kind = aekToolEnd) and (Event.ToolName = 'todo') then
-    SendCommand('get_state', BuildIdTypeFrame('req', 'get_state'));
+  { omp works on disk: load what its tools changed; refresh the todo panel after the todo tool. }
+  SyncAfterEvent(Event);
   Changed;
 end;
 

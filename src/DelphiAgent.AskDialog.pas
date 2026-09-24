@@ -26,7 +26,8 @@ implementation
 
 uses
   Winapi.Windows, Winapi.ShellAPI, Vcl.Forms, Vcl.StdCtrls, Vcl.Controls, Vcl.Graphics, Vcl.Dialogs,
-  DelphiAgent.ChatCommand, DelphiAgent.RpcProtocol, DelphiAgent.ChatPlan;
+  DelphiAgent.ChatCommand, DelphiAgent.RpcProtocol, DelphiAgent.ChatPlan, DelphiAgent.ChatSession,
+  DelphiAgent.ChatApprovalCard;
 
 const
   SOk = #$D655#$C778;
@@ -238,17 +239,24 @@ begin
   end
   else if Ui.Method = 'confirm' then
     Reply := BuildUiReply(Ui.Id, '', AskYes(Ui.Title, Ui.Message), False)
-  else if (Ui.Method = 'select') and Ui.Title.Contains('Path: xd://rad.') and
-    (Length(Ui.Options) > 0) and (Ui.Options[0] = 'Approve') then
+  else if ApprovalTargetsRad(Ui) and (ApproveOption(Ui) <> '') then
     { omp gates its write tool, which also carries rad.* calls. DelphiAgent asks for those
       itself (per the same approval mode), so a second omp prompt would only repeat it. }
-    Reply := BuildUiReply(Ui.Id, 'Approve', False, False)
-  else if (Ui.Method = 'select') and PlanActive and Ui.Title.StartsWith('Allow tool') and
-    (Length(Ui.Options) > 1) and (Ui.Options[1] = 'Deny') then
+    Reply := BuildUiReply(Ui.Id, ApproveOption(Ui), False, False)
+  else if PlanActive and IsToolApproval(Ui) and (DenyOption(Ui) <> '') then
   begin
     { Plan mode: omp may read and search, not write, edit or run commands. }
-    Reply := BuildUiReply(Ui.Id, 'Deny', False, False);
+    Reply := BuildUiReply(Ui.Id, DenyOption(Ui), False, False);
     Notice := '계획 모드라서 omp 도구 실행을 거부했습니다: ' + Copy(Ui.Title, 1, Pos(#10, Ui.Title + #10) - 1);
+  end
+  else if IsToolApproval(Ui) and InChatApprovals and (ApproveOption(Ui) <> '') and (DenyOption(Ui) <> '') then
+  begin
+    { omp's own tools (edit, write, bash…) ask in the chat like the rad.* changes do. }
+    if AskInChat(Copy(Ui.Title, 1, Pos(#10, Ui.Title + #10) - 1), '',
+      Trim(Copy(Ui.Title, Pos(#10, Ui.Title + #10) + 1, MaxInt) + #10 + Ui.Message)) then
+      Reply := BuildUiReply(Ui.Id, ApproveOption(Ui), False, False)
+    else
+      Reply := BuildUiReply(Ui.Id, DenyOption(Ui), False, False);
   end
   else if Ui.Method = 'select' then
   begin
@@ -285,6 +293,14 @@ begin
     Reply := BuildUiReply(Ui.Id, '', True, False);
 end;
 
+{ The levels omp offers for the current model; the common set before the catalog arrives. }
+function ThinkingChoices: string;
+begin
+  Result := string.Join(',', ChatSession.Catalog.ThinkingLevels);
+  if Result = '' then
+    Result := 'off,minimal,low,medium,high,xhigh';
+end;
+
 function DispatchSlash(const Original: string; const Send: TRawSend;
   out PickModels: Boolean): Boolean;
 var
@@ -318,7 +334,7 @@ begin
       end;
     ccThinking:
       begin
-        if (Arg1 = '') and not AskCsv(#$C0DD#$AC01, 'off,minimal,low,medium,high,xhigh', Arg1) then
+        if (Arg1 = '') and not AskCsv(#$C0DD#$AC01, ThinkingChoices, Arg1) then
           Exit;
         Send('set_thinking_level', BuildSetThinkingFrame('req', Arg1));
       end;

@@ -21,7 +21,8 @@ uses
   System.SysUtils, System.JSON, Winapi.Windows, Winapi.ShellAPI, Vcl.Dialogs, Vcl.Clipbrd,
   DelphiAgent.ChatSession, DelphiAgent.ChatActions, DelphiAgent.ChatCommand,
   DelphiAgent.EditorContext, DelphiAgent.SettingsDialog, DelphiAgent.ChatExtensions,
-  DelphiAgent.ChatApprovalCard, DelphiAgent.ChatPlan, DelphiAgent.ChatStatus, DelphiAgent.ChatBtw;
+  DelphiAgent.ChatApprovalCard, DelphiAgent.ChatPlan, DelphiAgent.ChatStatus, DelphiAgent.ChatBtw,
+  DelphiAgent.ChatCheckpoints;
 
 function Post(const Kind, Field, Value: string): string;
 var
@@ -132,6 +133,8 @@ begin
       if Obj.GetValue<Boolean>('composer', False) then
         Session.PostToView(Post('submitted', '', ''));
     end
+    else if Kind = 'restore' then
+      GoBackTo(Obj.GetValue<Integer>('seq', 0), Obj.GetValue<Boolean>('branch', False))
     else if Kind = 'btwStop' then
       StopBtw(Obj.GetValue<string>('id', ''))
     else if Kind = 'btwDelete' then

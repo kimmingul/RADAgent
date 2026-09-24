@@ -11,7 +11,11 @@ type
   TAgentEventKind = (aekNone, aekAgentStart, aekAgentEnd, aekThinking, aekThinkingEnd, aekTextDelta,
     aekTextEnd, aekToolCallStart, aekToolCallDelta, aekToolStart, aekToolUpdate, aekToolEnd,
     aekNotice, aekCompactionStart, aekCompactionEnd, aekRetryStart, aekRetryEnd, aekFallback,
-    aekSubagent, aekError);
+    aekSubagent, aekError,
+    { A prompt that finished without an agent turn (a local slash command): no agent_end follows. }
+    aekPromptLocal,
+    { Text a built-in slash command printed (command_output), terminal colours removed. }
+    aekCommandOutput);
 
   { Subagent: ToolId = id, ToolName = agent, Detail = description, Text = last intent,
     Level = status, Count = tool calls. Retry/fallback: Text is the Korean line to show. }
@@ -199,6 +203,27 @@ begin
   end;
 end;
 
+{ Drops ANSI escape sequences (colours, cursor moves) from terminal-styled text. }
+function StripAnsi(const Text: string): string;
+var
+  Index: Integer;
+begin
+  Result := '';
+  Index := 1;
+  while Index <= Length(Text) do
+  begin
+    if (Text[Index] = #27) and (Index < Length(Text)) and (Text[Index + 1] = '[') then
+    begin
+      Inc(Index, 2);
+      while (Index <= Length(Text)) and not CharInSet(Text[Index], ['@'..'~']) do
+        Inc(Index);
+    end
+    else
+      Result := Result + Text[Index];
+    Inc(Index);
+  end;
+end;
+
 function ParseAgentEvent(const Line: string): TAgentEvent;
 var
   Obj: TJSONObject;
@@ -239,6 +264,16 @@ begin
     else if (EvType = 'auto_retry_start') or (EvType = 'auto_retry_end') or
       (EvType = 'retry_fallback_applied') or (EvType = 'retry_fallback_succeeded') then
       ReadRetry(Obj, EvType, Result)
+    else if (EvType = 'prompt_result') and IsJsonFalse(Obj.GetValue('agentInvoked')) then
+      Result.Kind := aekPromptLocal
+    else if (EvType = 'response') and (JsonStr(Obj, 'command') = 'prompt') and
+      (JsonChild(Obj, 'data') <> nil) and IsJsonFalse(JsonChild(Obj, 'data').GetValue('agentInvoked')) then
+      Result.Kind := aekPromptLocal
+    else if EvType = 'command_output' then
+    begin
+      Result.Kind := aekCommandOutput;
+      Result.Text := StripAnsi(JsonStr(Obj, 'text'));
+    end
     else if EvType = 'extension_error' then
     begin
       Result.Kind := aekError;

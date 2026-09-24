@@ -1,6 +1,6 @@
 ﻿unit DelphiAgent.HostTools;
 
-{ rad.* host-tool dispatch. Buffer edits live in DelphiAgent.BufferEdits, debugger reads in
+{ rad.* host-tool dispatch. Caret insertion lives in DelphiAgent.BufferEdits, debugger reads in
   DelphiAgent.DebugTools, debugger control in DelphiAgent.DebugControl, form designer tools in
   DelphiAgent.FormTools. }
 
@@ -94,85 +94,6 @@ begin
   end;
 end;
 
-function DiffersFromDisk(const Path, Text: string): Boolean;
-begin
-  if (Path = '') or not FileExists(Path) then
-    Exit(True);
-  try
-    Result := TFile.ReadAllText(Path, TEncoding.UTF8) <> Text;
-  except
-    Result := True;
-  end;
-end;
-
-function ListDirtyJson: string;
-var
-  Items: TArray<TEditorText>;
-  Root: TJSONArray;
-  Obj: TJSONObject;
-  Index: Integer;
-begin
-  Items := OpenEditorTexts;
-  Root := TJSONArray.Create;
-  try
-    for Index := 0 to High(Items) do
-    begin
-      if not Items[Index].Modified or
-        not DiffersFromDisk(Items[Index].FileName, Items[Index].Text) then
-        Continue;
-      Obj := TJSONObject.Create;
-      Obj.AddPair('path', Items[Index].FileName);
-      Obj.AddPair('modified', TJSONTrue.Create);
-      Obj.AddPair('lineCount', TJSONNumber.Create(LineCountOf(Items[Index].Text)));
-      Root.AddElement(Obj);
-    end;
-    Result := Root.ToJSON;
-  finally
-    Root.Free;
-  end;
-end;
-
-{ "12| text" per line: edits address lines by these numbers, so the model must not count. }
-function NumberedLines(const Text: string): string;
-var
-  Lines: TArray<string>;
-  Builder: TStringBuilder;
-  Index: Integer;
-begin
-  Lines := Text.Replace(#13#10, #10).Split([#10]);
-  { A final line break does not start another line. }
-  if (Length(Lines) > 0) and (Lines[High(Lines)] = '') then
-    SetLength(Lines, Length(Lines) - 1);
-  Builder := TStringBuilder.Create;
-  try
-    for Index := 0 to High(Lines) do
-      Builder.Append(Index + 1).Append('| ').Append(Lines[Index]).Append(#10);
-    Result := Builder.ToString;
-  finally
-    Builder.Free;
-  end;
-end;
-
-function ReadBufferText(const Path: string; out Text, Problem: string): Boolean;
-begin
-  Text := '';
-  Problem := '';
-  Result := False;
-  if Path = '' then
-  begin
-    Problem := 'path가 비어 있습니다.';
-    Exit;
-  end;
-  Text := BufferText(Path);
-  if Text = '' then
-  begin
-    Problem := '열린 버퍼가 없습니다.';
-    Exit;
-  end;
-  Text := NumberedLines(Text);
-  Result := True;
-end;
-
 function FormArgs(const ArgumentsJson: string): TFormToolArgs;
 begin
   Result.Path := ArgText(ArgumentsJson, 'path');
@@ -187,44 +108,6 @@ begin
   Result.NewName := ArgText(ArgumentsJson, 'newName');
   Result.Event := ArgText(ArgumentsJson, 'event');
   Result.Handler := ArgText(ArgumentsJson, 'handler');
-end;
-
-function EditsFrom(const ArgumentsJson: string): TArray<TBufferEdit>;
-var
-  Value, Item: TJSONValue;
-  Obj: TJSONObject;
-  Edit: TBufferEdit;
-begin
-  Result := nil;
-  Value := TJSONObject.ParseJSONValue(ArgumentsJson);
-  try
-    if not (Value is TJSONObject) or not (TJSONObject(Value).GetValue('edits') is TJSONArray) then
-      Exit;
-    for Item in TJSONArray(TJSONObject(Value).GetValue('edits')) do
-      if Item is TJSONObject then
-      begin
-        Obj := TJSONObject(Item);
-        Edit.Path := Obj.GetValue<string>('path', '');
-        Edit.Content := Obj.GetValue<string>('content', '');
-        Edit.NewText := Obj.GetValue<string>('newText', '');
-        Edit.StartLine := Obj.GetValue<Integer>('startLine', 0);
-        Edit.EndLine := Obj.GetValue<Integer>('endLine', 0);
-        Result := Result + [Edit];
-      end;
-  finally
-    Value.Free;
-  end;
-end;
-
-{ Approved-or-cancelled results; a cancel is not an error. }
-procedure Outcome(Ok: Boolean; const OkText, Problem: string; out ResultText: string;
-  out IsError: Boolean);
-begin
-  if Ok then
-    ResultText := OkText
-  else
-    ResultText := Problem;
-  IsError := not Ok and (Problem <> SEditCancelled);
 end;
 
 function DebugControlArgs(const ArgumentsJson: string): TDebugControlArgs;
@@ -256,38 +139,6 @@ begin
       IsError := not ResultText.Contains('"ok":true');
     end;
   end
-  else if ToolName = ToolListDirty then
-  begin
-    ResultText := ListDirtyJson;
-    IsError := False;
-  end
-  else if ToolName = ToolReadBuffer then
-  begin
-    if ReadBufferText(ArgText(ArgumentsJson, 'path'), ResultText, Problem) then
-      IsError := False
-    else
-      ResultText := Problem;
-  end
-  else if ToolName = ToolApplyEdit then
-  begin
-    if ApplyEdit(ArgText(ArgumentsJson, 'path'), ArgText(ArgumentsJson, 'content'),
-      ArgText(ArgumentsJson, 'newText'), ArgInt(ArgumentsJson, 'startLine'),
-      ArgInt(ArgumentsJson, 'endLine'), Approval, Problem) then
-    begin
-      ResultText := '{"ok":true}';
-      IsError := False;
-    end
-    else if Problem = SEditCancelled then
-    begin
-      ResultText := Problem;
-      IsError := False;
-    end
-    else
-      ResultText := Problem;
-  end
-  else if ToolName = ToolApplyEdits then
-    Outcome(ApplyEdits(EditsFrom(ArgumentsJson), Approval, Problem), '{"ok":true}', Problem,
-      ResultText, IsError)
   else if ToolName = ToolSubmitPlan then
     IsError := not SubmitPlan(ArgumentsJson, ResultText)
   else if ToolName = ToolProjectInfo then

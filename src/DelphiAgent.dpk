@@ -1,6 +1,7 @@
 ﻿package DelphiAgent370;
 
 {$R DelphiAgent.res}
+{$R 'DelphiAgentIcons.res' 'DelphiAgentIcons.rc'}
 {$DESCRIPTION 'DelphiAgent — omp-powered agentic coding for RAD Studio 13.2'}
 {$DESIGNONLY}
 {$IMPLICITBUILD OFF}
@@ -17,10 +18,10 @@ contains
   DelphiAgent.ChatCommand in 'DelphiAgent.ChatCommand.pas',
   DelphiAgent.AskDialog in 'DelphiAgent.AskDialog.pas',
   DelphiAgent.RpcEvents in 'DelphiAgent.RpcEvents.pas',
+  DelphiAgent.RpcChunks in 'DelphiAgent.RpcChunks.pas',
   DelphiAgent.RpcDispatch in 'DelphiAgent.RpcDispatch.pas',
   DelphiAgent.RpcClient in 'DelphiAgent.RpcClient.pas',
   DelphiAgent.IdeContext in 'DelphiAgent.IdeContext.pas',
-  DelphiAgent.DirtyBuffers in 'DelphiAgent.DirtyBuffers.pas',
   DelphiAgent.Compile in 'DelphiAgent.Compile.pas',
   DelphiAgent.Approval in 'DelphiAgent.Approval.pas',
   DelphiAgent.LineDiff in 'DelphiAgent.LineDiff.pas',
@@ -71,6 +72,13 @@ contains
   DelphiAgent.BtwStore in 'DelphiAgent.BtwStore.pas',
   DelphiAgent.BtwRunner in 'DelphiAgent.BtwRunner.pas',
   DelphiAgent.ChatBtw in 'DelphiAgent.ChatBtw.pas',
+  DelphiAgent.OmpProbe in 'DelphiAgent.OmpProbe.pas',
+  DelphiAgent.OmpCheck in 'DelphiAgent.OmpCheck.pas',
+  DelphiAgent.IdeFiles in 'DelphiAgent.IdeFiles.pas',
+  DelphiAgent.GitRepo in 'DelphiAgent.GitRepo.pas',
+  DelphiAgent.ChatDiskSync in 'DelphiAgent.ChatDiskSync.pas',
+  DelphiAgent.ChatCheckpoints in 'DelphiAgent.ChatCheckpoints.pas',
+  DelphiAgent.MenuIcon in 'DelphiAgent.MenuIcon.pas',
   DelphiAgent.DockForm in 'DelphiAgent.DockForm.pas',
   DelphiAgent.Wizard in 'DelphiAgent.Wizard.pas';
 

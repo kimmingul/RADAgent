@@ -17,8 +17,7 @@ implementation
 
 uses
   System.SysUtils, System.Classes, System.JSON, System.TypInfo, System.Rtti, Vcl.Controls, ToolsAPI,
-  DelphiAgent.HostToolDefs, DelphiAgent.FormDesigner, DelphiAgent.FormBatch, DelphiAgent.IdeContext,
-  DelphiAgent.DirtyBuffers;
+  DelphiAgent.HostToolDefs, DelphiAgent.FormDesigner, DelphiAgent.FormBatch, DelphiAgent.IdeContext;
 
 function IsFormTool(const ToolName: string): Boolean;
 begin
@@ -182,18 +181,11 @@ begin
   end;
 end;
 
-{ Designer changes rewrite the unit (fields, handlers). When the buffer still matched the prompt
-  snapshot, those rewrites are ours: move the snapshot along so later edits do not conflict. }
 procedure ExecuteFormTool(const ToolName: string; const Args: TFormToolArgs;
   const ArgumentsJson: string; const Approval: IAgentApproval; out ResultText: string;
   out IsError: Boolean);
-var
-  Clean: Boolean;
 begin
-  Clean := (Args.Path <> '') and not SnapshotConflicts(Args.Path, BufferText(Args.Path));
   RunFormTool(ToolName, Args, ArgumentsJson, Approval, ResultText, IsError);
-  if Clean and not IsError then
-    UpdateSnapshot(Args.Path, BufferText(Args.Path));
 end;
 
 end.

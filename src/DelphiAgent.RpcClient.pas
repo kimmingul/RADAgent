@@ -40,6 +40,7 @@ type
     FEvents: TRpcDispatch;
     FLinkError: string;
     FStopping: Boolean;
+    FProtocol: Integer;
     FToolProfile: TToolProfile;
     procedure WriteFrame(const Frame, FrameType: string);
     procedure QueueFrame(const Frame, FrameType: string);
@@ -82,7 +83,7 @@ type
 procedure ShutdownActiveClient;
 implementation
 uses
-  System.JSON, System.SyncObjs, Winapi.Windows,
+  System.SyncObjs, Winapi.Windows,
   DelphiAgent.Options, DelphiAgent.RpcProtocol, DelphiAgent.ChatCommand;
 var
   GActive: TAgentRpcClient;
@@ -213,6 +214,13 @@ end;
 procedure TAgentRpcClient.SendHostTools;
 begin
   if FHostToolsSent or not FReady then Exit;
+  if FProtocol = 0 then
+  begin
+    FLinkError := 'omp가 DelphiAgent가 아는 RPC 프로토콜(v1, v2)을 지원하지 않습니다';
+    Exit;
+  end;
+  { v2 carries frames over 1 MiB losslessly as rpc_chunk runs (ReadStdoutLines rebuilds them). }
+  if FProtocol = 2 then WriteFrame(BuildNegotiateFrame(NewRequestId(FNextId), 2), 'negotiate_protocol');
   WriteFrame(BuildSetHostToolsFrame(NewRequestId(FNextId), FToolProfile), 'set_host_tools');
   WriteFrame(BuildIdTypeFrame(NewRequestId(FNextId), 'get_state'), 'get_state');
   WriteFrame(BuildIdTypeFrame(NewRequestId(FNextId), 'get_available_commands'), 'get_available_commands');
@@ -224,9 +232,10 @@ var
   Kind: string;
   Event: TAgentEvent;
 begin
-  if Line = '' then begin Post('frame exceeds 1MiB'); Exit; end;
+  if Line = '' then begin Post('omp 출력 프레임을 버렸습니다(크기 초과 또는 조각 오류).'); Exit; end;
   AppendRpcLog('< ' + Line);
   Kind := FrameTypeOf(Line);
+  if Kind = 'ready' then FProtocol := ChooseProtocol(Line);
   if Assigned(FOnUi) and (Kind = 'extension_ui_request') then begin QueueUi(Line); Exit; end;
   if (Kind = 'response') or (Kind = 'available_commands_update') then
     QueueResponse(Line);
@@ -249,7 +258,7 @@ begin
   ReadStdoutLines(FStdOut, ReaderStopped, ReaderLine);
   if FAlive and not FStopping then
   begin
-    FLinkError := '파이프가 닫혔습니다';
+    FLinkError := ChildExitReason(OmpStderrLog);
     TThread.Queue(TThread(nil),
       procedure
       begin
@@ -290,6 +299,7 @@ begin
   FLinkError := '';
   FStopping := False;
   FNextId := 0;
+  FProtocol := 1;
   TStringList(FCancel).Clear;
   FReader := TRpcReader.Create(True);
   FReader.Client := Self;
@@ -364,21 +374,11 @@ begin
 end;
 procedure TAgentRpcClient.SendRaw(const FrameType, Frame: string);
 var
-  Value: TJSONValue;
-  Obj: TJSONObject;
+  Line: string;
 begin
   if not FReady then Exit;
-  Value := TJSONObject.ParseJSONValue(Frame);
-  if not (Value is TJSONObject) then begin Value.Free; Exit; end;
-  Obj := TJSONObject(Value);
-  { A UI reply names the request it answers; only commands get a fresh id. }
-  if FrameType <> 'extension_ui_response' then
-  begin
-    Obj.RemovePair('id').Free;
-    Obj.AddPair('id', NewRequestId(FNextId));
-  end;
-  WriteFrame(Obj.ToJSON, FrameType);
-  Obj.Free;
+  Line := WithRequestId(FrameType, Frame, FNextId);
+  if Line <> '' then WriteFrame(Line, FrameType);
 end;
 procedure TAgentRpcClient.SendHostResult(const CallId, Text: string; IsError: Boolean);
 begin

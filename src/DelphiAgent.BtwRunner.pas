@@ -8,7 +8,7 @@
 interface
 
 uses
-  System.SysUtils, DelphiAgent.RpcDispatch;
+  System.SysUtils, DelphiAgent.RpcDispatch, DelphiAgent.RpcChunks;
 
 type
   TBtwRun = class
@@ -19,6 +19,7 @@ type
     FReady, FEnded, FAborted, FFinished, FChanged: Boolean;
     FNextId: Integer;
     FStartTick, FAbortTick: UInt64;
+    FChunks: TRpcChunkAssembler;
     procedure WriteFrame(const Frame: string);
     procedure CloseInput;
     procedure Drain;
@@ -62,6 +63,7 @@ end;
 destructor TBtwRun.Destroy;
 begin
   Kill;
+  FChunks.Free;
   inherited Destroy;
 end;
 
@@ -71,6 +73,7 @@ begin
   FStderr := StderrPath;
   FStartTick := GetTickCount64;
   SetLength(FBuffer, 65536);
+  FChunks := TRpcChunkAssembler.Create;
   AppendRpcLog('btw$ ' + CommandLine);
   Result := SpawnRpcProcess(CommandLine, WorkDir, StderrPath, FPipes);
   if not Result then
@@ -119,6 +122,15 @@ begin
     if Kind = 'ready' then
     begin
       FReady := True;
+      case ChooseProtocol(Line) of
+        0:
+          begin
+            FError := 'omp가 DelphiAgent가 아는 RPC 프로토콜(v1, v2)을 지원하지 않습니다.';
+            CloseInput;
+            Exit;
+          end;
+        2: WriteFrame(BuildNegotiateFrame(NewRequestId(FNextId), 2));
+      end;
       WriteFrame(BuildIdTypeFrame(NewRequestId(FNextId), 'get_state'));
       WriteFrame(BuildPromptFrame(NewRequestId(FNextId), FQuestion));
     end
@@ -194,7 +206,7 @@ begin
         if (Last > Start) and (FPending[Last - 1] = 13) then
           Dec(Last);
         if Last > Start then
-          HandleLine(TEncoding.UTF8.GetString(FPending, Start, Last - Start));
+          HandleLine(FChunks.Feed(TEncoding.UTF8.GetString(FPending, Start, Last - Start)));
         Start := Index + 1;
       end;
     FPending := Copy(FPending, Start, MaxInt);
@@ -202,8 +214,6 @@ begin
 end;
 
 procedure TBtwRun.Finish;
-var
-  Lines: TStringList;
 begin
   FFinished := True;
   CloseInput;
@@ -213,22 +223,8 @@ begin
   if (FText <> '') and not FAborted then
     FError := ''
   else if (FError = '') and not FAborted and FileExists(FStderr) then
-  begin
-    { The child died before answering; its last stderr lines say why. }
-    Lines := TStringList.Create;
-    try
-      try
-        Lines.LoadFromFile(FStderr, TEncoding.UTF8);
-      except
-      end;
-      while (Lines.Count > 0) and (Trim(Lines[Lines.Count - 1]) = '') do
-        Lines.Delete(Lines.Count - 1);
-      if Lines.Count > 0 then
-        FError := Trim(Lines[Lines.Count - 1]);
-    finally
-      Lines.Free;
-    end;
-  end;
+    { The child died before answering; its last stderr line says why. }
+    FError := ChildExitReason(FStderr);
   if (FError = '') and (FText = '') and not FAborted then
     FError := 'omp가 답 없이 끝났습니다.';
   if (FError = '') and FileExists(FStderr) then

@@ -41,7 +41,7 @@ function SpawnRpcProcess(const Command, WorkDir, StderrPath: string; out Pipes: 
 implementation
 
 uses
-  System.JSON, Winapi.Windows, DelphiAgent.RpcProtocol;
+  System.JSON, Winapi.Windows, DelphiAgent.RpcProtocol, DelphiAgent.RpcChunks;
 
 procedure Say(const Events: TRpcDispatch; const Text: string);
 begin
@@ -64,7 +64,7 @@ var
 begin
   if not AcceptFrameLine(Line) then
   begin
-    Say(Events, 'frame exceeds 1MiB');
+    Say(Events, 'frame exceeds 64MiB');
     Exit;
   end;
   Kind := FrameTypeOf(Line);
@@ -117,55 +117,76 @@ begin
     Events.HostCall(CallId, ToolName, Args);
 end;
 
+{ One physical line: v2 chunk runs become the frame they carry; a dropped frame is ''. }
+procedure Deliver(Chunks: TRpcChunkAssembler; const Physical: string; OnLine: TRpcLineEvent);
+var
+  Line: string;
+begin
+  Line := Chunks.Feed(Physical);
+  if Chunks.Error <> '' then
+    OnLine('');
+  if Line <> '' then
+    OnLine(Line);
+end;
+
 procedure ReadStdoutLines(StdOut: THandle; Stopped: TRpcStopEvent; OnLine: TRpcLineEvent);
 var
   Pending, Buffer: TBytes;
   ReadCount: DWORD;
   Index, LineBytes: Integer;
-  Line: string;
+  Chunks: TRpcChunkAssembler;
+  { The current line already passed MaxFrameBytes: drop it up to its newline. }
+  Skipping: Boolean;
 begin
+  Skipping := False;
   SetLength(Pending, 0);
   SetLength(Buffer, 8192);
-  while not (Assigned(Stopped) and Stopped()) and (StdOut <> 0) do
-  begin
-    ReadCount := 0;
-    if not ReadFile(StdOut, Buffer[0], Length(Buffer), ReadCount, nil) or (ReadCount = 0) then
-      Break;
-    Index := Length(Pending);
-    SetLength(Pending, Index + Integer(ReadCount));
-    Move(Buffer[0], Pending[Index], ReadCount);
-    Index := 0;
-    while Index < Length(Pending) do
+  Chunks := TRpcChunkAssembler.Create;
+  try
+    while not (Assigned(Stopped) and Stopped()) and (StdOut <> 0) do
     begin
-      if Pending[Index] <> 10 then
-      begin
-        Inc(Index);
-        Continue;
-      end;
-      LineBytes := Index;
-      if (LineBytes > 0) and (Pending[LineBytes - 1] = 13) then
-        Dec(LineBytes);
-      if LineBytes > MaxFrameBytes then
-      begin
-        if Assigned(OnLine) then
-          OnLine('');
-      end
-      else if (LineBytes > 0) and Assigned(OnLine) then
-      begin
-        Line := TEncoding.UTF8.GetString(Pending, 0, LineBytes);
-        OnLine(Line);
-      end;
-      if Index + 1 < Length(Pending) then
-      begin
-        Move(Pending[Index + 1], Pending[0], Length(Pending) - Index - 1);
-        SetLength(Pending, Length(Pending) - Index - 1);
-      end
-      else
-        SetLength(Pending, 0);
+      ReadCount := 0;
+      if not ReadFile(StdOut, Buffer[0], Length(Buffer), ReadCount, nil) or (ReadCount = 0) then
+        Break;
+      Index := Length(Pending);
+      SetLength(Pending, Index + Integer(ReadCount));
+      Move(Buffer[0], Pending[Index], ReadCount);
       Index := 0;
+      while Index < Length(Pending) do
+      begin
+        if Pending[Index] <> 10 then
+        begin
+          Inc(Index);
+          Continue;
+        end;
+        LineBytes := Index;
+        if (LineBytes > 0) and (Pending[LineBytes - 1] = 13) then
+          Dec(LineBytes);
+        if Skipping or (LineBytes > MaxFrameBytes) then
+        begin
+          Skipping := False;
+          if Assigned(OnLine) then
+            OnLine('');
+        end
+        else if (LineBytes > 0) and Assigned(OnLine) then
+          Deliver(Chunks, TEncoding.UTF8.GetString(Pending, 0, LineBytes), OnLine);
+        if Index + 1 < Length(Pending) then
+        begin
+          Move(Pending[Index + 1], Pending[0], Length(Pending) - Index - 1);
+          SetLength(Pending, Length(Pending) - Index - 1);
+        end
+        else
+          SetLength(Pending, 0);
+        Index := 0;
+      end;
+      if Length(Pending) > MaxFrameBytes then
+      begin
+        SetLength(Pending, 0);
+        Skipping := True;
+      end;
     end;
-    if Length(Pending) > MaxFrameBytes then
-      SetLength(Pending, 0);
+  finally
+    Chunks.Free;
   end;
 end;
 

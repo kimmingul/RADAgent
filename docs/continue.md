@@ -29,21 +29,23 @@ stdin에는 JSONL만 쓴다. 일반 텍스트 한 줄이면 omp가 죽는다. `@
 - 승인 방식 선택은 IDE 변경 승인도 정한다(항상 묻기 = 변경마다, 쓰기 허용 = 턴마다 한 번, 권한 무시 = 묻지 않음, 처음 값 권한 무시). `tools.approvalMode`를 `<프로젝트>\.omp\delphiagent.yml`에 쓰고 omp를 같은 세션으로 다시 시작한다(RPC에 바꾸는 명령이 없음).
 - 위 막대: 세션 제목(세션 목록, `switch_session` 후 `get_messages_page`로 기록 표시), 새 세션, 내보내기(`export_html`), 설정. 색은 IDE 테마를 따르고 테마 변경 통지를 받는다.
 - 진행 표시: 생각(`thinking_delta`), 도구 입력(`toolcall_delta`), 도구 중간 출력(`tool_execution_update`, 250ms 간격, 끝 8000자), 하위 에이전트(`set_subagent_subscription progress`), 작업 목록(`todo` 도구 뒤 `get_state.todoPhases`), 재시도·모델 대체. 페이지가 `display` 메시지로 항목별로 숨긴다.
-- 설정 창: 채팅 표시·글자 크기·고대비(레지스트리), 모델·생각 수준·OAuth 로그인(RPC), 역할별 모델·스킬/확장/하위 에이전트·omp 도구 승인·기본 생각 수준(`<프로젝트>\.omp\delphiagent.yml`, `--config`), omp 경로·추가 인자·스냅샷 여부. omp 설정이 바뀌면 같은 세션 파일로 다시 시작(`switch_session`). 턴이 도는 중이면 턴이 끝난 뒤 다시 시작한다.
+- 설정 창: 채팅 표시·글자 크기·고대비(레지스트리), 모델·생각 수준·OAuth 로그인(RPC), 역할별 모델·스킬/확장/하위 에이전트·omp 도구 승인·기본 생각 수준(`<프로젝트>\.omp\delphiagent.yml`, `--config`), omp 경로·추가 인자. omp 설정이 바뀌면 같은 세션 파일로 다시 시작(`switch_session`). 턴이 도는 중이면 턴이 끝난 뒤 다시 시작한다.
 - 승인은 채팅 안 카드(`approval.js`, `DelphiAgent.ChatApprovalCard`)로 묻는다. 줄 diff(앞뒤 3줄), 중지 시 모두 거부. WebView2가 없으면 모달 승인 창.
 - 계획 모드(`DelphiAgent.ChatPlan`): 승인 방식 `계획`, `rad.submit_plan` → `docs\plans\yyyy-mm-dd-hhnn-<slug>.md`, 계획 카드의 진행 → 이전 방식으로 omp 재시작 후 `@계획서` 프롬프트. `docs` 파일은 `Project.AddFile`로 Project Manager에 보인다.
-- `@` 파일 메뉴(`composer.js`, `ChatStatus.PageFiles`), 더티 버퍼 `@경로` → 스냅샷 경로. 하위 에이전트는 안내문으로 읽기 전용. IDE가 뒤에 있으면 승인 요청과 턴 끝에 작업 표시줄이 깜빡인다.
+- `@` 파일 메뉴(`composer.js`, `ChatStatus.PageFiles`). 보내기 전에 저장하므로 `@경로`는 디스크 그대로다.
+- 디스크 기준(`IdeFiles`, `ChatDiskSync`): 프롬프트 전·`rad.*` 변경 후 저장, omp 도구 끝·턴 끝에 바뀐 모듈 `Refresh`, 사용자가 고치던 모듈은 충돌 알림. omp 도구 승인도 채팅 카드.
+- git 체크포인트(`GitRepo`, `ChatCheckpoints`, `checkpoints.js`): 저장소가 없으면 `git init`, 메시지마다 `refs/delphiagent/cp/`, 메시지의 `↶ 여기로 되돌리기`/`⑂ 여기서 브랜치`. IDE가 뒤에 있으면 승인 요청과 턴 끝에 작업 표시줄이 깜빡인다.
 - `/btw` 곁가지 질문(`DelphiAgent.ChatBtw`, `BtwRunner`, `BtwStore`, `btw.js`): 질문마다 `omp --mode rpc --no-tools --fork <대화>`(이어 묻기는 `--resume <주제 세션>`), 채팅 접힌 카드 + 위 막대 `BTW` 메모 창. 저장 위치 `%LOCALAPPDATA%\DelphiAgent\btw\<프로젝트>\`.
 - 에디터 오른쪽 클릭 `DelphiAgent: 선택 영역 설명/고치기`, 메시지 창 오른쪽 클릭 `DelphiAgent: 빌드 오류 고치기`.
 - WebView2는 rtl `Winapi.WebView2`와 BPL 옆 `DelphiAgent\WebView2Loader.dll`로 띄운다. 실패하면 글자 기록으로 계속한다. 배포는 `docs/install.md`.
 - 프로젝트 해석: 프로젝트 그룹, 열린 모듈, 에디터 옆 `.dproj`, 마지막 캐시. 없으면 `프로젝트=없음`.
 - 슬래시 명령은 모달로 고른 뒤 기존 RPC만 전송.
 - omp가 보내는 `extension_ui_request`의 select, confirm, input, editor는 모달. notify와 setStatus는 로그.
-- host-tool: `rad.compile`, `rad.open_buffer`, `rad.insert_at_caret`, `rad.list_dirty`, `rad.read_buffer`, `rad.apply_edit`.
+- host-tool: `rad.compile`, `rad.open_buffer`, `rad.insert_at_caret`(코드 편집은 omp의 디스크 도구).
 - 디버거 읽기 host-tool: `rad.debug_state`, `rad.debug_stack`(최대 64프레임), `rad.debug_evaluate`(부작용 없음), `rad.debug_breakpoints`. 평가가 `erDeferred`로 오면 기다리지 않고 오류로 돌려준다.
 - 디버거 실행 제어 host-tool: `rad.debug_run`(프로세스가 없으면 IDE `RunRunCommand`로 빌드·실행, 멈춰 있으면 계속), `rad.debug_step`(`mode` over/into/return), `rad.debug_pause`, `rad.debug_reset`, `rad.debug_add_breakpoint`(`file`, `line`). 모두 승인 뒤에만 하고, 최대 5초 동안 디버그 이벤트를 처리한 뒤 `rad.debug_state`와 같은 JSON을 돌려준다. 메모리 쓰기는 없다.
 - 폼 디자이너 host-tool: `rad.form_components`, `rad.form_properties`(읽기 전용, 이벤트는 메서드 이름), `rad.form_set_property`, `rad.form_add_component`, `rad.form_delete_component`, `rad.form_rename_component`(`newName`), `rad.form_set_event`(`event`, `handler`, 빈 handler는 연결 해제). 바꾸는 도구는 승인 후 디자이너에만 반영하고 저장하지 않는다. 대상은 `.pas` 절대 경로이고, 모듈이 닫혀 있으면 연다. 폼 자체는 지우거나 이름을 바꾸지 않는다. 이름을 바꾸면 디자이너가 기본 이름 핸들러(`Button1Click`)도 바꾼다.
-- `rad.apply_edit`와 캐럿 삽입은 적용을 누르기 전에 버퍼를 고치지 않는다. 디스크 Save는 하지 않는다.
+- 캐럿 삽입은 승인 전에 버퍼를 고치지 않고, 승인 뒤 저장한다.
 - omp 실행 파일은 PATH의 `omp.exe`, 없으면 `%LOCALAPPDATA%\omp\omp.exe`.
 
 메뉴 등록은 `ViewsMenu`, `ViewMenu`, `ToolsMenu`, `HelpMenu` 순으로 있는 이름에만 `AddActionMenu`한다. RAD Studio 13.2의 View 메뉴 컴포넌트 이름은 `ViewsMenu`다. `ViewMenu`로 고정하면 패키지 로드가 실패한다.
@@ -84,7 +86,8 @@ stdin에는 JSONL만 쓴다. 일반 텍스트 한 줄이면 omp가 죽는다. `@
 | 모달 | `DelphiAgent.AskDialog` |
 | host-tool 이름과 스키마 | `DelphiAgent.HostToolDefs.BuildSetHostToolsFrame` |
 | host-tool 실행 | `DelphiAgent.HostTools.ExecuteHostTool` |
-| 승인 후 버퍼 반영, 충돌 검사 | `DelphiAgent.BufferEdits.ApplyEdit`, `InsertAtCaret` |
+| 저장·다시 읽기, 충돌 | `DelphiAgent.IdeFiles`, `DelphiAgent.ChatDiskSync` |
+| 체크포인트·되돌리기 | `DelphiAgent.GitRepo`, `DelphiAgent.ChatCheckpoints` |
 | 디버거 읽기 host-tool | `DelphiAgent.DebugTools.ExecuteDebugTool` |
 | 디버거 실행 제어 | `DelphiAgent.DebugControl.ExecuteDebugControl` |
 | 승인 계약 | `DelphiAgent.Approval.IAgentApproval` |
@@ -134,6 +137,9 @@ Ghost Text, `IOTAAIPlugin`, KAI, 터미널 임베드는 하지 않았다. KAI와
 | Claude Desktop형 화면 | 64-bit IDE: 위 막대(새 대화·Smoke·아이콘), 입력 상자·아래 줄, `MainForm.pas` 칩, bash와 `rad.apply_edit`을 쓰는 턴에서 `도구 10개 사용 실패 1 ›` 묶음(펼치면 생각 2개와 도구 8개), 작업 중 `✳ 응답 기다리는 중 · 24초`와 중지 단추, 승인 후 파일 카드 `MainForm.pas +1 -0`. `/mo` 명령 목록, 입력에서 Esc 뒤에도 도킹 창 유지. 승인 방식을 쓰기 허용으로 바꾸면 `delphiagent.yml`에 `tools.approvalMode: write`, omp pid가 바뀌고 같은 세션 기록 복원, 권한 무시로 되돌리면 파일 삭제. 목록 안 들여쓴 코드 블록이 코드로 보임. 32-bit IDE: 같은 배치, 도구 묶음, 코드 블록. 오류 창 없음 |
 | + 메뉴 | 64-bit IDE: 파일 또는 사진 추가·폴더 추가·커넥터›·플러그인›·프로젝트 컴파일. 커넥터: 시험용 `demo-docs`(프로젝트 `.omp\mcp.json`)를 끄자 `/mcp disable demo-docs`로 그 파일에 `enabled: false`, 켜자 다시 지워짐. 플러그인: `orca-prefill` 끄기 → `delphiagent.yml`에 `extension-module:orca-prefill`, omp 재시작, 다시 켜면 파일 삭제. 사진 `red.png` 첨부 → prompt 프레임에 `images`, 답 "흰 배경 위에 가로로 긴 빨간색 직사각형". 폴더 추가 → omp `command_output` "Added …". 32-bit IDE: 메뉴와 커넥터 목록. 오류 창 없음 |
 | 프로젝트 맞춤 도구 | 64-bit IDE, VCL Smoke: 명령줄에 `--config omp-host.yml --append-system-prompt project-guide.md`, `.omp/lsp.json` 생성, 도구 28개(폼 도구 포함). "메모장 UI" 요청 → `rad.form_apply`로 Memo1·MainMenu1, 메뉴 항목, `rad.apply_edits`로 핸들러, 컴파일 오류 0. 여기서 찾은 ShortCut 텍스트(`Ctrl+N`) 변환 실패를 고쳤다. FMX 프로젝트: 안내에 `Framework: FMX`, "계산기 UI" 요청이 턴마다 한 번 승인으로 승인 1번, 31초, `form_apply`로 TEdit 3개·TButton, 컴파일 오류 0, 파일 카드 `Unit1.pas +10 -2`. 콘솔 프로젝트: 폼 도구 없이 등록, `project_info` → `set_build_config`(Release) → `new_module kind=form`(IDE가 VCL 프레임워크를 켤지 물음) → 폼 도구 8개가 다시 등록되고 `form_apply`로 Button1. 32-bit IDE: FMX 프로젝트에서 도구 28개, 안내 `Framework: FMX`. C++Builder 프로젝트는 확인하지 않음 |
+| 디스크 기준·git 체크포인트 | `build-tests` ALL PASSED(임시 저장소: init·.gitignore·첫 커밋, 체크포인트가 HEAD를 안 움직임, 프롬프트 보존, 되돌리기로 바뀐 파일 복원·새 파일 삭제, 되돌리기 취소, 브랜치 전환). 64-bit IDE, 새 Smoke: `git init` 알림, 메시지 1 → `cp/000001`, omp `edit`가 디스크를 고치고 에디터가 대화상자 없이 다시 읽음. 메시지 2 뒤 `↶ 여기로 되돌리기` → `// second` 사라짐(디스크·에디터), `before-restore/000001`, omp `branch`로 대화 1개로 줄고 메시지 2가 입력칸에. 불러온 기록의 메시지에도 되돌리기 단추. `⑂ 여기서 브랜치` → `delphiagent/<시각>` 브랜치, `git status` 깨끗. 항상 묻기에서 omp `edit` 승인 카드 → 승인 → 반영. `rad.form_apply` 승인 후 `.dfm`/`.pas` 저장됨. 32-bit IDE: 메시지 → 체크포인트, 디스크 편집 다시 읽기. |
+| 메뉴 아이콘 | 64-bit·32-bit IDE: View 메뉴 DelphiAgent 항목에 `MenuIcon` 아이콘(INTAServices280.AddImage, 16·32px). 원본 그래픽을 넘긴 뒤 해제해도 그려져 IDE가 복사함을 확인. 에디터·메시지 오른쪽 클릭 메뉴는 IDE가 항목 비트맵을 그리지 않아(두 메뉴에서 확인) 글자만 둔다. |
+| omp 업데이트 대비 | `build-tests` ALL PASSED: v2 조각 재조립(1.5MB 한글 프레임, 끊긴 조각 거절, 1MiB 넘는 물리 줄 버림), 프로토콜 선택, 승인 선택지 뜻 맞춤, `agentInvoked:false`/`prompt_result`/`command_output`, 실제 omp 18.2.11 호환성 검사 10항목 통과. 64-bit IDE: 시작 때 `negotiate_protocol` v2 성공, 레지스트리 `OmpCheckedVersion=18.2.11` 기록, `/context` 출력이 표로 보이고 턴이 끝남, 설정 → 고급 → omp 호환성 검사 대화상자 10항목 통과. 32-bit IDE: `/context` 동일. |
 | /btw 곁가지 질문 | 64-bit IDE, Smoke: 본 턴(`rad.read_buffer` 표 정리)이 도는 중에 `/btw` → 본 턴 `agent_end` 전에 별도 자식(`--no-tools --fork`)이 대화 요약으로 답, 본 대화 프롬프트에 btw 없음. 카드 이어 묻기 → `--resume`으로 앞 답을 기억. 메모 창: 목록·펼침·삭제 확인·새 질문, 스트리밍 중 머리글 `중지` → abort 프레임, 0.7초 뒤 `agent_end`, 부분 답 `중지됨`. IDE 다시 시작 후 메모 유지, 채팅 창 다시 열면 카드 재표시. `# `으로 시작하는 스트리밍 답에서 `markdown.js`가 멈추던 문제 고침. 32-bit IDE: `/b` 메뉴에 `/btw <질문>`, 답 카드. |
 | 채팅 승인·계획·@ 파일 | 64-bit IDE, Smoke: `@Ma` → `MainForm.dfm/.pas` 목록, 선택 후 질문에 도구 없이 답. 더티 `MainForm.pas`의 `@MainForm.pas`가 `@...\snap-0-MainForm.pas`로 바뀌고 저장 안 한 주석을 읽음. 항상 묻기에서 `rad.apply_edits` 승인 카드 → 승인(`✓ 승인됨`, 파일 카드), 거부(`{"ok":false,"cancelled":true}`), 중지로 떠 있는 카드 거부와 abort. 계획 모드: `docs\plans\2026-09-24-0130-add-clear-button.md`(여섯 절), 계획 카드, Project Manager에 `docs`, 진행 → 항상 묻기로 돌아가 `rad.form_apply` 승인 카드. 오류 대화상자 없음. 32-bit IDE: `@Sm` 목록, 권한 무시 편집 반영. |
 | 승인 방식 통합 | 64-bit IDE, Smoke: 권한 무시에서 `rad.apply_edits`가 승인 창 없이 반영. 항상 묻기로 바꾸자 `delphiagent.yml`에 `approvalMode: always-ask`, 편집 두 번에 DelphiAgent 승인 창 두 번(omp의 `Allow tool: write` 창은 자동 통과). 쓰기 허용에서 편집 두 번에 승인 창 한 번. 권한 무시로 되돌리자 파일 삭제. 마지막 줄 편집마다 파일 끝에 빈 줄이 늘던 문제(버퍼 전체를 다시 쓰면 IDE가 마지막 줄바꿈을 남김)와 모델이 줄 번호를 잘못 세던 문제를 고쳐, 두 턴 뒤에도 `end.` 뒤 빈 줄 없이 정확한 위치에 들어감(`rad.read_buffer`가 `N|` 줄 번호를 줌). 컴파일 오류 0 |
@@ -167,6 +173,8 @@ Ghost Text, `IOTAAIPlugin`, KAI, 터미널 임베드는 하지 않았다. KAI와
   | `Smoke.dproj` | Confirm 없음 | 오류 창 없음 |
 
 ## MVP 확인 결과 (2026-09-23)
+
+아래 두 절(결과와 절차)은 저장하지 않던 시절(스냅샷, `rad.apply_edit`)의 기록이다. 2026-09-24부터는 디스크 기준과 git 체크포인트로 바뀌었으므로, 3·4·5·6단계는 위 "검증 기록"의 "디스크 기준·git 체크포인트" 줄로 대신한다.
 
 64-bit IDE와 32-bit IDE에서 아래 절차를 모두 진행했다. 확인용 프로젝트의 활성 플랫폼은 두 IDE 모두 Win64다. 결과는 IDE 창, 채팅창, 메시지 뷰, `rpc.log`, 디스크 파일을 직접 읽어 확인했다. IDE가 오류 창을 띄우는지도 매 단계 확인했고, 오류 창은 한 번도 뜨지 않았다.
 

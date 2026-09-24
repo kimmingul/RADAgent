@@ -1,6 +1,6 @@
 ﻿# DelphiAgent
 
-RAD Studio 13.2 IDE 안의 design-time BPL이다. 에이전트 루프는 설치된 omp 18.2.11이고, Delphi로 다시 만들지 않는다. 도킹 창은 Tools 또는 View 메뉴의 DelphiAgent다. 이어서 할 일은 [docs/continue.md](docs/continue.md)에 적어 두었다.
+RAD Studio 13.2 IDE 안의 design-time BPL이다. 에이전트 루프는 설치된 omp(검증 버전 18.2.11)이고, Delphi로 다시 만들지 않는다. 도킹 창은 Tools 또는 View 메뉴의 DelphiAgent다. 이어서 할 일은 [docs/continue.md](docs/continue.md)에 적어 두었다.
 
 ## 요구사항
 
@@ -8,7 +8,7 @@ RAD Studio 13.2 IDE 안의 design-time BPL이다. 에이전트 루프는 설치�
 - `%BDS%` 기본값: `C:\Program Files (x86)\Embarcadero\Studio\37.0`
 - 32-bit IDE: `%BDS%\bin\bds.exe`. 그 IDE 안의 DelphiLSP는 `%BDS%\bin\DelphiLSP.exe`이며, omp는 이 파일을 쓰지 않는다.
 - 64-bit IDE: `%BDS%\bin64\bds.exe`. omp가 쓸 DelphiLSP는 항상 `%BDS%\bin64\DelphiLSP.exe`다.
-- `omp` 18.2.11. PATH에 없으면 `%LOCALAPPDATA%\omp\omp.exe`. 진입점: `omp --mode rpc`
+- `omp`: 검증 버전 18.2.11. PATH에 없으면 `%LOCALAPPDATA%\omp\omp.exe`. 진입점: `omp --mode rpc`. 다른 버전은 아래 "omp 업데이트"대로 확인한다.
 
 DelphiLSP.exe는 IDE 설치본만 사용한다. 이 저장소에 복사하지 않는다. BPL은 `DelphiLSP.exe`를 실행하지 않는다. omp가 `templates/omp.lsp.json`을 활성 프로젝트의 `.omp/lsp.json`으로 펼쳐 별도 프로세스로 띄운다. 절차는 [docs/lsp-setup.md](docs/lsp-setup.md)다.
 
@@ -39,6 +39,38 @@ DelphiLSP.exe는 IDE 설치본만 사용한다. 이 저장소에 복사하지 �
 
 `%BDS%`가 없고 `C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\rsvars.bat`도 없으면 빌드 스크립트는 `call rsvars.bat` 단계에서 실패한다. 그 경우 가정한 경로는 `C:\Program Files (x86)\Embarcadero\Studio\37.0`이다.
 
+## 파일 저장과 git 체크포인트
+
+일반적인 agentic coding처럼 디스크가 기준이다.
+
+- 메시지를 보내기 직전과 승인된 `rad.*` 변경(폼, 모듈, 캐럿 삽입) 직후에 프로젝트의 저장 안 한 파일을 저장한다.
+- omp는 자기 read/edit/write 도구로 파일을 고치고, 도구가 끝날 때마다 IDE가 바뀐 파일을 다시 읽는다. 그 사이 사용자가 같은 파일을 고치고 있었으면 덮어쓰지 않고 채팅에 충돌을 알린다.
+- 폼(`.dfm`)과 프로젝트 파일은 omp가 텍스트로 고치지 않고 `rad.form_*`/`rad.new_module`로만 바꾼다. 폼 디자이너와 디버거는 그대로 쓴다.
+- 프로젝트 폴더가 git 저장소가 아니면 처음 omp를 시작할 때 `git init`, Delphi `.gitignore`, 첫 커밋을 만든다. git이 없으면 알리고 체크포인트만 끈다.
+- 메시지마다 보내기 직전 상태를 체크포인트 커밋으로 남긴다(`refs/delphiagent/cp/`). 사용자의 브랜치·index·HEAD는 바뀌지 않는다.
+- 채팅의 내 메시지에 마우스를 올리면:
+  - `↶ 여기로 되돌리기`: 파일을 그 메시지 전 상태로 되돌리고(그 뒤에 생긴 파일은 지움), omp 대화도 그 메시지 앞에서 갈라진다. 메시지는 입력칸으로 돌아온다. 되돌리기 전 상태는 `refs/delphiagent/before-restore/`에 남는다.
+  - `⑂ 여기서 브랜치`: 같은 되돌리기에 더해 그 체크포인트에서 `delphiagent/<시각>` git 브랜치를 만들어 옮겨 간다.
+- omp가 일하는 중에는 되돌리지 않는다. IDE 실행 취소(Ctrl+Z)는 디스크에서 다시 읽은 뒤에는 이어지지 않으므로 되돌리기는 체크포인트로 한다.
+
+## omp 업데이트
+
+omp가 업데이트돼도 DelphiAgent가 계속 동작하도록 다음을 한다.
+
+- **자동 호환성 검사**: IDE에서 omp를 처음 시작할 때 `omp --version`이 마지막으로 통과한 버전과 다르면, 뒤에서 호환성 검사를 한 번 돌린다. 모델은 부르지 않고 세션도 저장하지 않는다. 검사 항목은 다음과 같다.
+  - DelphiAgent가 쓰는 명령줄 옵션
+  - RPC 시작과 프로토콜
+  - `rad.*` 도구 등록과 xd:// 장치 연결
+  - `get_state`, 명령 목록, 생각 수준 응답
+  - `config list --json`
+
+  모두 통과하면 그 버전을 기억한다. 검증 버전(18.2.11)과 다르면 채팅에 "통과"를 한 번 알린다. 실패하면 무엇이 깨졌는지 경고한다. 설정 → 고급 → `omp 호환성 검사`로 언제든 다시 볼 수 있다.
+- **프로토콜**: omp가 RPC v2를 제공하면 v2로 협상해 1MiB가 넘는 응답도 조각(`rpc_chunk`)으로 잃지 않고 받는다. 둘 다 없으면 이유를 보여 주고 연결하지 않는다.
+- **시작 실패 이유**: omp가 모르는 옵션 등으로 바로 끝나면, 오류 대신 omp가 stderr에 남긴 마지막 줄(예: `Error: unknown flag: --x`)을 보여 준다.
+- **omp가 혼자 끝낸 명령**: `/context` 같은 omp 내장 명령은 출력(`command_output`)을 채팅에 그대로 보여 주고, `agentInvoked: false`로 턴을 끝낸다. 작업 중 표시가 멈춰 있지 않는다.
+- **승인 문구**: omp 승인 요청은 문서화된 `Allow tool:` 제목과 선택지의 뜻(Approve/Allow/Deny/Reject…)으로 알아본다. 선택지 순서나 정확한 낱말에 기대지 않는다.
+- **개발자**: omp를 올린 뒤 `scripts\build-tests.cmd`를 돌린다. 설치된 omp로 같은 호환성 검사(`omp probe:` 줄)와 핸드셰이크 실시험을 한다.
+
 ## 첫 검증 시나리오
 
 - 빈 IDE에서 DelphiAgent를 열면 상태줄 둘째 줄이 `프로젝트 없음`이다.
@@ -56,7 +88,7 @@ DelphiLSP.exe는 IDE 설치본만 사용한다. 이 저장소에 복사하지 �
 
 입력칸은 여러 줄이다. Enter는 보내기, Shift+Enter는 줄바꿈, 첫 줄에서 ↑는 이전에 보낸 문장이다. `/`를 치면 omp 명령 목록이 뜨고 Tab/Enter로 고른다. 입력칸 위 줄은 활성 파일, 선택한 줄, 저장 안 한 파일 수다. `선택 영역 포함`을 켜면 선택한 코드가 프롬프트에 붙는다.
 
-채팅 창 전체가 WebView2 페이지다(Claude Desktop과 비슷한 배치).
+채팅 창 전체가 WebView2 페이지다(Claude Desktop과 비슷한 배치). View 메뉴의 DelphiAgent 항목에는 `resources\MenuIcon-16/32.png` 아이콘이 붙는다(IDE 이미지 목록에 두 크기로 넣어 고DPI에서 선명하다). IDE 오른쪽 클릭 메뉴는 자기 이미지 목록만 그리므로 글자만 있다.
 
 - 위 막대: 세션 제목(누르면 세션 목록), 프로젝트, `＋` 새 세션, `⤓` HTML 내보내기, `⚙` 설정.
 - 가운데: 가운데 정렬된 한 칸. 내 메시지는 오른쪽 말풍선, 답은 테두리 없는 본문. 답 사이의 도구·생각은 `도구 N개 사용 ›` 한 줄로 묶이고 펼치면 도구별 입력과 결과가 보인다. 승인 후 버퍼에 반영된 편집은 파일 카드(`+N -M`, 누르면 에디터에서 그 줄로)로 보인다. 작업 중에는 끝에 `✳ 생각하는 중 · N초`.
@@ -68,14 +100,13 @@ IDE 기능을 omp에 맞춰 넘긴다:
 - 프로젝트를 보고 도구를 고른다. 폼이 있을 때만 폼 도구를 등록하고, VCL/FMX와 Delphi/C++Builder에 맞는 사용법을 준다. 도구 사용법은 시스템 프롬프트에 들어 있어 omp가 따로 읽지 않는다.
 - 프로젝트 안내(언어, 프레임워크, 폼 목록, 작업 규칙)를 omp 시스템 프롬프트에 덧붙인다.
 - Delphi 프로젝트에 `<프로젝트>.delphilsp.json`이 있으면 `.omp/lsp.json`을 만들어 DelphiLSP를 연결한다. 없으면 IDE의 Generate LSP Config를 켜라고 한 번 알린다. C++Builder 프로젝트는 omp에 쓸 LSP가 없다.
-- 묶음 도구: `rad.form_apply`(컴포넌트 추가·속성·이벤트를 한 번에), `rad.apply_edits`(여러 파일 편집을 한 번에). 각각 승인 한 번.
+- 묶음 도구: `rad.form_apply`(컴포넌트 추가·속성·이벤트를 한 번에, 승인 한 번).
 - 프로젝트 도구: `rad.project_info`, `rad.set_build_config`(구성·플랫폼), `rad.new_module`(폼·프레임·데이터 모듈·유닛), `rad.list_components`(팔레트 클래스).
 - 승인 방식 하나로 omp 도구와 IDE 변경을 함께 정한다: 항상 묻기(IDE 변경마다 승인), 쓰기 허용(턴마다 한 번 승인), 권한 무시(묻지 않음, 처음 값). 어느 쪽이든 저장은 하지 않는다. `rad.*` 호출에 대한 omp 자체 확인은 DelphiAgent가 대신 통과시켜 두 번 묻지 않는다.
 - 계획: 네 번째 승인 방식. omp를 always-ask로 다시 시작하고 디스크 도구는 거부, 바꾸는 `rad.*` 도구는 빼고 `rad.submit_plan`만 준다. 계획서는 `<프로젝트>\docs\plans\yyyy-mm-dd-hhnn-<slug>.md`(목표 / 현재 상태 / 단계 / 바뀔 파일 / 위험 / 확인 방법)로 쓰이고 채팅에 계획 카드가 뜬다. `이 계획대로 진행`은 이전 승인 방식으로 돌아가 `@계획서`로 구현을 시작한다. `docs` 아래 파일은 프로젝트에 추가되어 Project Manager에 보인다(프로젝트 파일은 저장하지 않음).
-- 입력에서 `@`를 치면 프로젝트 폴더 파일 목록이 뜬다. 저장 안 한 버퍼가 있는 파일의 `@경로`는 스냅샷 경로로 바뀌어 omp가 IDE에 보이는 내용을 읽는다.
+- 입력에서 `@`를 치면 프로젝트 폴더 파일 목록이 뜬다. 보내기 전에 저장하므로 `@경로`는 IDE에 보이는 내용이다.
 - `/btw <질문>`: 곁가지 질문. 지금 대화를 복제(`--fork`)한 별도 omp 자식이 도구 없이 답하므로 에이전트가 작업 중이어도 되고, 본 대화에는 들어가지 않는다. 여러 번, 여러 주제를 물을 수 있다. 답은 채팅에 접힌 `BTW` 카드로 뜨고(이어 묻기·복사·메모에서 보기·중지), 모든 주제는 위 막대의 `BTW` 메모 창에 따로 남는다(검색, `이 대화만`, 이어 묻기, 삭제). `/btw`만 치면 메모 창이 열린다. 이어 묻기는 그 주제 자신의 세션(`--resume`)으로 이어 가므로, 처음 물은 시점의 대화 맥락과 그 주제의 앞 문답을 본다. 메모는 프로젝트 밖 `%LOCALAPPDATA%\DelphiAgent\btw\<프로젝트>\`에 저장된다.
-- 하위 에이전트(task)는 읽기 전용 조사에만 쓴다. `rad.*`를 볼 수 없으므로 IDE 변경은 메인 세션이 한다(프로젝트 안내문에 적힘).
-- `rad.read_buffer`는 `N| 줄` 형식으로 줄 번호를 붙여 준다. 편집은 바뀐 부분만 버퍼에 쓴다.
+- 하위 에이전트(task)는 `rad.*`를 볼 수 없다. 서로 다른 `.pas` 파일을 맡으면 디스크에서 동시에 고칠 수 있고, 폼·프로젝트 파일과 컴파일은 메인 세션이 한다(프로젝트 안내문에 적힘). 더 나아간 병렬 방안은 [docs/plans/2026-09-24-0930-parallel-subagents.md](docs/plans/2026-09-24-0930-parallel-subagents.md)에 있다.
 
 `＋` 메뉴:
 
@@ -94,7 +125,7 @@ IDE 기능을 omp에 맞춰 넘긴다:
 - 채팅 표시: 위 항목, 글자 크기, 고대비. 바로 적용.
 - 계정·모델: 지금 대화의 모델과 생각 수준, OAuth 로그인. RPC로 바로 적용. API 키가 필요한 공급자는 터미널 omp의 `/login`을 쓴다.
 - 역할별 모델, 확장(스킬·확장·하위 에이전트 켜고 끄기, MCP 목록), 고급(omp 도구 승인, 기본 생각 수준): 이 프로젝트에만 적용된다. `<프로젝트>\.omp\delphiagent.yml`에 저장하고 `--config`로 omp에 넘긴다. 전역 `~/.omp/agent/config.yml`은 바꾸지 않는다. 확인을 누르면 omp를 같은 세션으로 다시 시작할지 묻는다.
-- 고급(이 PC): omp 실행 파일, 추가 인자, 저장 안 한 버퍼 스냅샷 여부.
+- 고급(이 PC): omp 실행 파일, 추가 인자, `omp 호환성 검사` 단추.
 
 에디터 오른쪽 클릭 메뉴에 `DelphiAgent: 선택 영역 설명/고치기`, 메시지 창 오른쪽 클릭 메뉴에 `DelphiAgent: 빌드 오류 고치기`가 있다. 승인이 필요하거나 답이 끝났을 때 IDE가 뒤에 있으면 작업 표시줄 단추가 깜빡인다. 채팅 창을 닫거나 디버그 레이아웃으로 바뀌어도 대화와 omp는 그대로다.
 
@@ -102,7 +133,7 @@ IDE 기능을 omp에 맞춰 넘긴다:
 
 `/model`은 omp가 준 목록으로 모델을 고른다. `/fast`, `/thinking`, `/effort`는 모달에서 고른 뒤 기존 RPC만 보낸다. `/clear`는 확인 후 새 세션이다. 그 외 `/`로 시작하는 문장은 omp에 원문 그대로 넘긴다. `파일` 버튼은 고른 경로를 입력칸에 붙인다. `@file`은 쓰지 않는다.
 
-IDE 도구는 `rad.compile`, `rad.open_buffer`, `rad.insert_at_caret`, `rad.list_dirty`, `rad.read_buffer`, `rad.apply_edit`이다. 버퍼를 고치는 도구는 적용을 누르기 전에는 쓰지 않고, 디스크에 자동 저장하지 않는다.
+IDE 도구는 `rad.compile`, `rad.open_buffer`, `rad.insert_at_caret`이다. 코드는 omp가 자기 read/edit/write 도구로 디스크에서 고치고, IDE가 다시 읽는다.
 
 디버거 읽기 도구는 `rad.debug_state`, `rad.debug_stack`, `rad.debug_evaluate`, `rad.debug_breakpoints`이다. 식 평가는 부작용 없이 한다. 실행 제어 도구는 `rad.debug_run`(실행 또는 계속), `rad.debug_step`(over, into, return), `rad.debug_pause`, `rad.debug_reset`, `rad.debug_add_breakpoint`이다. 모두 승인 창에서 승인해야 동작하고, 끝나면 디버거 상태를 돌려준다. 디버기 메모리는 쓰지 않는다.
 

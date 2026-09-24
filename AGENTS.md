@@ -1,6 +1,6 @@
 ﻿# DelphiAgent
 
-RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp 18.2.11이다. Delphi로 다시 구현하지 않는다.
+RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp이고 검증 버전은 18.2.11이다. Delphi로 다시 구현하지 않는다.
 
 상세 절차는 스킬에 있다. 여기 규칙과 스킬이 충돌하면 여기 규칙을 따른다.
 
@@ -54,6 +54,7 @@ RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp 18.2.11�
 - 중단은 `abort` 프레임이다. 프로세스를 바로 죽이는 것이 중단의 기본 동작이 아니다.
 - IDE 상태 변경은 host-tools 콜백으로만 한다. omp 도구가 IDE 메모리를 직접 쓰지 않는다.
 - `/btw` 곁가지 질문은 도구 없는 별도 omp 자식(`--fork` 대화 또는 `--resume` 주제 세션)이 답한다. 본 대화에 넣지 않는다.
+- omp 버전에 기대는 곳(옵션, 프레임 필드, 설정 키, 승인 문구)을 새로 쓰면 `DelphiAgent.OmpProbe` 검사나 `tests\OmpCompatTests.pas`에도 넣는다. 사람이 읽는 문구는 위치나 정확한 낱말이 아니라 뜻으로 맞춘다.
 - 프레임 필드와 순서는 omp-rpc 스킬을 따른다. 여기에 프로토콜을 복붙하지 않는다.
 
 ## DelphiLSP
@@ -66,18 +67,18 @@ RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp 18.2.11�
 - pasls, delphi-lookup, ACP Registry로 LSP를 대체하지 않는다.
 - 설정 파일 생성과 `.omp/lsp.json` 필드는 delphi-lsp 스킬과 `templates/omp.lsp.json`이 기준이다.
 
-## 더티 버퍼
+## 파일과 git
 
-- 프롬프트 직전에 수정된 IDE 버퍼를 스냅샷한다.
-- 자동 저장 기본값은 꺼짐이다. 그 스냅샷 때문에 저장하지 않는다.
-- IDE 버퍼·폼·디버거 변경의 승인은 입력 아래 줄의 승인 방식(omp `tools.approvalMode`)을 따른다: 항상 묻기 = 변경마다, 쓰기 허용 = 턴마다 한 번, 권한 무시 = 묻지 않음. 처음 값은 권한 무시다. 승인은 채팅 안 카드로 묻는다. `계획` 방식은 아무것도 바꾸지 않고 `docs\plans`에 계획서만 쓴다.
-- 권한 무시여도 저장하지 않고, IDE에서 되돌릴 수 있게 버퍼 API로만 반영한다.
-- `IOTAEditorServices` 버퍼 API로 IDE 버퍼를 갱신한다.
-- 스냅샷 이후 사용자가 같은 버퍼를 고쳤으면 덮어쓰지 않고 충돌로 보여 준다.
+- 디스크가 기준이다. 프롬프트 직전과 승인된 `rad.*` 변경 직후에 프로젝트의 저장 안 한 모듈을 저장한다(`IOTAModule.Save`).
+- omp는 자기 read/edit/write 도구로 디스크 파일을 고친다. 도구가 끝날 때와 턴이 끝날 때 바뀐 파일을 IDE에 다시 읽힌다(`IOTAModule.Refresh`). 그 사이 사용자가 같은 모듈을 고쳤으면 덮어쓰지 않고 충돌로 알린다.
+- 폼(`.dfm`/`.fmx`)과 프로젝트 파일은 텍스트로 고치지 않는다. 폼은 `rad.form_*`, 모듈은 `rad.new_module`로만 바꾼다.
+- IDE 변경과 omp 도구의 승인은 입력 아래 승인 방식(omp `tools.approvalMode`)을 따른다: 항상 묻기 = 변경마다, 쓰기 허용 = 턴마다 한 번, 권한 무시 = 묻지 않음. 처음 값은 권한 무시다. 승인은 채팅 안 카드로 묻는다. `계획` 방식은 아무것도 바꾸지 않고 `docs\plans`에 계획서만 쓴다.
+- 프로젝트 폴더는 항상 git 저장소다. 없으면 `git init`과 Delphi `.gitignore`, 첫 커밋을 만든다.
+- 사용자 메시지마다 보내기 직전 상태를 체크포인트로 남긴다. 체크포인트는 사용자의 index, HEAD, 브랜치를 건드리지 않는다(별도 index, `refs/delphiagent/cp/`). 되돌리기는 파일과 omp 대화를 함께 되돌리고, 되돌리기 전 상태도 `refs/delphiagent/before-restore/`에 남긴다.
 
 ## 범위
 
-- 먼저 도킹 Chat, RPC, 스냅샷, 승인 후 버퍼 반영, 컴파일, 메시지 뷰가 한 바퀴 돌아야 한다.
+- 먼저 도킹 Chat, RPC, 저장·다시 읽기, 승인, 컴파일, 메시지 뷰가 한 바퀴 돌아야 한다.
 - 그 전에 Ghost Text, `IOTAAIPlugin`, 폼 디자이너를 넣지 않는다.
 - 동작하는 MVP 전에 큰 리팩터를 하지 않는다. 실패하는 테스트나 깨진 수동 확인이 있을 때만 구조를 바꾼다.
 - `src/` 밖에 앱 코드를 두지 않는다. 하네스 문서와 템플릿은 루트, `.agents/`, `.grok/`에 둔다.

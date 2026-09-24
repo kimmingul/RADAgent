@@ -37,8 +37,8 @@ description: RAD Studio 13.2 ToolsAPI로 DelphiAgent design-time BPL을 만들 �
 
 - 활성 프로젝트: `GetActiveProject`. nil이면 프롬프트를 보내지 않고 메시지 뷰에 이유를 쓴다.
 - 열린 편집기: `IOTAEditorServices.TopView`와 `TopBuffer`. 모듈 목록이 필요하면 `IOTAModuleServices`를 순회한다.
-- 더티 여부는 모듈의 수정 플래그로 판단한다. 프롬프트 전에 텍스트를 복사하고 저장은 하지 않는다.
-- 승인된 패치는 에디터 버퍼 API로 쓴다. 파일을 디스크에만 쓰고 열린 버퍼를 그대로 두지 않는다.
+- 더티 여부는 모듈 편집기의 `Modified`로 판단한다. 프롬프트 전에 `IOTAModule.Save(False, True)`로 저장한다.
+- omp가 디스크에서 바꾼 파일은 `IOTAModule.Refresh(True)`로 다시 읽힌다. 사용자가 고치던 모듈은 다시 읽지 않고 충돌로 알린다. 파일이 지워졌으면 `CloseModule(True)`.
 - 이 호출은 메인 스레드에서만 한다.
 
 ## 컴파일과 메시지
@@ -62,7 +62,7 @@ description: RAD Studio 13.2 ToolsAPI로 DelphiAgent design-time BPL을 만들 �
 ## 폼 디자이너 host-tool
 
 - 대상은 `.pas` 모듈의 `IOTAFormEditor`다. 네이티브 컴포넌트는 `INTAComponent.GetComponent`, 디자이너는 `INTAFormEditor.FormDesigner`로 얻는다.
-- 변경(속성, 추가, 삭제, 이름 변경, 이벤트 연결)은 승인 뒤에만 하고, 끝나면 `IDesigner.Modified`를 부른다. 저장하지 않는다.
+- 변경(속성, 추가, 삭제, 이름 변경, 이벤트 연결)은 승인 뒤에만 하고, 끝나면 `IDesigner.Modified`를 부른다. 그 뒤 모듈을 저장한다(omp가 디스크에서 읽는다).
 - `CreateComponent`는 컨트롤 위치를 무시하므로 만든 뒤 `SetBounds`로 놓는다. 이벤트는 `IDesigner.CreateMethod`로 기존 메서드를 쓰거나 빈 메서드를 만든다.
 
 ## 디버그

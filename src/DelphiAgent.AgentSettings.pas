@@ -32,9 +32,9 @@ function OmpCommand: string;
 { Extra command line arguments appended after --mode rpc. }
 function OmpExtraArgs: string;
 procedure SetOmpExtraArgs(const Value: string);
-{ Write unsaved buffers to temp snapshots for omp before each prompt. }
-function SnapshotDirtyBuffers: Boolean;
-procedure SetSnapshotDirtyBuffers(Value: Boolean);
+{ omp version that last passed DelphiAgent's compatibility check (DelphiAgent.OmpProbe). }
+function CheckedOmpVersion: string;
+procedure SetCheckedOmpVersion(const Value: string);
 
 implementation
 
@@ -159,14 +159,15 @@ begin
   WriteValue('OmpArgs', Trim(Value));
 end;
 
-function SnapshotDirtyBuffers: Boolean;
+function CheckedOmpVersion: string;
 begin
-  Result := Integer(ReadValue('SnapshotDirty', 1)) <> 0;
+  Result := Trim(string(ReadValue('OmpCheckedVersion', '')));
 end;
 
-procedure SetSnapshotDirtyBuffers(Value: Boolean);
+procedure SetCheckedOmpVersion(const Value: string);
 begin
-  WriteValue('SnapshotDirty', Ord(Value));
+  WriteValue('OmpCheckedVersion', Value);
 end;
+
 
 end.

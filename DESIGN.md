@@ -13,14 +13,14 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 |  DockForm (Chat 뷰, WebView2)  <-- 재표시 --  ChatSession (omp, 기록)        |
 |    |  프롬프트 직전                                                           |
 |    v                                                                         |
-|  DirtyBuffers  ---- 읽기 ---- IdeContext                                     |
-|    |  스냅샷 (저장하지 않음)                    활성 .dproj, 에디터 버퍼       |
+|  IdeFiles(저장) + GitRepo(체크포인트) --- IdeContext                          |
+|    |  디스크가 기준                             활성 .dproj, 에디터 버퍼       |
 |    v                                                                         |
 |  RpcClient  ==== JSONL stdin/stdout ===>  omp --mode rpc                     |
 |    ^                                         cwd = .dproj 디렉터리           |
 |    |  host_tool_call / result                 tools + 자체 LSP               |
 |  HostTools                                      |                            |
-|    승인 후 IDE 버퍼 반영                        v                            |
+|    승인 후 IDE 변경, omp 디스크 편집은 다시 읽기 v                          |
 |  Compile                                   DelphiLSP.exe                    |
 |    BuildProject + CompileNotifier          omp가 기동한 별도 프로세스        |
 |  메시지 뷰 (IOTAMessageServices)           IDE 안의 LSP에 attach 하지 않음   |
@@ -51,14 +51,14 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | ChatSession | IDE당 대화 하나. omp 자식과 진행 상태를 가진다. 창을 닫거나 레이아웃이 바뀌어도 살아 있다. 설정을 바꾸면 같은 세션 파일로 omp를 다시 시작한다. 승인 계약을 구현한다. |
 | ChatStream | 에이전트 이벤트를 페이지 메시지로 바꾸고 기록(재표시용)을 가진다: 답, 생각, 도구 입력·중간 출력·결과, 하위 에이전트, 작업 목록, 알림. |
 | ChatCatalog | 설정 창용 모델, 생각 수준, 로그인 공급자 목록(RPC 응답). |
-| ChatActions | 보내기(스냅샷, 선택 영역 첨부), 컴파일, 새 세션, 세션 전환과 기록 불러오기, 내보내기, host-tool 실행, 상태줄 문구. |
+| ChatActions | 보내기(저장, 체크포인트, 선택 영역 첨부), 컴파일, 새 세션, 세션 전환과 기록 불러오기, 내보내기, host-tool 실행, 상태줄 문구. |
 | ChatActivity | RPC 이벤트로 지금 하는 일(생각, 답 작성, 도구 실행, 압축)과 경과 시간을 정한다. |
 | ChatPageMessages | 채팅 페이지(`src\chat`)로 보내는 JSON 메시지. 페이지는 `chat.js`(기록), `tools.js`(도구 묶음·파일 카드), `activity.js`(생각·입력·하위 에이전트·작업 목록), `topbar.js`, `composer.js`(입력 상자와 아래 줄)로 나뉜다. |
 | WebView2Host / WebView2Handlers | rtl `Winapi.WebView2`와 BPL 옆 `WebView2Loader.dll`로 WebView2를 띄운다. 가상 호스트로 페이지를 싣고, 페이지 밖 이동과 새 창을 막는다. |
 | ChatFallback | WebView2를 못 띄울 때의 글자 기록. |
 | ChatInput | WebView2 대체 화면의 VCL 입력칸: 여러 줄, 보낸 문장 기록, `/` 명령 목록. |
 | ChatTheme | IDE 테마 색(IOTAIDEThemingServices), 고대비·글자 크기 반영, 테마 변경 통지. |
-| AgentSettings | DelphiAgent 자체 설정(IDE 레지스트리 키): 채팅 표시 항목, 글자 크기, 고대비, omp 경로·추가 인자, 스냅샷 여부. |
+| AgentSettings | DelphiAgent 자체 설정(IDE 레지스트리 키): 채팅 표시 항목, 글자 크기, 고대비, omp 경로·추가 인자. |
 | SettingsDialog / SettingsUi / SettingsAccount / SettingsProject | 설정 창. 채팅 표시, 계정·모델(RPC로 바로 적용), 역할별 모델·확장·고급(프로젝트 omp 설정). |
 | OmpSettings / OmpCatalog / OmpCli | 프로젝트 omp 설정 파일 `<프로젝트>\.omp\delphiagent.yml`(`--config`로 전달)과 omp가 읽는 스킬·확장·하위 에이전트·MCP 목록. `omp config list`를 읽기만 하고 전역 설정은 쓰지 않는다. |
 | EditorContext | 활성 파일, 선택 영역, 저장 안 한 파일 수, 링크로 파일 열기. |
@@ -74,38 +74,44 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | RpcDispatch | stdout 줄을 프레임 종류별로 나눠 이벤트로 넘긴다. ToolsAPI 없음. |
 | ChatCommand | 채팅 입력을 기존 omp RPC 프레임으로 분류한다. 새 명령 `type`을 만들지 않는다. |
 | AskDialog | `extension_ui_request`와 슬래시 명령 선택 모달. |
-| Options | omp 실행 파일, 명령줄, `%TEMP%\DelphiAgent` 로그 경로. |
+| Options | omp 실행 파일, 명령줄(인자 인용), `%TEMP%\DelphiAgent` 로그 경로, 자식이 일찍 끝난 이유(stderr 마지막 줄), 공통 `--config` 내용. |
+| RpcChunks | RPC v2 `rpc_chunk` 조각을 원래 프레임으로 되돌린다(순서·크기·끊김 검사). |
+| OmpProbe | 설치된 omp 호환성 검사: 버전, 명령줄 옵션, RPC 시작·프로토콜, `rad.*` 등록과 xd:// 연결, 응답 필드, `config list`. 모델 호출 없음. 시험과 IDE가 같이 쓴다. |
+| OmpCheck | omp 버전이 바뀌면 첫 시작 때 OmpProbe를 뒤에서 돌려 채팅에 알리고, 설정 창에서 바로 돌린다. |
+| MenuIcon | `resources\MenuIcon-16/32.png`(RCDATA)를 IDE 이미지 목록에 넣어 View 메뉴 항목 아이콘으로 쓴다. |
 | IdeContext | 활성 `.dproj` 경로, 열린 모듈, 에디터 버퍼 위치. |
-| DirtyBuffers | 프롬프트 전 더티 버퍼 스냅샷과 충돌 판정. 자동 저장 기본 꺼짐. |
+| IdeFiles | 프로젝트 모듈 저장, 디스크에서 바뀐 모듈 다시 읽기(`Refresh`), 사용자가 고치던 모듈은 충돌로 돌려준다. 지워진 파일의 모듈은 닫는다. |
+| ChatDiskSync | 프롬프트 전·`rad.*` 변경 후 저장, omp 도구가 끝날 때와 턴 끝에 다시 읽기, 충돌 알림. |
+| GitRepo | git 실행, `git init`과 `.gitignore`, 별도 index로 만드는 체크포인트 커밋(`refs/delphiagent/`), 되돌리기, 체크포인트에서 브랜치. ToolsAPI 없음. |
+| ChatCheckpoints | 프로젝트 저장소 보장, 메시지마다 체크포인트, 채팅의 되돌리기·브랜치(파일은 git, 대화는 omp `get_entries`/`branch`). |
 | Compile | 활성 프로젝트 빌드와 완료 통지. 결과는 메시지 뷰로 보낸다. |
 | HostToolDefs | host-tool 이름과 `set_host_tools` 스키마. ToolsAPI 없음. |
 | HostTools | host-tool 호출을 도구별 구현으로 나눠 보낸다. 버퍼 읽기, 컴파일. 메인 스레드에서만 ToolsAPI를 호출한다. |
 | Approval | 상태를 바꾸는 host-tool이 쓰는 사용자 승인 계약(`IAgentApproval`). ChatSession이 구현한다. |
-| BufferEdits | 승인 후 IDE 버퍼 반영(줄 범위, 전체, 캐럿 삽입). 스냅샷 이후 버퍼가 바뀌었으면 반영하지 않는다. 저장하지 않는다. |
+| BufferEdits | 승인 후 캐럿 위치에 삽입(`rad.insert_at_caret`). 코드 편집은 omp의 디스크 편집이다. |
 | DebugTools | 디버거 상태, 호출 스택, 부작용 없는 식 평가, 중단점 목록. 읽기 전용. |
 | DebugControl | 승인 후 실행·계속, 스텝(over, into, return), 일시 정지, 종료, 소스 중단점 추가. 디버기 메모리는 쓰지 않는다. |
 | FormDesigner | 유닛의 폼 디자이너 찾기, 이름→컴포넌트, 속성 값 문자열화, 디자이너 수정 통지. |
 | FormTools | `rad.form_*` 분배와 읽기(컴포넌트 목록, published 속성). |
-| FormEdits | 승인 후 속성 변경, 컴포넌트 추가·삭제·이름 변경, 이벤트 연결. 저장하지 않는다. |
+| FormEdits | 승인 후 속성 변경, 컴포넌트 추가·삭제·이름 변경, 이벤트 연결. 끝나면 ChatDiskSync가 저장한다. |
 
 ## 데이터 흐름
 
 1. 사용자가 DockForm에 프롬프트를 보낸다.
-2. DirtyBuffers가 수정된 IDE 버퍼의 사본을 `%TEMP%\DelphiAgent`에 쓰고 그 경로를 프롬프트에 붙인다. 원본 파일은 저장하지 않는다.
+2. ChatDiskSync가 프로젝트의 저장 안 한 모듈을 저장하고, ChatCheckpoints가 그 상태를 git 체크포인트로 남긴다.
 3. RpcClient가 `ready`를 받은 뒤에만 `prompt` 프레임을 쓴다.
 4. omp가 도구와 LSP로 답을 만든다. DelphiLSP는 omp 설정의 별도 인스턴스다.
-5. omp가 파일을 고치면 패치는 디스크에 남는다. IDE 버퍼는 아직 그대로다.
-6. 사용자가 승인하면 HostTools가 그 텍스트를 IDE 버퍼에 쓴다.
+5. omp는 자기 도구로 디스크 파일을 고친다(승인 방식에 따라 채팅 카드로 묻는다). 도구가 끝날 때마다 IdeFiles가 바뀐 모듈을 IDE에 다시 읽힌다.
+6. 폼·디버거·프로젝트 변경은 `rad.*` host-tool로 승인 뒤 IDE에서 하고, 끝나면 저장한다.
 7. Compile이 활성 프로젝트를 빌드한다. 오류와 성공은 메시지 뷰에 올린다.
 8. BPL을 다시 빌드한 경우에는 같은 비트의 IDE에 그 BPL만 다시 로드한다.
 
-## 더티 버퍼
+## 파일과 체크포인트
 
-- 프롬프트를 보내기 직전에, 수정된 버퍼마다 텍스트와 파일 경로를 스냅샷한다.
-- 자동 저장은 기본 꺼짐이다. 세션에서 사용자가 켜기 전에는 저장하지 않는다.
-- omp의 디스크 패치는 승인 전이다. 승인 없이 IDE 버퍼를 덮어쓰지 않는다.
-- 승인 후에는 IDE 에디터 API로 버퍼를 갱신한다. 열린 버퍼와 디스크가 어긋나게 두지 않는다.
-- 스냅샷과 다른 사용자 편집이 있으면 덮어쓰지 않고 DockForm에 충돌을 보여 준다.
+- 디스크가 기준이다. 프롬프트 직전과 `rad.*` 변경 직후에 저장한다.
+- omp가 바꾼 파일은 IDE에 다시 읽힌다. 사용자가 그 사이 고친 모듈은 덮어쓰지 않고 충돌로 알린다.
+- 메시지마다 체크포인트 커밋(`refs/delphiagent/cp/NNNNNN`, 부모는 HEAD, 트리는 작업 폴더 전체)을 남긴다. 사용자 브랜치 기록은 바뀌지 않는다.
+- 되돌리기: 지금 상태를 `refs/delphiagent/before-restore/`에 남기고, 체크포인트의 파일을 쓰고 그 뒤에 생긴 파일을 지운 뒤 IDE에 다시 읽힌다. 대화는 omp `branch`로 그 메시지 앞에서 갈라지고, 메시지는 입력칸으로 돌아온다. 브랜치는 여기에 `git branch`와 HEAD 전환을 더한다.
 
 ## 비범위
 

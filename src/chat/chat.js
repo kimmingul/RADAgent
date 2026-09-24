@@ -133,7 +133,8 @@
 
   function handleNotice(level, text) {
     const wasNear = isNearBottom();
-    const notice = document.createElement('div');
+    // Output of a slash command omp ran itself: keep its layout.
+    const notice = document.createElement(level === 'output' ? 'pre' : 'div');
     notice.className = 'notice notice-' + (level || 'info');
     notice.textContent = text || '';
     logEl.appendChild(notice);
@@ -215,6 +216,8 @@
       case 'approvalResult': global.ChatCards.approvalResult(msg); break;
       case 'plan': global.ChatCards.plan(msg); break;
       case 'btw': global.ChatBtw.update(msg); break;
+      case 'checkpoint': global.ChatCheckpoints.one(msg); break;
+      case 'checkpoints': global.ChatCheckpoints.list(msg); break;
       case 'btwList': global.ChatBtw.setList(msg); break;
       case 'focusInput': global.ChatComposer.focus(); break;
       case 'toolInputDelta': global.ChatActivity.toolInputDelta(msg.id, msg.name, msg.text); break;
@@ -292,6 +295,7 @@
     global.ChatComposer.wire();
     global.ChatPlusMenu.wire();
     global.ChatBtw.wire(ctx);
+    global.ChatCheckpoints.init(postHost);
     scrollBtn = document.getElementById('scroll-bottom-btn');
     if (scrollBtn) {
       scrollBtn.addEventListener('click', () => scrollToBottom(true));

@@ -1,6 +1,6 @@
 unit DelphiAgent.RpcProtocol;
 
-{ JSONL frames for omp --mode rpc v1. No ToolsAPI. }
+{ JSONL frames for omp --mode rpc (protocol v1, and v2 when omp offers it). No ToolsAPI. }
 
 interface
 
@@ -8,7 +8,10 @@ uses
   System.SysUtils;
 
 const
+  { One physical stdout line (v1 and v2). }
   MaxFrameBytes = 1048576;
+  { One logical frame rebuilt from v2 rpc_chunk frames. }
+  MaxReassembledFrameBytes = 67108864;
 
 type
   TAgentCompileError = record
@@ -21,6 +24,12 @@ type
 function AcceptFrameLine(const Line: string): Boolean;
 function FrameTypeOf(const Line: string): string;
 function IsReadyFrame(const Line: string): Boolean;
+{ Protocol to use after this ready frame: 2 when offered, else 1; 0 when omp offers neither. }
+function ChooseProtocol(const ReadyLine: string): Integer;
+function BuildNegotiateFrame(const Id: string; Version: Integer): string;
+{ A command frame from the page or a dialog with a fresh request id; UI replies keep theirs.
+  '' when Frame is not a JSON object. }
+function WithRequestId(const FrameType, Frame: string; var NextId: Integer): string;
 function CanSendPrompt(Ready, HostToolsSent: Boolean; const Message: string): Boolean;
 function AllowOutbound(Ready: Boolean; const FrameType: string): Boolean;
 function NewRequestId(var NextId: Integer): string;
@@ -29,7 +38,6 @@ function BuildPromptFrame(const Id, Message: string; const ImagesJson: string = 
 function BuildAbortFrame(const Id: string): string;
 function BuildHostToolResultFrame(const Id, Text: string; IsError: Boolean): string;
 function BuildExtensionUiResponse(const RequestLine: string): string;
-function MessageWithSnapshots(const Message: string; const Paths: TArray<string>): string;
 function TryBuildPromptFrame(Ready, HostToolsSent: Boolean; const Id, Message: string;
   out Frame: string; const ImagesJson: string = ''): Boolean;
 function BuildCompileResultJson(Ok: Boolean; const ConfigName, PlatformName: string;
@@ -51,7 +59,8 @@ end;
 
 function AcceptFrameLine(const Line: string): Boolean;
 begin
-  Result := TEncoding.UTF8.GetByteCount(Line) <= MaxFrameBytes;
+  { Physical lines over MaxFrameBytes never get here (ReadStdoutLines drops them). }
+  Result := TEncoding.UTF8.GetByteCount(Line) <= MaxReassembledFrameBytes;
 end;
 
 function FrameTypeOf(const Line: string): string;
@@ -69,6 +78,74 @@ end;
 function IsReadyFrame(const Line: string): Boolean;
 begin
   Result := FrameTypeOf(Line) = 'ready';
+end;
+
+function ChooseProtocol(const ReadyLine: string): Integer;
+var
+  Obj: TJSONObject;
+  Versions: TJSONValue;
+  Item: TJSONValue;
+  HasV1, HasV2: Boolean;
+begin
+  Obj := JsonObject(ReadyLine);
+  try
+    Versions := nil;
+    if Obj <> nil then
+      Versions := Obj.GetValue('supportedProtocolVersions');
+    { Older runtimes announce no list and speak v1 only. }
+    if not (Versions is TJSONArray) then
+      Exit(1);
+    HasV1 := False;
+    HasV2 := False;
+    for Item in TJSONArray(Versions) do
+      if Item is TJSONNumber then
+      begin
+        HasV1 := HasV1 or (TJSONNumber(Item).AsInt = 1);
+        HasV2 := HasV2 or (TJSONNumber(Item).AsInt = 2);
+      end;
+    if HasV2 then
+      Result := 2
+    else if HasV1 then
+      Result := 1
+    else
+      Result := 0;
+  finally
+    Obj.Free;
+  end;
+end;
+
+function BuildNegotiateFrame(const Id: string; Version: Integer): string;
+var
+  Obj: TJSONObject;
+begin
+  Obj := TJSONObject.Create;
+  try
+    Obj.AddPair('id', Id);
+    Obj.AddPair('type', 'negotiate_protocol');
+    Obj.AddPair('protocolVersion', TJSONNumber.Create(Version));
+    Result := Obj.ToJSON;
+  finally
+    Obj.Free;
+  end;
+end;
+
+function WithRequestId(const FrameType, Frame: string; var NextId: Integer): string;
+var
+  Obj: TJSONObject;
+begin
+  Obj := JsonObject(Frame);
+  if Obj = nil then
+    Exit('');
+  try
+    if FrameType <> 'extension_ui_response' then
+    begin
+      Obj.RemovePair('id').Free;
+      Obj.AddPair('id', NewRequestId(NextId));
+    end;
+    Result := Obj.ToJSON;
+  finally
+    Obj.Free;
+  end;
 end;
 
 function CanSendPrompt(Ready, HostToolsSent: Boolean; const Message: string): Boolean;
@@ -189,17 +266,6 @@ begin
   finally
     Request.Free;
   end;
-end;
-function MessageWithSnapshots(const Message: string; const Paths: TArray<string>): string;
-var
-  Index: Integer;
-begin
-  Result := Message;
-  if Length(Paths) = 0 then
-    Exit;
-  Result := Result + sLineBreak + sLineBreak + 'Dirty buffer snapshots:';
-  for Index := 0 to High(Paths) do
-    Result := Result + sLineBreak + Paths[Index];
 end;
 function TryBuildPromptFrame(Ready, HostToolsSent: Boolean; const Id, Message: string;
   out Frame: string; const ImagesJson: string): Boolean;

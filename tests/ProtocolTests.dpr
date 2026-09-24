@@ -13,15 +13,20 @@ uses
   DelphiAgent.HostToolDefs in '..\src\DelphiAgent.HostToolDefs.pas',
   DelphiAgent.ChatCommand in '..\src\DelphiAgent.ChatCommand.pas',
   DelphiAgent.RpcDispatch in '..\src\DelphiAgent.RpcDispatch.pas',
-  DelphiAgent.DirtyBuffers in '..\src\DelphiAgent.DirtyBuffers.pas',
   DelphiAgent.RpcClient in '..\src\DelphiAgent.RpcClient.pas',
   DelphiAgent.RpcJson in '..\src\DelphiAgent.RpcJson.pas',
   DelphiAgent.RpcEvents in '..\src\DelphiAgent.RpcEvents.pas',
   DelphiAgent.RpcResponses in '..\src\DelphiAgent.RpcResponses.pas',
   DelphiAgent.LineDiff in '..\src\DelphiAgent.LineDiff.pas',
+  DelphiAgent.RpcChunks in '..\src\DelphiAgent.RpcChunks.pas',
+  DelphiAgent.OmpCli in '..\src\DelphiAgent.OmpCli.pas',
+  DelphiAgent.OmpProbe in '..\src\DelphiAgent.OmpProbe.pas',
+  DelphiAgent.GitRepo in '..\src\DelphiAgent.GitRepo.pas',
   TestCheck in 'TestCheck.pas',
   RpcEventsTests in 'RpcEventsTests.pas',
-  LineDiffTests in 'LineDiffTests.pas';
+  LineDiffTests in 'LineDiffTests.pas',
+  OmpCompatTests in 'OmpCompatTests.pas',
+  GitRepoTests in 'GitRepoTests.pas';
 
 var
   GFailures: Integer;
@@ -72,22 +77,18 @@ procedure TestPromptGate;
 var
   Frame: string;
   Obj: TJSONObject;
-  Paths: TArray<string>;
   NextId: Integer;
 begin
   Check(not CanSendPrompt(False, True, 'hello'), 'prompt blocked before ready');
   Check(not CanSendPrompt(True, False, 'hello'), 'prompt blocked before host tools');
   Check(not TryBuildPromptFrame(False, False, 'req-1', 'hello', Frame), 'try build refuses');
   Check(Frame = '', 'refused frame is empty');
-  SetLength(Paths, 1);
-  Paths[0] := 'C:\Temp\DelphiAgent\snap-0-Unit1.pas';
   NextId := 0;
-  Check(TryBuildPromptFrame(True, True, NewRequestId(NextId),
-    MessageWithSnapshots('요약', Paths), Frame), 'try build allows');
+  Check(TryBuildPromptFrame(True, True, NewRequestId(NextId), '요약', Frame), 'try build allows');
   Obj := Parse(Frame);
   try
     Check(Obj.GetValue<string>('type') = 'prompt', 'frame type prompt');
-    Check(Obj.GetValue<string>('message').Contains(Paths[0]), 'prompt contains snapshot path');
+    Check(Obj.GetValue<string>('message') = '요약', 'prompt carries the message');
   finally
     Obj.Free;
   end;
@@ -143,8 +144,8 @@ var
 begin
   Names := ToolNames(BuildSetHostToolsFrame('req-3'), SchemaOk);
   Check(SchemaOk, 'every tool schema is an object with a declared required field');
-  Check(Names.Contains(' ' + ToolFormApply + ' ') and Names.Contains(' ' + ToolApplyEdits + ' '),
-    'project with forms offers batch form and edit tools');
+  Check(Names.Contains(' ' + ToolFormApply + ' ') and not Names.Contains('rad.apply_edit') and
+    not Names.Contains('rad.read_buffer'), 'forms change through the designer; code through omp''s own edits');
   Profile := DefaultToolProfile;
   Profile.HasForms := False;
   Names := ToolNames(BuildSetHostToolsFrame('req-4', Profile), SchemaOk);
@@ -177,30 +178,14 @@ begin
   end;
 end;
 
-procedure TestSnapshotsAndFrames;
+procedure TestFrames;
 var
-  Root, ReadBack: string;
-  Files, Texts, Paths: TArray<string>;
   Client: TAgentRpcClient;
   Huge: string;
 begin
-  Root := AgentTempRoot + 'protocol-tests\';
-  ForceDirectories(Root);
-  SetLength(Files, 1);
-  SetLength(Texts, 1);
-  Files[0] := 'Unit1.pas';
-  Texts[0] := 'unit Unit1;';
-  Paths := WriteSnapshots(Root, Files, Texts);
-  Check(Length(Paths) = 1, 'one snapshot');
-  Check(Paths[0].StartsWith(Root), 'snapshot stays under temp');
-  ReadBack := TFile.ReadAllText(Paths[0], TEncoding.UTF8);
-  Check(ReadBack = Texts[0], 'snapshot text roundtrip');
-  RememberSnapshots(Files, Texts);
-  Check(not SnapshotConflicts('Unit1.pas', Texts[0]), 'same text is not a conflict');
-  Check(SnapshotConflicts('Unit1.pas', Texts[0] + ' '), 'edited text conflicts');
   Check(IsReadyFrame('{"type":"ready","protocolVersion":1}'), 'ready frame');
-  Huge := StringOfChar('x', MaxFrameBytes + 1);
-  Check(not AcceptFrameLine(Huge), 'oversize line rejected');
+  Huge := StringOfChar('x', MaxReassembledFrameBytes + 1);
+  Check(not AcceptFrameLine(Huge), 'a frame over the v2 reassembly limit is rejected');
   Client := TAgentRpcClient.Create;
   try
     Check(not Client.SendPrompt('hello'), 'client refuses prompt before ready');
@@ -293,11 +278,14 @@ begin
     TestCommandLine;
     TestPromptGate;
     TestHostToolsAndCompileJson;
-    TestSnapshotsAndFrames;
+    TestFrames;
     TestClassifyChat;
     RunRpcEventsTests(Check);
     RunLineDiffTests(Check);
+    RunOmpCompatTests(Check);
+    RunGitRepoTests(Check);
     TestLiveReady;
+    RunLiveOmpProbe(Check);
   except
     on E: Exception do
     begin

@@ -1,6 +1,6 @@
 ﻿---
 name: omp-rpc
-description: omp 18.2.11 --mode rpc JSONL 계약. ready 프레임, prompt, abort, host-tools. Use when starting omp, writing the Delphi RPC client, or handling host tool calls. DelphiLSP는 이 스킬이 아니라 delphi-lsp 스킬로 연결한다.
+description: omp --mode rpc JSONL 계약(검증 버전 18.2.11). ready 프레임, prompt, abort, host-tools. Use when starting omp, writing the Delphi RPC client, or handling host tool calls. DelphiLSP는 이 스킬이 아니라 delphi-lsp 스킬로 연결한다.
 ---
 
 # omp RPC
@@ -31,7 +31,7 @@ DelphiLSP는 이 프로세스에 붙이지 않는다. omp가 `.omp/lsp.json`으�
 {"type":"ready","protocolVersion":1,"supportedProtocolVersions":[1,2],"maxFrameBytes":1048576,"maxReassembledFrameBytes":67108864}
 ```
 
-v1만 구현해도 된다. v2 `negotiate_protocol`은 64MiB까지 재조립이 필요할 때만 보낸다. 물리 프레임 한도는 1MiB다.
+`supportedProtocolVersions`에 2가 있으면 첫 명령으로 `negotiate_protocol`(v2)을 보낸다. 그 뒤 1MiB가 넘는 객체는 `rpc_chunk` 조각으로 오고, `DelphiAgent.RpcChunks`가 `ReadStdoutLines` 안에서 원래 줄로 되돌린다(재조립 한도 64MiB). 목록이 없으면 v1, 1도 2도 없으면 연결하지 않는다. 물리 프레임 한도는 1MiB다.
 
 ## prompt
 
@@ -42,7 +42,7 @@ v1만 구현해도 된다. v2 `negotiate_protocol`은 64MiB까지 재조립이 �
 `prompt` 응답의 `success: true`는 접수다. 턴 종료가 아니다.
 
 - 에이전트 턴은 `agent_end`이고 `isTerminal`이 `false`가 아닐 때 끝이다.
-- `data.agentInvoked: false` 또는 이후 `prompt_result`는 로컬에서 끝난 프롬프트다.
+- `data.agentInvoked: false` 또는 이후 `prompt_result`는 로컬에서 끝난 프롬프트다(`agent_end` 없음). 이때 턴을 끝낸다. 그 전에 온 `command_output.text`는 ANSI 색을 지우고 보여 준다.
 - 이미 스트리밍 중이면 `streamingBehavior`가 필요하다. `"steer"` 또는 `"followUp"`. 없으면 실패한다.
 
 ## abort

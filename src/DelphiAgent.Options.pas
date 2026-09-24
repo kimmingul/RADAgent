@@ -1,13 +1,19 @@
-unit DelphiAgent.Options;
+﻿unit DelphiAgent.Options;
 
 { omp.exe location, temp/log paths and the omp command line. No ToolsAPI. }
 
 interface
 
+const
+  { The --config DelphiAgent passes to every main omp: rad.* host tools as inline xd:// devices. }
+  OmpHostConfig = '{"tools":{"xdevInlineDevices":["rad.*"]}}';
+
 function OmpExecutable: string;
 function AgentTempRoot: string;
 function OmpStderrLog: string;
 procedure AppendRpcLog(const Line: string);
+{ Why an omp child ended early: the last line it wrote to StderrPath (e.g. "Error: unknown flag"). }
+function ChildExitReason(const StderrPath: string): string;
 { One command-line argument in quotes, safe for a trailing backslash (C:\dir\). }
 function QuoteArg(const Value: string): string;
 { Configs: --config files in order (empty entries skipped); AppendPrompt: file whose text omp
@@ -70,6 +76,24 @@ begin
   finally
     GLogGate.Release;
   end;
+end;
+
+function ChildExitReason(const StderrPath: string): string;
+var
+  Lines: TArray<string>;
+  Index: Integer;
+begin
+  Result := '파이프가 닫혔습니다';
+  try
+    if not FileExists(StderrPath) then
+      Exit;
+    Lines := TFile.ReadAllLines(StderrPath, TEncoding.UTF8);
+  except
+    Exit;
+  end;
+  for Index := High(Lines) downto 0 do
+    if Trim(Lines[Index]) <> '' then
+      Exit(Result + ': ' + Trim(Lines[Index]));
 end;
 
 function QuoteArg(const Value: string): string;

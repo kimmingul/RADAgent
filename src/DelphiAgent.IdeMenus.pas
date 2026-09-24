@@ -111,8 +111,8 @@ end;
 
 procedure TMenuHandlers.FixBuild(Sender: TObject);
 begin
-  Send('활성 프로젝트의 빌드 오류를 고쳐줘. 먼저 rad.compile로 오류 위치와 내용을 확인하고, ' +
-    '고칠 내용은 rad.apply_edit로 내가 승인한 뒤에만 버퍼에 반영해.');
+  Send('활성 프로젝트의 빌드 오류를 고쳐줘. 먼저 rad.compile로 오류 위치와 내용을 확인하고 고친 뒤 ' +
+    '다시 rad.compile로 확인해.');
 end;
 
 function SelectionPrompt(const Request: string): string;
@@ -139,8 +139,7 @@ procedure TMenuHandlers.FixSelection(Sender: TObject);
 var
   Prompt: string;
 begin
-  Prompt := SelectionPrompt('아래 선택한 코드의 문제를 찾아 고쳐줘. 고칠 내용은 rad.apply_edit로 ' +
-    '내가 승인한 뒤에만 버퍼에 반영해.');
+  Prompt := SelectionPrompt('아래 선택한 코드의 문제를 찾아 고쳐줘.');
   if Prompt <> '' then
     Send(Prompt);
 end;

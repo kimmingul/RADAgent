@@ -26,54 +26,21 @@ implementation
 uses
   System.SysUtils, System.JSON, DelphiAgent.ChatSession, DelphiAgent.RpcResponses,
   DelphiAgent.RpcProtocol, DelphiAgent.ChatCommand, DelphiAgent.AskDialog,
-  DelphiAgent.IdeContext, DelphiAgent.DirtyBuffers, DelphiAgent.Compile, DelphiAgent.AgentSettings,
+  DelphiAgent.IdeContext, DelphiAgent.Compile, DelphiAgent.AgentSettings,
   DelphiAgent.ChatPageMessages, DelphiAgent.Sessions, DelphiAgent.Options, DelphiAgent.HostTools,
-  DelphiAgent.OmpSettings, DelphiAgent.HostToolDefs, DelphiAgent.ChatPlan, DelphiAgent.ChatBtw;
+  DelphiAgent.OmpSettings, DelphiAgent.HostToolDefs, DelphiAgent.ChatPlan, DelphiAgent.ChatBtw,
+  DelphiAgent.ChatDiskSync, DelphiAgent.ChatCheckpoints, DelphiAgent.RpcJson;
 
 var
   GPickModel: Boolean;
   GHistory: TArray<THistoryItem>;
-
-function PromptWithSnapshots(const Text: string): string;
-var
-  Open: TArray<TEditorText>;
-  Files, Texts, DirtyFiles, DirtyTexts, Snaps: TArray<string>;
-  Index: Integer;
-  Dir: string;
-begin
-  { Remember every open buffer for conflict checks; only dirty ones go to disk for omp. }
-  Open := OpenEditorTexts;
-  SetLength(Files, Length(Open));
-  SetLength(Texts, Length(Open));
-  for Index := 0 to High(Open) do
-  begin
-    Files[Index] := Open[Index].FileName;
-    Texts[Index] := Open[Index].Text;
-    if Open[Index].Modified and SnapshotDirtyBuffers then
-    begin
-      DirtyFiles := DirtyFiles + [Open[Index].FileName];
-      DirtyTexts := DirtyTexts + [Open[Index].Text];
-    end;
-  end;
-  RememberSnapshots(Files, Texts);
-  Snaps := WriteSnapshots(AgentTempRoot, DirtyFiles, DirtyTexts);
-  { omp expands @path from disk; an unsaved buffer must be read from its snapshot instead. }
-  Result := Text;
-  Dir := IncludeTrailingPathDelimiter(ActiveProjectDir);
-  for Index := 0 to High(Snaps) do
-  begin
-    Result := StringReplace(Result, '@' + DirtyFiles[Index], '@' + Snaps[Index], [rfReplaceAll, rfIgnoreCase]);
-    Result := StringReplace(Result, '@' + ExtractRelativePath(Dir, DirtyFiles[Index]), '@' + Snaps[Index],
-      [rfReplaceAll, rfIgnoreCase]);
-  end;
-  Result := MessageWithSnapshots(Result, Snaps);
-end;
 
 function SubmitChat(const Text, Attachment, AttachmentLabel, ImagesJson: string): Boolean;
 var
   Session: TChatSession;
   Arg1, Arg2, Display: string;
   PickModels: Boolean;
+  Seq: Integer;
 begin
   Session := ChatSession;
   Result := False;
@@ -85,12 +52,18 @@ begin
   end;
   if not Session.Connected or Session.Busy or (Trim(Text) = '') then
     Exit;
+  { omp reads and edits files on disk: they must hold what the IDE shows. }
+  SaveProject;
   if ClassifyChat(Text, Arg1, Arg2) = ccPrompt then
   begin
     Display := Text;
     if AttachmentLabel <> '' then
       Display := Display + sLineBreak + '(' + AttachmentLabel + ')';
-    Exit(Session.SendPrompt(PromptWithSnapshots(Text + Attachment), Display, ImagesJson));
+    Seq := CheckpointBeforePrompt(Text + Attachment);
+    Result := Session.SendPrompt(Text + Attachment, Display, ImagesJson);
+    if Result and (Seq > 0) then
+      Session.Emit(PageCheckpoint(Seq));
+    Exit;
   end;
   if DispatchSlash(Text, Session.SendCommand, PickModels) then
   begin
@@ -193,6 +166,32 @@ begin
   ChatSession.RestartWhenIdle;
 end;
 
+function BranchText(const Line: string): string;
+var
+  Obj: TJSONObject;
+begin
+  Obj := JsonObject(Line);
+  try
+    Result := JsonStr(JsonChild(Obj, 'data'), 'text');
+  finally
+    Obj.Free;
+  end;
+end;
+
+function PageSetInput(const Text: string): string;
+var
+  Obj: TJSONObject;
+begin
+  Obj := TJSONObject.Create;
+  try
+    Obj.AddPair('t', 'setInput');
+    Obj.AddPair('text', Text);
+    Result := Obj.ToJSON;
+  finally
+    Obj.Free;
+  end;
+end;
+
 procedure LoadHistoryPage(const Cursor: string);
 var
   Obj: TJSONObject;
@@ -244,8 +243,13 @@ begin
     ChatSession.Notice('info', '새 세션을 시작했습니다.');
     RefreshState;
   end
-  else if Command = 'switch_session' then
+  else if Command = 'get_entries' then
+    HandleEntries(Line)
+  else if (Command = 'switch_session') or (Command = 'branch') then
   begin
+    { branch: going back to a checkpoint; its message goes back into the input box. }
+    if Command = 'branch' then
+      ChatSession.PostToView(PageSetInput(BranchText(Line)));
     ChatSession.ClearTranscript;
     GHistory := nil;
     RefreshState;
@@ -259,6 +263,10 @@ begin
     else
     begin
       ChatSession.Emit(PageHistory(GHistory));
+      ChatSession.Emit(PageCheckpointList);
+      FollowUp := TakeRestoreNotice;
+      if FollowUp <> '' then
+        ChatSession.Notice('info', FollowUp);
       ChatSession.Notice('info', Format('세션을 불러왔습니다. 메시지 %d개.', [Length(GHistory)]));
       GHistory := nil;
       { A plan the user approved goes out once the restarted omp has the history back. }
@@ -297,6 +305,9 @@ begin
   { A first form makes the form tools available. }
   if (ToolName = ToolNewModule) and not IsError then
     Session.RefreshHostTools;
+  { omp works on disk: what the IDE just changed must be there before omp reads it. }
+  if IsChangingTool(ToolName) and not IsError then
+    SaveProject;
   if (Session.Client <> nil) and not Session.Client.WasCancelled(CallId) then
     Session.Client.SendHostResult(CallId, Text, IsError);
 end;

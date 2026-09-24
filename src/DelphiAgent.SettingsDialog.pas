@@ -15,7 +15,8 @@ uses
   System.SysUtils, System.Classes, System.IOUtils, Vcl.Forms, Vcl.Controls, Vcl.StdCtrls, Vcl.ExtCtrls,
   Vcl.ComCtrls, System.UITypes, DelphiAgent.AskDialog, DelphiAgent.SettingsUi, DelphiAgent.SettingsAccount,
   DelphiAgent.SettingsProject, DelphiAgent.OmpSettings, DelphiAgent.AgentSettings,
-  DelphiAgent.ChatSession, DelphiAgent.ChatTheme, DelphiAgent.IdeContext, DelphiAgent.Options;
+  DelphiAgent.ChatSession, DelphiAgent.ChatTheme, DelphiAgent.IdeContext, DelphiAgent.Options,
+  DelphiAgent.OmpCheck, Vcl.Dialogs;
 
 type
   TSettingsForm = class(TForm)
@@ -23,7 +24,7 @@ type
     FPages: TPageControl;
     FShows: TListView;
     FFontSize: TComboBox;
-    FHighContrast, FSnapshot: TCheckBox;
+    FHighContrast: TCheckBox;
     FOmpPath, FOmpArgs: TEdit;
     FProject: TOmpProjectSettings;
     FProjectPages: TProjectPages;
@@ -31,6 +32,7 @@ type
     procedure BuildDisplay(Page: TWinControl);
     procedure BuildAdvanced(Page: TWinControl);
     procedure OkClick(Sender: TObject);
+    procedure CheckOmpClick(Sender: TObject);
   public
     constructor CreateDialog;
     destructor Destroy; override;
@@ -161,8 +163,26 @@ begin
   FOmpArgs.TextHint := '예: --no-lsp';
   FOmpArgs.Text := OmpExtraArgs;
   AddRow(Page, 'omp 추가 인자', FOmpArgs);
-  FSnapshot := AddCheck(Page, '프롬프트마다 저장 안 한 버퍼를 임시 스냅샷으로 omp에 넘기기');
-  FSnapshot.Checked := SnapshotDirtyBuffers;
+  AddHeading(Page, 'omp 호환성');
+  AddButton(AddButtons(Page), 'omp 호환성 검사', CheckOmpClick);
+  AddNote(Page, 'omp를 업데이트하면 처음 시작할 때 자동으로 검사합니다. DelphiAgent가 쓰는 명령줄 옵션, ' +
+    'RPC 프로토콜, IDE 도구 등록, 응답 필드를 확인하며 모델은 부르지 않습니다.');
+end;
+
+procedure TSettingsForm.CheckOmpClick(Sender: TObject);
+var
+  Dir, Report: string;
+begin
+  Dir := ExcludeTrailingPathDelimiter(ActiveProjectDir);
+  if Dir = '' then
+    Dir := GetCurrentDir;
+  Screen.Cursor := crHourGlass;
+  try
+    Report := OmpCheckReport(Dir);
+  finally
+    Screen.Cursor := crDefault;
+  end;
+  MessageDlg('omp 호환성 검사' + sLineBreak + sLineBreak + Report, mtInformation, [mbOK], 0);
 end;
 
 procedure TSettingsForm.OkClick(Sender: TObject);
@@ -180,7 +200,6 @@ begin
   if FFontSize.ItemIndex >= 0 then
     SetChatFontSize(StrToInt(FFontSize.Items[FFontSize.ItemIndex]));
   SetHighContrast(FHighContrast.Checked);
-  SetSnapshotDirtyBuffers(FSnapshot.Checked);
   Restart := (Trim(FOmpPath.Text) <> OmpPathOverride) or (Trim(FOmpArgs.Text) <> OmpExtraArgs);
   SetOmpPathOverride(FOmpPath.Text);
   SetOmpExtraArgs(FOmpArgs.Text);

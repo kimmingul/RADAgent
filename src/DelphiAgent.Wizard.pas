@@ -12,7 +12,8 @@ uses
   System.SysUtils, System.Classes, System.IniFiles, Winapi.Windows, Vcl.Forms,
   Vcl.Controls, Vcl.Menus, Vcl.ActnList, Vcl.ImgList, Vcl.ComCtrls, Vcl.ToolWin, Vcl.ExtCtrls,
   ToolsAPI, DesignIntf, DelphiAgent.DockForm, DelphiAgent.Compile, DelphiAgent.RpcClient,
-  DelphiAgent.Options, DelphiAgent.ChatSession, DelphiAgent.IdeMenus, DelphiAgent.DockKeeper;
+  DelphiAgent.Options, DelphiAgent.ChatSession, DelphiAgent.IdeMenus, DelphiAgent.DockKeeper,
+  DelphiAgent.MenuIcon;
 
 type
   TDelphiAgentWizard = class(TNotifierObject, IOTAWizard)
@@ -283,12 +284,14 @@ begin
     begin
       GViewAction := TAction.Create(GMenuOwner);
       GViewAction.Caption := 'DelphiAgent';
+      GViewAction.ImageIndex := AgentImageIndex;
       GViewAction.OnExecute := GMenuOwner.OpenChat;
     end;
     if GViewItem = nil then
     begin
       GViewItem := TMenuItem.Create(GMenuOwner);
       GViewItem.Caption := 'DelphiAgent';
+      GViewItem.ImageIndex := AgentImageIndex;
       GViewItem.OnClick := GMenuOwner.OpenChat;
     end;
     Services := BorlandIDEServices as INTAServices;

@@ -1,4 +1,4 @@
-unit DelphiAgent.ChatCommand;
+﻿unit DelphiAgent.ChatCommand;
 
 { Maps chat input onto omp RPC frames that already exist. No new command types. }
 
@@ -39,6 +39,13 @@ type
 
 function ParseExtensionUi(const Line: string; out Ui: TExtensionUi): Boolean;
 function BuildUiReply(const Id, Value: string; Confirmed, Cancelled: Boolean): string;
+{ omp's tool approval: a select titled "Allow tool: <name>" (omp approval-mode.md). }
+function IsToolApproval(const Ui: TExtensionUi): Boolean;
+{ The approval is for a rad.* host tool, called by name or through an xd://rad.* device. }
+function ApprovalTargetsRad(const Ui: TExtensionUi): Boolean;
+{ The option that approves / denies, found by its wording rather than its position; '' if none. }
+function ApproveOption(const Ui: TExtensionUi): string;
+function DenyOption(const Ui: TExtensionUi): string;
 
 implementation
 
@@ -329,6 +336,40 @@ begin
   finally
     Obj.Free;
   end;
+end;
+
+function IsToolApproval(const Ui: TExtensionUi): Boolean;
+begin
+  Result := (Ui.Method = 'select') and Ui.Title.TrimLeft.StartsWith('Allow tool', True);
+end;
+
+function ApprovalTargetsRad(const Ui: TExtensionUi): Boolean;
+var
+  Text: string;
+begin
+  Text := LowerCase(Ui.Title + #10 + Ui.Message);
+  Result := IsToolApproval(Ui) and (Text.Contains('xd://rad.') or Text.Contains('allow tool: rad.'));
+end;
+
+function OptionStarting(const Ui: TExtensionUi; const Words: array of string): string;
+var
+  Option, Word: string;
+begin
+  for Option in Ui.Options do
+    for Word in Words do
+      if LowerCase(Trim(Option)).StartsWith(Word) then
+        Exit(Option);
+  Result := '';
+end;
+
+function ApproveOption(const Ui: TExtensionUi): string;
+begin
+  Result := OptionStarting(Ui, ['approve', 'allow', 'accept', 'yes', '승인', '허용']);
+end;
+
+function DenyOption(const Ui: TExtensionUi): string;
+begin
+  Result := OptionStarting(Ui, ['deny', 'reject', 'decline', 'no', '거부', '거절']);
 end;
 
 end.

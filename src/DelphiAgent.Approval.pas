@@ -10,7 +10,6 @@ type
     ['{B1C2A8E4-7F0D-4C3A-9E21-6D5A4B3C2D10}']
     { Target is the file or IDE area. Before '' means no diff: show After as is. True on approve. }
     function ApproveChange(const Target, Before, After: string): Boolean;
-    procedure ShowConflict(const FileName: string);
     { An approved edit reached the buffer. Before '' means text inserted at Line. }
     procedure ChangeApplied(const FileName, Before, After: string; Line: Integer);
   end;
@@ -30,7 +29,6 @@ type
   public
     constructor Create(const Inner: IAgentApproval);
     function ApproveChange(const Target, Before, After: string): Boolean;
-    procedure ShowConflict(const FileName: string);
     procedure ChangeApplied(const FileName, Before, After: string; Line: Integer);
   end;
 
@@ -43,12 +41,6 @@ end;
 function TPreApproved.ApproveChange(const Target, Before, After: string): Boolean;
 begin
   Result := True;
-end;
-
-procedure TPreApproved.ShowConflict(const FileName: string);
-begin
-  if FInner <> nil then
-    FInner.ShowConflict(FileName);
 end;
 
 procedure TPreApproved.ChangeApplied(const FileName, Before, After: string; Line: Integer);

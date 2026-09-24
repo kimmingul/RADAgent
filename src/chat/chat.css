@@ -172,6 +172,20 @@ details[open] > .tool-summary::before { transform: rotate(90deg); }
   background: rgba(244, 71, 71, 0.12);
   border: 1px solid rgba(244, 71, 71, 0.25);
 }
+.notice-output {
+  align-self: stretch;
+  text-align: left;
+  color: var(--fg);
+  background: var(--codeBg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--monoFont);
+  font-size: 12px;
+  white-space: pre;
+  overflow-x: auto;
+  max-width: 100%;
+  margin: 2px 0;
+}
 
 /* Markdown body */
 .markdown-body { line-height: 1.6; word-break: break-word; }
@@ -284,3 +298,11 @@ details[open] > .tool-summary::before { transform: rotate(90deg); }
 }
 #scroll-bottom-btn.visible { display: block; }
 #scroll-bottom-btn:hover { filter: brightness(1.1); }
+
+/* Checkpoint actions under a user message (checkpoints.js) */
+.turn-user { position: relative; }
+.cp-actions { display: flex; gap: 6px; justify-content: flex-end; visibility: hidden; }
+.turn-user:hover .cp-actions { visibility: visible; }
+.cp-btn { font: inherit; font-size: 11px; color: var(--muted); background: transparent;
+  border: 1px solid var(--border); border-radius: 6px; padding: 1px 8px; cursor: pointer; }
+.cp-btn:hover { color: var(--fg); }

@@ -25,7 +25,8 @@ implementation
 
 uses
   System.SysUtils, System.Classes, System.IOUtils, System.JSON, Winapi.Windows,
-  DelphiAgent.Options, DelphiAgent.AgentSettings, DelphiAgent.ChatPlan;
+  DelphiAgent.Options, DelphiAgent.AgentSettings, DelphiAgent.ChatPlan, DelphiAgent.OmpCheck,
+  DelphiAgent.ChatCheckpoints;
 
 procedure WriteText(const Path, Text: string);
 begin
@@ -37,7 +38,7 @@ end;
 function HostConfigFile: string;
 begin
   Result := AgentTempRoot + 'omp-host.yml';
-  WriteText(Result, '{"tools":{"xdevInlineDevices":["rad.*"]}}');
+  WriteText(Result, OmpHostConfig);
 end;
 
 function DelphiLspSettingsFile(const Profile: TProjectProfile): string;
@@ -124,6 +125,13 @@ begin
     ExtraArgs := Trim(ExtraArgs + ' --approval-mode always-ask');
   Lsp := EnsureDelphiLsp(Profile);
   Guide := WriteProjectGuide(Profile, Lsp);
+  { A new omp is checked once, in the background; the chat hears about problems. }
+  if Profile.ProjectDir <> '' then
+  begin
+    CheckOmpAfterUpdate(Profile.ProjectDir);
+    { Every project is a git repository: each user message becomes a checkpoint. }
+    EnsureProjectRepo(ExcludeTrailingPathDelimiter(Profile.ProjectDir));
+  end;
   Note := '';
   if not Lsp and (Profile.Tools.Language = 'delphi') and (Profile.ProjectFile <> '') and
     not SameText(GLspNoted, Profile.ProjectFile) then
@@ -173,13 +181,16 @@ begin
     end;
     Lines.Add('');
     Lines.Add('## How to work');
-    Lines.Add('- Never write project sources or form files on disk while the IDE has the project open; ' +
-      'change them through rad.apply_edits (code) and rad.form_apply (forms). Nothing is saved.');
-    Lines.Add('- Read code with rad.read_buffer (line numbers for edits). Batch related edits into one ' +
-      'rad.apply_edits call and form layout into one rad.form_apply call: each call is one approval.');
+    Lines.Add('- Files on disk are current: the IDE saves every open file before each of your turns and ' +
+      'reloads the files you change. Read and edit code with your own read/edit/write tools.');
+    Lines.Add('- Never edit form files (.dfm/.fmx) or the project files (.dproj/.dpr/.groupproj) as text; ' +
+      'forms change only through the rad.form_* tools, modules through rad.new_module.');
     if Profile.Tools.HasForms then
-      Lines.Add('- Build UI in the designer with rad.form_apply, then write handlers with rad.apply_edits. ' +
-        'Check classes with rad.list_components when unsure.');
+      Lines.Add('- Build UI in the designer with rad.form_apply (one call, one approval), then write the ' +
+        'handlers in the .pas file. Check classes with rad.list_components when unsure.');
+    Lines.Add('- While a debug session is running (rad.debug_state), do not edit sources unless asked.');
+    Lines.Add('- Every user message is a git checkpoint; do not run git commands that commit, reset or ' +
+      'switch branches unless the user asks.');
     Lines.Add('- After changes call rad.compile and fix the reported errors before answering.');
     Lines.Add('- Use rad.project_info for configurations, platforms and modules; rad.set_build_config ' +
       'to switch them.');
@@ -191,17 +202,16 @@ begin
     else
       Lines.Add('- DelphiLSP is not configured for this project (no .delphilsp.json); use grep/read.');
     Lines.Add('- The rad.* schemas are already in this prompt; do not read xd://rad.* docs first.');
-    Lines.Add('- @path in the user message is the file content from disk; unsaved IDE buffers arrive as ' +
-      'snapshot paths instead.');
-    Lines.Add('- Subagents (task tool) cannot call rad.* tools and must never edit project files. Use them ' +
-      'only for read-only research (agent scout: search, read, compare) in parallel; keep every IDE ' +
-      'change in this session.');
+    Lines.Add('- @path in the user message is the current file content.');
+    Lines.Add('- Subagents (task tool) cannot call rad.* tools. They may edit .pas/.inc/.cpp/.h files on ' +
+      'disk in parallel when each owns different files (name the files in each task); forms, project ' +
+      'files and compiling stay in this session. After they finish, call rad.compile and fix errors.');
     if PlanActive then
     begin
       Lines.Add('');
       Lines.Add('## PLAN MODE (active)');
       Lines.Add('- Do not change anything: no rad.* changes, no write/edit/bash on files. Investigate with ' +
-        'read, grep, glob, rad.read_buffer, rad.project_info, rad.form_components.');
+        'read, grep, glob, rad.project_info, rad.form_components.');
       Lines.Add('- Finish with exactly one rad.submit_plan call (title, slug in English, goal, context, ' +
         'steps, files, risks, verification) and stop. The user reviews it and chooses to proceed.');
       Lines.Add('- Write the plan in the user''s language.');

@@ -10,10 +10,6 @@ const
   ToolCompile = 'rad.compile';
   ToolOpenBuffer = 'rad.open_buffer';
   ToolInsertAtCaret = 'rad.insert_at_caret';
-  ToolListDirty = 'rad.list_dirty';
-  ToolReadBuffer = 'rad.read_buffer';
-  ToolApplyEdit = 'rad.apply_edit';
-  ToolApplyEdits = 'rad.apply_edits';
   ToolProjectInfo = 'rad.project_info';
   ToolSetBuildConfig = 'rad.set_build_config';
   ToolNewModule = 'rad.new_module';
@@ -70,7 +66,7 @@ end;
 
 function IsChangingTool(const Name: string): Boolean;
 begin
-  Result := (Name = ToolApplyEdit) or (Name = ToolApplyEdits) or (Name = ToolInsertAtCaret) or
+  Result := (Name = ToolInsertAtCaret) or
     (Name = ToolSetBuildConfig) or (Name = ToolNewModule) or (Name = ToolFormApply) or
     (Name = ToolFormSetProperty) or (Name = ToolFormAddComponent) or (Name = ToolFormDeleteComponent) or
     (Name = ToolFormRenameComponent) or (Name = ToolFormSetEvent) or (Name = ToolDebugRun) or
@@ -124,10 +120,6 @@ const
     '"slug":{"type":"string"},"goal":{"type":"string"},"context":{"type":"string"},"steps":{"type":' +
     '"array","items":{"type":"string"}},"files":{"type":"array","items":{"type":"string"}},"risks":' +
     '{"type":"array","items":{"type":"string"}},"verification":{"type":"array","items":{"type":"string"}}}}';
-  EditsSchema = '{"type":"object","required":["edits"],"properties":{"edits":{"type":"array",' +
-    '"items":{"type":"object","required":["path"],"properties":{"path":{"type":"string"},' +
-    '"startLine":{"type":"integer"},"endLine":{"type":"integer"},"newText":{"type":"string"},' +
-    '"content":{"type":"string"}}}}}}';
   FormApplySchema = '{"type":"object","required":["path"],"properties":{"path":{"type":"string"},' +
     '"delete":{"type":"array","items":{"type":"string"}},"components":{"type":"array","items":' +
     '{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"class":' +
@@ -194,20 +186,18 @@ function BuildSetHostToolsFrame(const Id: string; const Profile: TToolProfile): 
 var
   Obj: TJSONObject;
   Tools: TJSONArray;
-  Lang, Expr, Source: string;
+  Lang, Expr: string;
   Index: Integer;
 begin
   if Profile.Language = 'cpp' then
   begin
     Lang := 'C++Builder';
     Expr := 'C++';
-    Source := '.cpp/.h';
   end
   else
   begin
     Lang := 'Delphi';
     Expr := 'Delphi';
-    Source := '.pas';
   end;
   Obj := TJSONObject.Create;
   try
@@ -230,22 +220,9 @@ begin
     Tools.AddElement(ToolDef(ToolListComponents,
       'Installed component classes on the IDE palette with their package; filter is a ' +
       'case-insensitive substring. Use it to pick valid classes for forms. Read-only.', 'filter'));
-    Tools.AddElement(ToolDef(ToolReadBuffer,
-      'Current IDE editor text (unsaved changes included) of an absolute ' + Source + ' path as ' +
-      '"N| line"; use N for edits (the prefix is not part of the text). Read again after edits. ' +
-      'Does not save.', 'path'));
-    Tools.AddElement(ToolDef(ToolListDirty,
-      'Open IDE buffers that differ from disk. Does not save.', ''));
     Tools.AddElement(ToolDef(ToolOpenBuffer, 'Open a file in the IDE editor.', 'file'));
-    Tools.AddElement(SchemaDef(ToolApplyEdits,
-      'Preferred way to change code: several edits in one or more open IDE buffers with one ' +
-      'approval. Each edit replaces lines startLine..endLine (1-based, inclusive, numbers from ' +
-      'rad.read_buffer before any edit) with newText, or the whole buffer with content. Edits of ' +
-      'one file must not overlap. Does not save.', EditsSchema));
-    Tools.AddElement(ToolDef(ToolApplyEdit,
-      'Single edit of one open buffer (see rad.apply_edits).', 'path,content,startLine,endLine,newText'));
     Tools.AddElement(ToolDef(ToolInsertAtCaret,
-      'After approval insert text at the editor caret.', 'text'));
+      'After approval insert text at the editor caret (the file is then saved).', 'text'));
     if Profile.HasForms then
       AddFormTools(Tools, Profile);
     Tools.AddElement(ToolDef(ToolDebugState,

@@ -193,6 +193,9 @@ begin
           Emit(PageNotice(Event.Level, Event.Text));
     aekError:
       Emit(PageNotice('error', Event.Text));
+    aekCommandOutput:
+      if Trim(Event.Text) <> '' then
+        Emit(PageNotice('output', Event.Text));
     aekCompactionStart:
       Emit(PageNotice('info', '대화가 길어져 압축합니다.'));
     aekRetryStart, aekFallback:

@@ -154,8 +154,8 @@ begin
   AddRow(Page, '기본 생각 수준', FThinking);
   FillChoices(FThinking, ThinkingLevels, FSettings.OverlayText('defaultThinkingLevel'),
     FSettings.BaseText('defaultThinkingLevel'));
-  AddNote(Page, 'omp 도구 승인은 omp 자체 도구(bash, write 등)에 대한 것입니다. IDE 버퍼와 폼을 ' +
-    '바꾸는 rad.* 도구는 이 값과 관계없이 항상 DelphiAgent 승인 창을 거칩니다.');
+  AddNote(Page, 'omp 도구 승인은 채팅 입력 아래 승인 방식과 같은 값입니다. omp 자체 도구(bash, write 등)와 ' +
+    'IDE 버퍼·폼을 바꾸는 rad.* 도구가 모두 이 값을 따릅니다.');
 end;
 
 function ChoiceValue(Combo: TComboBox): string;

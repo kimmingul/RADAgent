@@ -83,10 +83,10 @@
     <DCCReference Include="DelphiAgent.ChatCommand.pas"/>
     <DCCReference Include="DelphiAgent.AskDialog.pas"/>
     <DCCReference Include="DelphiAgent.RpcEvents.pas"/>
+    <DCCReference Include="DelphiAgent.RpcChunks.pas"/>
     <DCCReference Include="DelphiAgent.RpcDispatch.pas"/>
     <DCCReference Include="DelphiAgent.RpcClient.pas"/>
     <DCCReference Include="DelphiAgent.IdeContext.pas"/>
-    <DCCReference Include="DelphiAgent.DirtyBuffers.pas"/>
     <DCCReference Include="DelphiAgent.Compile.pas"/>
     <DCCReference Include="DelphiAgent.Approval.pas"/>
     <DCCReference Include="DelphiAgent.LineDiff.pas"/>
@@ -137,6 +137,16 @@
     <DCCReference Include="DelphiAgent.BtwStore.pas"/>
     <DCCReference Include="DelphiAgent.BtwRunner.pas"/>
     <DCCReference Include="DelphiAgent.ChatBtw.pas"/>
+    <DCCReference Include="DelphiAgent.OmpProbe.pas"/>
+    <DCCReference Include="DelphiAgent.OmpCheck.pas"/>
+    <DCCReference Include="DelphiAgent.IdeFiles.pas"/>
+    <DCCReference Include="DelphiAgent.GitRepo.pas"/>
+    <DCCReference Include="DelphiAgent.ChatDiskSync.pas"/>
+    <DCCReference Include="DelphiAgent.ChatCheckpoints.pas"/>
+    <DCCReference Include="DelphiAgent.MenuIcon.pas"/>
+    <RcCompile Include="DelphiAgentIcons.rc">
+      <Form>DelphiAgentIcons.res</Form>
+    </RcCompile>
     <DCCReference Include="DelphiAgent.DockForm.pas"/>
     <DCCReference Include="DelphiAgent.Wizard.pas"/>
   </ItemGroup>
