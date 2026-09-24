@@ -24,7 +24,7 @@ type
     FPages: TPageControl;
     FShows: TListView;
     FFontSize: TComboBox;
-    FHighContrast: TCheckBox;
+    FHighContrast, FEnglish: TCheckBox;
     FOmpPath, FOmpArgs: TEdit;
     FProject: TOmpProjectSettings;
     FProjectPages: TProjectPages;
@@ -163,6 +163,8 @@ begin
   FOmpArgs.TextHint := '예: --no-lsp';
   FOmpArgs.Text := OmpExtraArgs;
   AddRow(Page, 'omp 추가 인자', FOmpArgs);
+  FEnglish := AddCheck(Page, 'omp가 작업(생각·계획·하위 에이전트 지시)은 영어로 하고, 답은 내 언어로 하기 (토큰 절약)');
+  FEnglish.Checked := EnglishWork;
   AddHeading(Page, 'omp 호환성');
   AddButton(AddButtons(Page), 'omp 호환성 검사', CheckOmpClick);
   AddNote(Page, 'omp를 업데이트하면 처음 시작할 때 자동으로 검사합니다. DelphiAgent가 쓰는 명령줄 옵션, ' +
@@ -200,7 +202,9 @@ begin
   if FFontSize.ItemIndex >= 0 then
     SetChatFontSize(StrToInt(FFontSize.Items[FFontSize.ItemIndex]));
   SetHighContrast(FHighContrast.Checked);
-  Restart := (Trim(FOmpPath.Text) <> OmpPathOverride) or (Trim(FOmpArgs.Text) <> OmpExtraArgs);
+  Restart := (Trim(FOmpPath.Text) <> OmpPathOverride) or (Trim(FOmpArgs.Text) <> OmpExtraArgs) or
+    (FEnglish.Checked <> EnglishWork);
+  SetEnglishWork(FEnglish.Checked);
   SetOmpPathOverride(FOmpPath.Text);
   SetOmpExtraArgs(FOmpArgs.Text);
   if FProjectPages <> nil then

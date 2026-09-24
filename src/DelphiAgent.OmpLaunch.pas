@@ -217,6 +217,16 @@ begin
       Lines.Add('- Write the plan in the user''s language.');
     end;
     Lines.Add('- Do not read skills about IDE file operations; these rules replace them.');
+    if EnglishWork then
+    begin
+      Lines.Add('');
+      Lines.Add('## Language');
+      Lines.Add('- Work in English to save tokens: thinking, plans, todo items, tool call intents and ' +
+        'every subagent task and report.');
+      Lines.Add('- Reply to the user in the language of their message.');
+      Lines.Add('- What stays in files follows the project, not this rule: keep string literals, comments, ' +
+        'commit messages and documents (docs\plans) in the language the project already uses for them.');
+    end;
     WriteText(Result, Lines.Text);
   finally
     Lines.Free;

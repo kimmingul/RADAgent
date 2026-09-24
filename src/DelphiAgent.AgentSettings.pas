@@ -32,6 +32,9 @@ function OmpCommand: string;
 { Extra command line arguments appended after --mode rpc. }
 function OmpExtraArgs: string;
 procedure SetOmpExtraArgs(const Value: string);
+{ omp works (thinks, plans, briefs subagents) in English and answers in the user's language. }
+function EnglishWork: Boolean;
+procedure SetEnglishWork(Value: Boolean);
 { omp version that last passed DelphiAgent's compatibility check (DelphiAgent.OmpProbe). }
 function CheckedOmpVersion: string;
 procedure SetCheckedOmpVersion(const Value: string);
@@ -157,6 +160,16 @@ end;
 procedure SetOmpExtraArgs(const Value: string);
 begin
   WriteValue('OmpArgs', Trim(Value));
+end;
+
+function EnglishWork: Boolean;
+begin
+  Result := Integer(ReadValue('EnglishWork', 0)) <> 0;
+end;
+
+procedure SetEnglishWork(Value: Boolean);
+begin
+  WriteValue('EnglishWork', Ord(Value));
 end;
 
 function CheckedOmpVersion: string;
