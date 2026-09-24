@@ -259,6 +259,8 @@ begin
 
   Ev := ParseAgentEvent('{"type":"auto_retry_start","attempt":1,"maxAttempts":3,"delayMs":2500,"errorMessage":"overloaded"}');
   Check(Ev.Text = '다시 시도 1/3 · 3초 후 · overloaded', 'auto_retry_start: text');
+  Ev := ParseAgentEvent('{"type":"auto_retry_start","attempt":1,"maxAttempts":10,"delayMs":484.5441097301113,"errorMessage":"Unable to connect"}');
+  Check((Ev.Kind = aekRetryStart) and Ev.Text.Contains('Unable to connect'), 'auto_retry_start: fractional delayMs parses');
   Ev := ParseAgentEvent('{"type":"retry_fallback_applied","from":"a/x","to":"b/y","role":"default"}');
   Check((Ev.Kind = aekFallback) and (Ev.Text = '모델 대체: a/x → b/y'), 'retry_fallback_applied: text');
 end;

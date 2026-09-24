@@ -116,6 +116,8 @@
   "chatstatus.error": "Erreur : %s",
   "chatstatus.idle": "Inactif",
   "chatstatus.newConversation": "Nouvelle conversation",
+  "chatstop.forced": "omp ne s'est pas arrêté ; il a été redémarré sur la même conversation.",
+  "chatstop.stopping": "Arrêt en cours. Si omp ne termine pas le tour dans les 5 secondes (ou si vous cliquez à nouveau sur Arrêter), il sera redémarré.",
   "chatstream.compacting": "La conversation est longue ; compactage en cours.",
   "compile.buildFailed": "Échec de la construction",
   "compile.buildSuccess": "Construction réussie",

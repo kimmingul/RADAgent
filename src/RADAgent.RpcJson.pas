@@ -66,8 +66,9 @@ end;
 function JsonInt(Obj: TJSONObject; const Name: string; Default: Int64): Int64;
 begin
   Result := Default;
+  { omp sends some counts as fractions (auto_retry_start delayMs); AsInt64 raises on those. }
   if (Obj <> nil) and (Obj.GetValue(Name) is TJSONNumber) then
-    Result := TJSONNumber(Obj.GetValue(Name)).AsInt64;
+    Result := Round(TJSONNumber(Obj.GetValue(Name)).AsDouble);
 end;
 
 function IsJsonTrue(Value: TJSONValue): Boolean;

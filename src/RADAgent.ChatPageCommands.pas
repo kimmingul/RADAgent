@@ -22,7 +22,7 @@ uses
   RADAgent.ChatSession, RADAgent.ChatActions, RADAgent.ChatCommand,
   RADAgent.EditorContext, RADAgent.SettingsDialog, RADAgent.ChatExtensions,
   RADAgent.ChatApprovalCard, RADAgent.ChatPlan, RADAgent.ChatStatus, RADAgent.ChatBtw,
-  RADAgent.ChatCheckpoints, RADAgent.Lang;
+  RADAgent.ChatCheckpoints, RADAgent.ChatStop, RADAgent.Lang;
 
 function Post(const Kind, Field, Value: string): string;
 var
@@ -147,9 +147,7 @@ begin
       ProceedWithPlan(Obj.GetValue<string>('path', ''))
     else if Kind = 'abort' then
     begin
-      RefuseAllApprovals;
-      if Session.Client <> nil then
-        Session.Client.SendAbort;
+      StopTurn
     end
     else if Kind = 'newSession' then
       StartNewSession

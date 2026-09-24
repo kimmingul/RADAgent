@@ -116,6 +116,8 @@
   "chatstatus.error": "Fehler: %s",
   "chatstatus.idle": "Bereit",
   "chatstatus.newConversation": "Neue Unterhaltung",
+  "chatstop.forced": "omp hat nicht angehalten und wurde mit derselben Unterhaltung neu gestartet.",
+  "chatstop.stopping": "Wird angehalten. Wenn omp den Durchlauf nicht innerhalb von 5 Sekunden beendet (oder Sie erneut auf Stopp klicken), wird es neu gestartet.",
   "chatstream.compacting": "Die Unterhaltung ist lang; sie wird komprimiert.",
   "compile.buildFailed": "Erzeugen fehlgeschlagen",
   "compile.buildSuccess": "Erzeugen erfolgreich",

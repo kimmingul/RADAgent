@@ -46,8 +46,8 @@ type
     procedure Detach(const View: IChatView);
     procedure EnsureStarted;
     procedure ProjectChanged;
-    { Restarts omp with the current settings and reopens the same session file. }
-    procedure Restart;
+    { Restarts omp on the same session file; Force also ends a running turn (stuck omp). }
+    procedure Restart(Force: Boolean = False);
     { Restart after the running turn ends. }
     procedure RestartWhenIdle;
     { The project gained or lost forms: register the rad.* tools that fit it now. }
@@ -267,10 +267,11 @@ begin
   Changed;
 end;
 
-procedure TChatSession.Restart;
+procedure TChatSession.Restart(Force: Boolean);
 begin
-  if Busy then
+  if Busy and not Force then
     Exit;
+  FActivity.Reset;
   FRestartPending := False;
   FResumeFile := FState.SessionFile;
   if FClient <> nil then

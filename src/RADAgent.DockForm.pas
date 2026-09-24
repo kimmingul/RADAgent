@@ -45,7 +45,7 @@ implementation
 uses
   System.SysUtils, System.JSON, RADAgent.ChatTheme, RADAgent.ChatFallback,
   RADAgent.ChatStatus, RADAgent.ChatPageCommands, RADAgent.ChatApprovalCard,
-  RADAgent.Lang, RADAgent.ChatPageMessages;
+  RADAgent.Lang, RADAgent.ChatPageMessages, RADAgent.ChatStop;
 var
   GActiveFrame: TRADAgentChatFrame;
 procedure TRADAgentChatFrame.ApplyTheme;
@@ -216,8 +216,7 @@ begin
 end;
 procedure TRADAgentChatFrame.FallbackStop(Sender: TObject);
 begin
-  if ChatSession.Client <> nil then
-    ChatSession.Client.SendAbort;
+  StopTurn;
 end;
 procedure TRADAgentChatFrame.FocusInput;
 begin

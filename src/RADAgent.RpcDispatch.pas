@@ -117,7 +117,7 @@ begin
     Events.HostCall(CallId, ToolName, Args);
 end;
 
-{ One physical line: v2 chunk runs become the frame they carry; a dropped frame is ''. }
+{ One physical line: v2 chunk runs become the frame they carry; a dropped or unreadable frame is ''. }
 procedure Deliver(Chunks: TRpcChunkAssembler; const Physical: string; OnLine: TRpcLineEvent);
 var
   Line: string;
@@ -125,8 +125,15 @@ begin
   Line := Chunks.Feed(Physical);
   if Chunks.Error <> '' then
     OnLine('');
-  if Line <> '' then
+  if Line = '' then
+    Exit;
+  { A frame the handler cannot read is dropped; letting the exception out would end the reader
+    thread and leave omp running with nobody reading it. }
+  try
     OnLine(Line);
+  except
+    OnLine('');
+  end;
 end;
 
 procedure ReadStdoutLines(StdOut: THandle; Stopped: TRpcStopEvent; OnLine: TRpcLineEvent);

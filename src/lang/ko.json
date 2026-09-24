@@ -116,6 +116,8 @@
   "chatstatus.error": "오류: %s",
   "chatstatus.idle": "대기",
   "chatstatus.newConversation": "새 대화",
+  "chatstop.forced": "omp가 멈추지 않아 같은 대화로 다시 시작했습니다.",
+  "chatstop.stopping": "중지하는 중입니다. omp가 5초 안에 멈추지 않거나 다시 누르면 omp를 다시 시작합니다.",
   "chatstream.compacting": "대화가 길어져 압축합니다.",
   "compile.buildFailed": "빌드 실패",
   "compile.buildSuccess": "빌드 성공",

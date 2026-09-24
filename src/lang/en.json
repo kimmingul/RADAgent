@@ -116,6 +116,8 @@
   "chatstatus.error": "Error: %s",
   "chatstatus.idle": "Idle",
   "chatstatus.newConversation": "New conversation",
+  "chatstop.forced": "omp did not stop, so it was restarted on the same conversation.",
+  "chatstop.stopping": "Stopping. If omp does not end the turn in 5 seconds (or you press stop again), it is restarted.",
   "chatstream.compacting": "Conversation is long; compacting.",
   "compile.buildFailed": "Build failed",
   "compile.buildSuccess": "Build succeeded",

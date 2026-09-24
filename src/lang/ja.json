@@ -116,6 +116,8 @@
   "chatstatus.error": "エラー: %s",
   "chatstatus.idle": "待機中",
   "chatstatus.newConversation": "新しい会話",
+  "chatstop.forced": "omp が停止しなかったため、同じ会話で再起動しました。",
+  "chatstop.stopping": "停止しています。omp が 5 秒以内に停止しない場合 (またはもう一度停止を押した場合) は再起動します。",
   "chatstream.compacting": "会話が長くなったため圧縮しています。",
   "compile.buildFailed": "ビルド失敗",
   "compile.buildSuccess": "ビルド成功",

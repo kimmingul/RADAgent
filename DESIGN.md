@@ -65,6 +65,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | OmpSettings / OmpCatalog / OmpCli | 프로젝트 omp 설정 파일 `<프로젝트>\.omp\radagent.yml`(`--config`로 전달)과 omp가 읽는 스킬·확장·하위 에이전트·MCP 목록. `omp config list`를 읽기만 하고 전역 설정은 쓰지 않는다. |
 | EditorContext | 활성 파일, 선택 영역, 저장 안 한 파일 수, 링크로 파일 열기. |
 | Sessions | 같은 프로젝트의 omp 세션 파일 목록과 선택. |
+| ChatStop | 중지 단추: abort를 보내고, 5초 안에 턴이 끝나지 않거나 다시 누르면 omp 자식을 끝내고 같은 세션으로 다시 시작한다. |
 | ChatAttention | IDE가 뒤에 있을 때 작업 표시줄 깜빡임. |
 | IdeMenus | 에디터와 메시지 창 오른쪽 클릭 메뉴 항목. |
 | DockKeeper | 디버그 시작·종료로 데스크톱이 바뀐 뒤 채팅을 다시 보여 준다. |
