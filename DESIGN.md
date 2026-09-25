@@ -44,6 +44,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | HandlerCode | 이벤트 핸들러 코드: Delphi는 디자이너 스텁에 주석 한 줄(빈 핸들러는 저장 때 지워짐), C++은 `.h` `__published` 선언과 `.cpp` 본문을 버퍼에 쓴다(C++ 디자이너는 코드를 쓰지 않음). |
 | CppDiagnostics | C++ 빌드 실패 때 바뀐 `.cpp`를 활성 플랫폼 컴파일러(bcc64x/bcc64/bcc32c)로 다시 컴파일해 오류를 읽는다. |
 | CppLsp | C++ 프로젝트의 clangd 연결: 활성 플랫폼 컴파일러의 헤더·타깃·매크로와 프로젝트 옵션으로 `.omp\clangd\compile_commands.json`, `.omp\lsp.json`. clangd는 설정 또는 PATH. |
+| ClangdInstall | 설정 창의 clangd 설치: GitHub 최신 릴리스의 Windows zip을 뒤에서 받아 `%LOCALAPPDATA%\RADAgent\clangd\<버전>`에 푼다. |
 | ProcessRun | 창 없이 콘솔 프로그램 실행과 출력 수집(git, C++ 컴파일러). |
 | ChatExtensions | 입력 상자 `＋` 메뉴의 IDE 쪽: 첨부 파일·사진(prompt images), 작업 폴더 추가, 커넥터(MCP)와 플러그인 목록과 켜기/끄기. |
 | ChatApproval | 채팅의 승인 계약 구현: 승인 카드(페이지가 없으면 승인 창), 충돌 알림, 버퍼에 반영된 편집의 파일 카드. |

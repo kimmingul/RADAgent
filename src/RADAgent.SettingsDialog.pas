@@ -16,7 +16,7 @@ uses
   Vcl.ComCtrls, System.UITypes, RADAgent.AskDialog, RADAgent.SettingsUi, RADAgent.SettingsAccount,
   RADAgent.SettingsProject, RADAgent.OmpSettings, RADAgent.AgentSettings,
   RADAgent.ChatSession, RADAgent.ChatTheme, RADAgent.IdeContext, RADAgent.Options,
-  RADAgent.OmpCheck, RADAgent.Lang;
+  RADAgent.OmpCheck, RADAgent.Lang, RADAgent.ClangdInstall;
 
 type
   TSettingsForm = class(TAgentForm)
@@ -26,6 +26,8 @@ type
     FFontSize, FLanguage: TComboBox;
     FHighContrast, FEnglish: TCheckBox;
     FOmpPath, FOmpArgs, FClangd: TEdit;
+    FClangdButton: TButton;
+    FClangdStatus: TLabel;
     FProject: TOmpProjectSettings;
     FProjectPages: TProjectPages;
     function AddSheet(const Caption: string): TScrollBox;
@@ -33,6 +35,7 @@ type
     procedure BuildAdvanced(Page: TWinControl);
     procedure OkClick(Sender: TObject);
     procedure CheckOmpClick(Sender: TObject);
+    procedure InstallClangdClick(Sender: TObject);
   public
     constructor CreateDialog;
     destructor Destroy; override;
@@ -178,11 +181,51 @@ begin
   FClangd.TextHint := Tr('settingsdialog.clangdHint');
   FClangd.Text := ClangdPath;
   AddRow(Page, Tr('settingsdialog.clangdPath'), FClangd);
+  FClangdButton := AddButton(AddButtons(Page), Tr('settingsdialog.btnInstallClangd'), InstallClangdClick);
+  FClangdStatus := AddNote(Page, Tr('settingsdialog.noteInstallClangd'));
   FEnglish := AddCheck(Page, Tr('settingsdialog.englishWork'));
   FEnglish.Checked := EnglishWork;
   AddHeading(Page, Tr('settingsdialog.headingCompatibility'));
   AddButton(AddButtons(Page), Tr('settingsdialog.btnCheckOmp'), CheckOmpClick);
   AddNote(Page, Tr('settingsdialog.noteCompatibility'));
+end;
+
+var
+  { The open settings dialog, for a clangd download that finishes while it is shown. }
+  GOpenForm: TSettingsForm;
+
+procedure TSettingsForm.InstallClangdClick(Sender: TObject);
+begin
+  if not AskYes(Tr('settingsdialog.btnInstallClangd'), Tr('settingsdialog.askInstallClangd')) then
+    Exit;
+  FClangdButton.Enabled := False;
+  FClangdStatus.Caption := Tr('settingsdialog.installingClangd');
+  InstallClangd(
+    procedure(const Path, Version, Problem: string)
+    begin
+      if Path <> '' then
+        ChatSession.Notice('info', TrF('settingsdialog.clangdInstalled', [Version, Path]))
+      else
+        ChatSession.Notice('warn', TrF('settingsdialog.clangdInstallFailed', [Problem]));
+      { Closed meanwhile: keep the path and restart omp with it. Open: OK saves it. }
+      if GOpenForm = nil then
+      begin
+        if Path <> '' then
+        begin
+          SetClangdPath(Path);
+          ChatSession.RestartWhenIdle;
+        end;
+        Exit;
+      end;
+      GOpenForm.FClangdButton.Enabled := True;
+      if Path <> '' then
+      begin
+        GOpenForm.FClangd.Text := Path;
+        GOpenForm.FClangdStatus.Caption := TrF('settingsdialog.clangdInstalled', [Version, Path]);
+      end
+      else
+        GOpenForm.FClangdStatus.Caption := TrF('settingsdialog.clangdInstallFailed', [Problem]);
+    end);
 end;
 
 procedure TSettingsForm.CheckOmpClick(Sender: TObject);
@@ -266,10 +309,12 @@ begin
   Form := TSettingsForm.CreateDialog;
   try
     ThemeForm(Form);
+    GOpenForm := Form;
     if (Page >= 0) and (Page < Form.FPages.PageCount) then
       Form.FPages.ActivePageIndex := Page;
     Form.ShowModal;
   finally
+    GOpenForm := nil;
     Form.Free;
   end;
 end;
