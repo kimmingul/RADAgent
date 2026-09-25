@@ -94,6 +94,11 @@ RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp이고 검
 - 설치 경로·레지스트리 키·패키지 이름을 코드에 박지 않는다. 설정은 `GetBaseRegistryKey`, BDS는 `%BDS%`에서 읽는다.
 - 빌드 스크립트는 `-Version 22.0`처럼 릴리스를 고를 수 있다(`scripts\bds.ps1`).
 
+## RAD Studio 스킬
+
+- `src\skills\*\SKILL.md`는 omp가 읽는 글이라 영어로 쓴다. 규칙·관습·자주 틀리는 사용법만 적고, 속성 사전이나 버전마다 바뀌는 목록은 넣지 않는다(`rad.form_properties`, 설치본 `source`).
+- 스킬을 고치면 `RADAgentResources.rc`의 RCDATA로 BPL에 들어간다. 호환성 검사는 omp가 스킬을 찾는지 확인한다.
+
 ## 배포
 
 - 설치 파일은 `scripts\package.ps1`(Inno Setup `installer\RADAgent.iss`)로만 만든다. BPL, 설치 파일, 제거 프로그램은 모두 Nanum Space 인증서로 서명하고 타임스탬프를 붙인다.

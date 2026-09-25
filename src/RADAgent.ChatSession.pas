@@ -255,7 +255,8 @@ begin
     FState := Default(TStateInfo);
     FSubscribed := False;
     FCatalog.LoadProject(OmpCommand, Dir);
-    PrepareLaunch(ExistingOverlay(Dir), Tools, Configs, Guide, Note, Extra);
+    PrepareLaunch(ExistingOverlay(Dir), FCatalog.Project.BaseList('skills.customDirectories'), Tools,
+      Configs, Guide, Note, Extra);
     FClient.ToolProfile := Tools;
     if Note <> '' then
       Notice('info', Note);

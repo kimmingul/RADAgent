@@ -24,6 +24,7 @@ contains
   RADAgent.ClangdInstall in 'RADAgent.ClangdInstall.pas',
   RADAgent.FormText in 'RADAgent.FormText.pas',
   RADAgent.FormShot in 'RADAgent.FormShot.pas',
+  RADAgent.Skills in 'RADAgent.Skills.pas',
   RADAgent.WebView2Api in 'RADAgent.WebView2Api.pas',
   RADAgent.ChatQueue in 'RADAgent.ChatQueue.pas',
   RADAgent.UsageReport in 'RADAgent.UsageReport.pas',

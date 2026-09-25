@@ -37,7 +37,7 @@ uses
   System.Classes, System.JSON, System.IOUtils, System.StrUtils, Winapi.Windows, RADAgent.OmpCli,
   RADAgent.Options, RADAgent.RpcDispatch, RADAgent.RpcProtocol, RADAgent.RpcChunks,
   RADAgent.RpcJson, RADAgent.RpcResponses, RADAgent.ChatCommand, RADAgent.HostToolDefs,
-  RADAgent.Lang;
+  RADAgent.Skills, RADAgent.Lang;
 
 const
   { Flags RADAgent passes (main child, plan mode, /btw). omp --help does not list --fork. }
@@ -49,8 +49,8 @@ const
   SessionCommands: array[0..4] of string = ('get_tree', 'get_branch_messages', 'get_last_assistant_text',
     'get_session_stats', 'get_subagents');
   { omp settings on the Advanced page. }
-  UsedSettings: array[0..5] of string = ('tools.approvalMode', 'compaction.enabled', 'retry.enabled',
-    'steeringMode', 'followUpMode', 'interruptMode');
+  UsedSettings: array[0..6] of string = ('tools.approvalMode', 'compaction.enabled', 'retry.enabled',
+    'steeringMode', 'followUpMode', 'interruptMode', 'skills.customDirectories');
 
 function OmpVersionText(const Executable: string): string;
 var
@@ -189,7 +189,7 @@ begin
   Config := ProcessTempFile('omp-probe.yml');
   Stderr := ProcessTempFile('omp-probe.stderr.log');
   ForceDirectories(AgentTempRoot);
-  TFile.WriteAllBytes(Config, TEncoding.UTF8.GetBytes(OmpHostConfig));
+  TFile.WriteAllBytes(Config, TEncoding.UTF8.GetBytes(HostConfigJson(WriteSkill('delphi'), [])));
   if not SpawnRpcProcess(BuildOmpCommandLine(Executable, WorkDir, [Config], '',
     '--no-session --no-title --no-lsp'), WorkDir, Stderr, Pipes) then
   begin
@@ -322,6 +322,8 @@ begin
     Result := Result + [Check(Tr('ompprobe.checkThinkingLevels'),
       ParseThinkingLevels(Found.Responses.Values['get_available_thinking_levels'], Levels) and (Length(Levels) > 0),
       string.Join(', ', Levels))];
+    Result := Result + [Check(Tr('ompprobe.checkSkill'),
+      Found.Responses.Values['get_available_commands'].Contains('radstudio-delphi'), 'skills.customDirectories')];
     Missing := '';
     for Flag in SessionCommands do
       if not ResponseOk(Found.Responses.Values[Flag]) or (Found.Responses.Values[Flag] = '') then

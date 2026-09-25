@@ -27,6 +27,7 @@ uses
   RADAgent.SlashRoutes in '..\src\RADAgent.SlashRoutes.pas',
   RADAgent.SessionData in '..\src\RADAgent.SessionData.pas',
   RADAgent.UsageReport in '..\src\RADAgent.UsageReport.pas',
+  RADAgent.Skills in '..\src\RADAgent.Skills.pas',
   TestCheck in 'TestCheck.pas',
   RpcEventsTests in 'RpcEventsTests.pas',
   LineDiffTests in 'LineDiffTests.pas',

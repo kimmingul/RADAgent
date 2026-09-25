@@ -192,6 +192,7 @@
   "ompprobe.checkRpcProtocol": "RPC-Protokoll",
   "ompprobe.checkRpcStart": "RPC-Start (ready, --config)",
   "ompprobe.checkSessionCommands": "Sitzungsanfragen (get_tree, get_session_stats, ...)",
+  "ompprobe.checkSkill": "RAD Studio-Skill geladen (radstudio-delphi)",
   "ompprobe.checkState": "Status (get_state)",
   "ompprobe.checkThinkingLevels": "Denkstufen (get_available_thinking_levels)",
   "ompprobe.checkUsage": "Nutzungslimits (usage --json)",

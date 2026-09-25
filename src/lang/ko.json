@@ -192,6 +192,7 @@
   "ompprobe.checkRpcProtocol": "RPC 프로토콜",
   "ompprobe.checkRpcStart": "RPC 시작 (ready, --config)",
   "ompprobe.checkSessionCommands": "세션 요청 (get_tree, get_session_stats 등)",
+  "ompprobe.checkSkill": "RAD Studio 스킬 불러오기 (radstudio-delphi)",
   "ompprobe.checkState": "상태 (get_state)",
   "ompprobe.checkThinkingLevels": "생각 수준 (get_available_thinking_levels)",
   "ompprobe.checkUsage": "사용량 한도 (usage --json)",

@@ -67,6 +67,7 @@ RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키
 
 - 디스크가 기준이다. 보내기 직전과 IDE 변경 직후에 저장 안 한 파일을 저장한다. omp는 자기 도구로 디스크 파일을 고치고, IDE가 바뀐 파일을 다시 읽는다. 그 사이 사용자가 같은 파일을 고치고 있었으면 덮어쓰지 않고 충돌을 알린다.
 - 프로젝트를 보고 omp에 줄 도구와 안내(언어, 프레임워크, 폼 목록, 작업 규칙)를 정한다. 폼이 있을 때만 폼 도구를 준다.
+- RAD Studio 스킬: 언어에 맞는 `radstudio-delphi` 또는 `radstudio-cpp`(명명 규칙, 유닛·폼·프로젝트 파일 구조, 객체 수명, VCL/FMX 사용 패턴과 차이, 폼 디자이너 규칙)를 omp에 준다. 모델은 코드를 쓰거나 이름을 정하기 전에 읽고, 프로젝트 자체의 규칙(`AGENTS.md`, 기존 코드)이 우선한다. 컴포넌트 속성은 스킬에 적지 않고 `rad.form_properties`와 RAD Studio 설치본의 `source` 폴더에서 찾게 한다. 사용자가 설정한 `skills.customDirectories`는 그대로 유지된다.
 - 코드 탐색: Delphi는 IDE가 만든 `<프로젝트>.delphilsp.json`이 있으면 DelphiLSP를 omp에 연결한다([docs/lsp-setup.md](docs/lsp-setup.md)). 없으면 Generate LSP Config를 켜라고 알린다.
 - 컴파일: `rad.compile`로 활성 프로젝트를 빌드하고 오류는 메시지 뷰에 올린다. `rad.set_build_config`로 구성·플랫폼을 바꾼다.
 - 폼 디자이너: 컴포넌트 목록·속성 읽기, 폼 스크린샷(모델이 레이아웃을 눈으로 확인), 속성 변경, 컴포넌트 추가·삭제·이름 변경, 이벤트 연결, 여러 변경을 묶은 `rad.form_apply`. 여러 폼의 속성 일괄 변경은 `rad.form_text_edit`(속성 줄만, 구문·속성 이름 검사, 승인 한 번)로 하며, 설정에서 "디자이너만"으로 끌 수 있다.

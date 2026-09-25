@@ -39,6 +39,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | ChatPageCommands | 페이지 요청(보내기, 중지, 승인 카드 답, 계획 진행, `@` 파일 목록, 세션, 내보내기, 설정, 컴파일, 파일 경로, 모델·생각 수준·승인 방식 변경, 링크) 처리. |
 | ProjectProfile | 활성 프로젝트의 언어(Delphi, C++Builder), 프레임워크(VCL, FMX, 없음), 폼 목록. `rad.project_info`, `rad.set_build_config`, `rad.list_components`. |
 | OmpLaunch | omp를 띄우기 전에 쓰는 파일(C++은 clangd 연결 포함): rad.* 문서를 시스템 프롬프트에 넣는 `omp-host-p<pid>.yml`(`tools.xdevInlineDevices`), 프로젝트 안내 `project-guide-p<pid>.md`(`--append-system-prompt`), Delphi 프로젝트의 `.omp/lsp.json`. |
+| Skills | BPL 리소스의 RAD Studio 스킬(`src\skills\radstudio-delphi`, `radstudio-cpp`) 중 프로젝트 언어에 맞는 것을 `%TEMP%\RADAgent\skills\<언어>`에 쓰고, 사용자의 `skills.customDirectories` 뒤에 붙여 `--config`로 넘긴다. |
 | HostToolDefs | 프로필에 맞춘 rad.* 목록: 폼이 있을 때만 폼 도구, VCL/FMX와 Delphi/C++ 문구. |
 | FormBatch / ModuleCreator | `rad.form_apply`(폼 변경 묶음, 승인 한 번), `rad.new_module`(폼·프레임·데이터 모듈·유닛 추가, 파일 이름 `UnitN`을 정하고 폼 소스는 Delphi·C++ 모두 직접 준다). |
 | FormShot | `rad.form_screenshot`: VCL은 `PaintTo`, FMX는 디자이너의 `FMTForm` 창을 화면에서 복사해 PNG. 도구 결과에 image 부분으로 보낸다. |

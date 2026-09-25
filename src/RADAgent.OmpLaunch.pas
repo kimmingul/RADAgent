@@ -8,19 +8,21 @@ unit RADAgent.OmpLaunch;
 interface
 
 uses
-  RADAgent.ProjectProfile, RADAgent.HostToolDefs;
+  RADAgent.ProjectProfile, RADAgent.HostToolDefs, RADAgent.Skills;
 
-{ %TEMP%\RADAgent\omp-host-p<pid>.yml: tools.xdevInlineDevices = rad.* }
-function HostConfigFile: string;
+{ %TEMP%\RADAgent\omp-host-p<pid>.yml: tools.xdevInlineDevices = rad.* and the skill folder. }
+function HostConfigFile(const Skills: TSkillSet; const UserSkillDirs: TArray<string>): string;
 { %TEMP%\RADAgent\project-guide-p<pid>.md for Profile. }
-function WriteProjectGuide(const Profile: TProjectProfile; LspReady: Boolean): string;
+function WriteProjectGuide(const Profile: TProjectProfile; LspReady: Boolean;
+  const SkillName: string = ''): string;
 { Writes <project>\.omp\lsp.json when the IDE generated <project>.delphilsp.json. }
 function EnsureDelphiLsp(const Profile: TProjectProfile): Boolean;
 { <project>.delphilsp.json next to the project, or ''. }
 function DelphiLspSettingsFile(const Profile: TProjectProfile): string;
-{ Everything an omp start needs for the active project. Note is a one-time hint for the chat. }
-procedure PrepareLaunch(const ProjectOverlay: string; out Tools: TToolProfile;
-  out Configs: TArray<string>; out Guide, Note, ExtraArgs: string);
+{ Everything an omp start needs for the active project. Note is a one-time hint for the chat.
+  UserSkillDirs: the skills.customDirectories omp has without RAD Agent. }
+procedure PrepareLaunch(const ProjectOverlay: string; const UserSkillDirs: TArray<string>;
+  out Tools: TToolProfile; out Configs: TArray<string>; out Guide, Note, ExtraArgs: string);
 
 implementation
 
@@ -36,10 +38,10 @@ begin
   TFile.WriteAllBytes(Path, TEncoding.UTF8.GetBytes(Text));
 end;
 
-function HostConfigFile: string;
+function HostConfigFile(const Skills: TSkillSet; const UserSkillDirs: TArray<string>): string;
 begin
   Result := ProcessTempFile('omp-host.yml');
-  WriteText(Result, OmpHostConfig);
+  WriteText(Result, HostConfigJson(Skills, UserSkillDirs));
 end;
 
 function DelphiLspSettingsFile(const Profile: TProjectProfile): string;
@@ -113,16 +115,18 @@ end;
 var
   GLspNoted: string;
 
-procedure PrepareLaunch(const ProjectOverlay: string; out Tools: TToolProfile;
-  out Configs: TArray<string>; out Guide, Note, ExtraArgs: string);
+procedure PrepareLaunch(const ProjectOverlay: string; const UserSkillDirs: TArray<string>;
+  out Tools: TToolProfile; out Configs: TArray<string>; out Guide, Note, ExtraArgs: string);
 var
   Profile: TProjectProfile;
   Lsp: Boolean;
+  Skills: TSkillSet;
 begin
   Profile := ActiveProfile;
   Tools := Profile.Tools;
   Tools.PlanMode := PlanActive;
-  Configs := [HostConfigFile, ProjectOverlay];
+  Skills := WriteSkill(Profile.Tools.Language);
+  Configs := [HostConfigFile(Skills, UserSkillDirs), ProjectOverlay];
   ExtraArgs := OmpExtraArgs;
   { Plan mode: omp asks before disk tools, and RADAgent answers Deny. }
   if PlanActive then
@@ -131,7 +135,9 @@ begin
     Lsp := EnsureClangd(Profile)
   else
     Lsp := EnsureDelphiLsp(Profile);
-  Guide := WriteProjectGuide(Profile, Lsp);
+  if Skills.Dir = '' then
+    Skills.Name := '';
+  Guide := WriteProjectGuide(Profile, Lsp, Skills.Name);
   { A new omp is checked once, in the background; the chat hears about problems. }
   if Profile.ProjectDir <> '' then
   begin
@@ -154,7 +160,8 @@ begin
   end;
 end;
 
-function WriteProjectGuide(const Profile: TProjectProfile; LspReady: Boolean): string;
+function WriteProjectGuide(const Profile: TProjectProfile; LspReady: Boolean;
+  const SkillName: string): string;
 var
   Lines: TStringList;
   Module: TProjectModule;
@@ -228,6 +235,12 @@ begin
         'answer references, so use grep for those.')
     else
       Lines.Add('- DelphiLSP is not configured for this project (no .delphilsp.json); use grep/read.');
+    if SkillName <> '' then
+      Lines.Add('- Before writing code, adding units or forms, or naming components, read skill://' +
+        SkillName + ' (conventions, project layout, component usage). The project''s own style and ' +
+        'rules win over it.');
+    Lines.Add('- RAD Studio sources for VCL/FMX/RTL declarations and defaults: ' +
+      IncludeTrailingPathDelimiter(BdsDir) + 'source (grep there instead of guessing an API).');
     Lines.Add('- The rad.* schemas are already in this prompt; do not read xd://rad.* docs first.');
     Lines.Add('- @path in the user message is the current file content.');
     Lines.Add('- Subagents (task tool) cannot call rad.* tools. They may edit .pas/.inc/.cpp/.h files on ' +

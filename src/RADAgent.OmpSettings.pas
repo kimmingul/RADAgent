@@ -28,6 +28,8 @@ type
     procedure SetOverlayText(const Key, Value: string);
     { Booleans: 'true', 'false', or '' for none. }
     function OverlayBool(const Key: string): string;
+    { A list setting as omp has it without this project's overlay. }
+    function BaseList(const Key: string): TArray<string>;
     procedure SetOverlayBool(const Key, Value: string);
     function Toggles: TArray<TToggleItem>;
     procedure ApplyToggles(const Items: TArray<TToggleItem>);
@@ -178,6 +180,11 @@ begin
     SetPath(FOverlay, Key, nil)
   else
     SetPath(FOverlay, Key, TJSONBool.Create(SameText(Value, 'true')));
+end;
+
+function TOmpProjectSettings.BaseList(const Key: string): TArray<string>;
+begin
+  Result := StringsOf(BaseValue(Key));
 end;
 
 function TOmpProjectSettings.EffectiveList(const Key: string): TArray<string>;

@@ -86,6 +86,7 @@
     <DCCReference Include="RADAgent.ClangdInstall.pas"/>
     <DCCReference Include="RADAgent.FormText.pas"/>
     <DCCReference Include="RADAgent.FormShot.pas"/>
+    <DCCReference Include="RADAgent.Skills.pas"/>
     <DCCReference Include="RADAgent.WebView2Api.pas"/>
     <DCCReference Include="RADAgent.ChatQueue.pas"/>
     <DCCReference Include="RADAgent.UsageReport.pas"/>
