@@ -30,6 +30,9 @@ function OmpPathOverride: string;
 procedure SetOmpPathOverride(const Value: string);
 { The omp to start: the override or the one found on PATH. }
 function OmpCommand: string;
+{ clangd.exe (or its folder) for C++Builder projects; '' means search PATH. }
+function ClangdPath: string;
+procedure SetClangdPath(const Value: string);
 { Extra command line arguments appended after --mode rpc. }
 function OmpExtraArgs: string;
 procedure SetOmpExtraArgs(const Value: string);
@@ -182,6 +185,16 @@ begin
   Result := OmpPathOverride;
   if Result = '' then
     Result := OmpExecutable;
+end;
+
+function ClangdPath: string;
+begin
+  Result := Trim(string(ReadValue('ClangdPath', '')));
+end;
+
+procedure SetClangdPath(const Value: string);
+begin
+  WriteValue('ClangdPath', Trim(Value));
 end;
 
 function OmpExtraArgs: string;

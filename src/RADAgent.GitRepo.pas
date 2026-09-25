@@ -47,7 +47,7 @@ const
     '__recovery/'#13#10'__astcache/'#13#10'*.obj'#13#10'*.o'#13#10'*.pch'#13#10'*.tds'#13#10'*.il?'#13#10 +
     '*.dcu'#13#10'*.local'#13#10'*.identcache'#13#10'*.stat'#13#10'*.dsk'#13#10'*.tvsconfig'#13#10 +
     '*.delphilsp.json'#13#10'Win32/'#13#10'Win64/'#13#10'Win64x/'#13#10'Linux64/'#13#10'OSX64/'#13#10 +
-    'OSXARM64/'#13#10'Android/'#13#10'Android64/'#13#10'iOSDevice64/'#13#10'.omp/lsp.json'#13#10;
+    'OSXARM64/'#13#10'Android/'#13#10'Android64/'#13#10'iOSDevice64/'#13#10'.omp/lsp.json'#13#10'.omp/clangd/'#13#10;
 
 function GitExecutable: string;
 var

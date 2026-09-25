@@ -25,7 +25,7 @@ type
     FShows: TListView;
     FFontSize, FLanguage: TComboBox;
     FHighContrast, FEnglish: TCheckBox;
-    FOmpPath, FOmpArgs: TEdit;
+    FOmpPath, FOmpArgs, FClangd: TEdit;
     FProject: TOmpProjectSettings;
     FProjectPages: TProjectPages;
     function AddSheet(const Caption: string): TScrollBox;
@@ -174,6 +174,10 @@ begin
   FOmpArgs.TextHint := Tr('settingsdialog.ompArgsHint');
   FOmpArgs.Text := OmpExtraArgs;
   AddRow(Page, Tr('settingsdialog.ompArgs'), FOmpArgs);
+  FClangd := TEdit.Create(Page);
+  FClangd.TextHint := Tr('settingsdialog.clangdHint');
+  FClangd.Text := ClangdPath;
+  AddRow(Page, Tr('settingsdialog.clangdPath'), FClangd);
   FEnglish := AddCheck(Page, Tr('settingsdialog.englishWork'));
   FEnglish.Checked := EnglishWork;
   AddHeading(Page, Tr('settingsdialog.headingCompatibility'));
@@ -219,7 +223,8 @@ begin
     SetChatFontSize(StrToInt(FFontSize.Items[FFontSize.ItemIndex]));
   SetHighContrast(FHighContrast.Checked);
   Restart := (Trim(FOmpPath.Text) <> OmpPathOverride) or (Trim(FOmpArgs.Text) <> OmpExtraArgs) or
-    (FEnglish.Checked <> EnglishWork);
+    (FEnglish.Checked <> EnglishWork) or (Trim(FClangd.Text) <> ClangdPath);
+  SetClangdPath(FClangd.Text);
   SetEnglishWork(FEnglish.Checked);
   SetOmpPathOverride(FOmpPath.Text);
   SetOmpExtraArgs(FOmpArgs.Text);

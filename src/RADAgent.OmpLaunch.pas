@@ -2,7 +2,8 @@ unit RADAgent.OmpLaunch;
 
 { Files written before each omp start: a RADAgent --config that inlines the rad.* tool docs,
   the project guide appended to omp's system prompt (language, framework, forms, how to use the
-  IDE tools) and, for Delphi projects, <project>\.omp\lsp.json for DelphiLSP. No VCL. }
+  IDE tools) and <project>\.omp\lsp.json: DelphiLSP for Delphi, clangd for C++Builder
+  (RADAgent.CppLsp). No VCL. }
 
 interface
 
@@ -26,7 +27,7 @@ implementation
 uses
   System.SysUtils, System.Classes, System.IOUtils, System.JSON, Winapi.Windows,
   RADAgent.Options, RADAgent.AgentSettings, RADAgent.ChatPlan, RADAgent.OmpCheck,
-  RADAgent.ChatCheckpoints, RADAgent.Lang;
+  RADAgent.ChatCheckpoints, RADAgent.Lang, RADAgent.CppLsp;
 
 procedure WriteText(const Path, Text: string);
 begin
@@ -123,7 +124,10 @@ begin
   { Plan mode: omp asks before disk tools, and RADAgent answers Deny. }
   if PlanActive then
     ExtraArgs := Trim(ExtraArgs + ' --approval-mode always-ask');
-  Lsp := EnsureDelphiLsp(Profile);
+  if Profile.Tools.Language = 'cpp' then
+    Lsp := EnsureClangd(Profile)
+  else
+    Lsp := EnsureDelphiLsp(Profile);
   Guide := WriteProjectGuide(Profile, Lsp);
   { A new omp is checked once, in the background; the chat hears about problems. }
   if Profile.ProjectDir <> '' then
@@ -138,6 +142,12 @@ begin
   begin
     GLspNoted := Profile.ProjectFile;
     Note := Tr('omplaunch.noDelphiLspNote');
+  end
+  else if not Lsp and (Profile.Tools.Language = 'cpp') and (Profile.ProjectFile <> '') and
+    not SameText(GLspNoted, Profile.ProjectFile) then
+  begin
+    GLspNoted := Profile.ProjectFile;
+    Note := Tr('omplaunch.noClangdNote');
   end;
 end;
 
@@ -198,7 +208,10 @@ begin
     Lines.Add('- After changes call rad.compile and fix the reported errors before answering.');
     Lines.Add('- Use rad.project_info for configurations, platforms and modules; rad.set_build_config ' +
       'to switch them.');
-    if Profile.Tools.Language = 'cpp' then
+    if (Profile.Tools.Language = 'cpp') and LspReady then
+      Lines.Add('- clangd is configured: use the lsp tool for definition, references, hover and ' +
+        'diagnostics. ' + CppLspNoise)
+    else if Profile.Tools.Language = 'cpp' then
       Lines.Add('- No language server for C++ here: use grep/read for navigation.')
     else if LspReady then
       Lines.Add('- DelphiLSP is configured: use the lsp tool for definition and diagnostics; it does not ' +

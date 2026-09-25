@@ -12,6 +12,11 @@ uses
 
 { Errors from the .cpp files changed since the last good build (all of them when unknown). }
 function CppBuildErrors(const Project: IOTAProject; const PlatformName: string): TArray<TAgentCompileError>;
+{ The platform's C++ compiler (bcc64x for Win64x, bcc64, bcc32c), '' when there is none. }
+function Compiler(const PlatformName: string): string;
+{ Include folders (absolute) and defines of the active configuration for PlatformName. }
+procedure ProjectOptions(const Project: IOTAProject; const PlatformName: string;
+  out Includes, Defines: TArray<string>);
 { Call after a successful build: later checks start from here. }
 procedure NoteCppBuildOk;
 { Parses compiler output ("Error E1525 MainForm.cpp 33(10): expected expression"). Dir resolves
@@ -103,13 +108,16 @@ begin
   end;
 end;
 
-function ProjectArgs(const Project: IOTAProject; const PlatformName, Dir: string): string;
+procedure ProjectOptions(const Project: IOTAProject; const PlatformName: string;
+  out Includes, Defines: TArray<string>);
 var
   Configs: IOTAProjectOptionsConfigurations;
   Config: IOTABuildConfiguration;
-  Item, Value: string;
+  Item, Value, Dir: string;
 begin
-  Result := ' -tW -tU -I"' + Dir + '"';
+  Dir := ExtractFileDir(Project.FileName);
+  Includes := [Dir];
+  Defines := nil;
   if not Supports(Project.ProjectOptions, IOTAProjectOptionsConfigurations, Configs) then
     Exit;
   Config := Configs.ActiveConfiguration;
@@ -121,11 +129,24 @@ begin
   begin
     Value := Expand(Trim(Item), PlatformName, Configs.ActiveConfigurationName);
     if (Value <> '') and not Value.Contains('$(') then
-      Result := Result + ' -I"' + TPath.Combine(Dir, Value) + '"';
+      Includes := Includes + [TPath.Combine(Dir, Value)];
   end;
   for Item in Config.GetValue('Defines', True).Split([';']) do
     if (Trim(Item) <> '') and not Item.Contains('$(') then
-      Result := Result + ' -D' + Trim(Item);
+      Defines := Defines + [Trim(Item)];
+end;
+
+function ProjectArgs(const Project: IOTAProject; const PlatformName: string): string;
+var
+  Includes, Defines: TArray<string>;
+  Item: string;
+begin
+  ProjectOptions(Project, PlatformName, Includes, Defines);
+  Result := ' -tW -tU';
+  for Item in Includes do
+    Result := Result + ' -I"' + Item + '"';
+  for Item in Defines do
+    Result := Result + ' -D' + Item;
 end;
 
 { The project's .cpp files changed since the last good build, plus the ones including a changed
@@ -180,7 +201,7 @@ begin
   if Exe = '' then
     Exit;
   Dir := ExtractFileDir(Project.FileName);
-  Args := ProjectArgs(Project, PlatformName, Dir);
+  Args := ProjectArgs(Project, PlatformName);
   ObjFile := ProcessTempFile('cppcheck.o');
   for FileName in ChangedSources(Project) do
   begin

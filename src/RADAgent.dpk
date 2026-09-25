@@ -19,6 +19,7 @@ contains
   RADAgent.BrandTable in 'RADAgent.BrandTable.pas',
   RADAgent.HandlerCode in 'RADAgent.HandlerCode.pas',
   RADAgent.CppDiagnostics in 'RADAgent.CppDiagnostics.pas',
+  RADAgent.CppLsp in 'RADAgent.CppLsp.pas',
   RADAgent.ProcessRun in 'RADAgent.ProcessRun.pas',
   RADAgent.Lang in 'RADAgent.Lang.pas',
   RADAgent.RpcProtocol in 'RADAgent.RpcProtocol.pas',
