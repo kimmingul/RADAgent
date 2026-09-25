@@ -10,6 +10,14 @@ uses
   RADAgent.OmpCatalog;
 
 type
+  { A combo whose rows are translated labels for Values; Values[0] = '' keeps omp's value. }
+  TLabeledChoice = record
+    Combo: TComboBox;
+    Key: string;
+    Values: TArray<string>;
+    IsBool: Boolean;
+  end;
+
   TProjectPages = class(TComponent)
   private
     FSettings: TOmpProjectSettings;
@@ -18,6 +26,9 @@ type
     FToggleList: TListView;
     FApproval, FThinking, FFormEditing: TComboBox;
     FFormEditingChanged: Boolean;
+    FChoices: TArray<TLabeledChoice>;
+    procedure AddLabeled(Page: TWinControl; const Caption, Key: string; const Values: array of string;
+      IsBool: Boolean);
     procedure ToggleChanging(Sender: TObject; Item: TListItem; Change: TItemChange;
       var AllowChange: Boolean);
     procedure BuildRoles(Page: TWinControl; const Models: TArray<string>);
@@ -190,6 +201,52 @@ begin
   FFormEditing.Items.Add(Tr('settingsproject.formEditingDesigner'));
   FFormEditing.ItemIndex := Ord(not FormTextAllowed(FSettings.ProjectDir));
   AddNote(Page, Tr('settingsproject.noteFormEditing'));
+  AddHeading(Page, Tr('settingsproject.headingSession'));
+  AddLabeled(Page, Tr('settingsproject.autoCompaction'), 'compaction.enabled', ['', 'true', 'false'], True);
+  AddLabeled(Page, Tr('settingsproject.autoRetry'), 'retry.enabled', ['', 'true', 'false'], True);
+  AddLabeled(Page, Tr('settingsproject.steeringMode'), 'steeringMode', ['', 'one-at-a-time', 'all'], False);
+  AddLabeled(Page, Tr('settingsproject.followUpMode'), 'followUpMode', ['', 'one-at-a-time', 'all'], False);
+  AddLabeled(Page, Tr('settingsproject.interruptMode'), 'interruptMode', ['', 'immediate', 'wait'], False);
+  AddNote(Page, Tr('settingsproject.noteSession'));
+end;
+
+function ValueCaption(const Value: string): string;
+begin
+  Result := Tr('settingsproject.value.' + Value);
+  if Result = 'settingsproject.value.' + Value then
+    Result := Value;
+end;
+
+procedure TProjectPages.AddLabeled(Page: TWinControl; const Caption, Key: string;
+  const Values: array of string; IsBool: Boolean);
+var
+  Choice: TLabeledChoice;
+  Index: Integer;
+  Current: string;
+begin
+  Choice.Combo := TComboBox.Create(Page);
+  Choice.Combo.Style := csDropDownList;
+  AddRow(Page, Caption, Choice.Combo);
+  Choice.Key := Key;
+  Choice.IsBool := IsBool;
+  Choice.Values := nil;
+  if IsBool then
+    Current := FSettings.OverlayBool(Key)
+  else
+    Current := FSettings.OverlayText(Key);
+  for Index := 0 to High(Values) do
+  begin
+    Choice.Values := Choice.Values + [Values[Index]];
+    if Values[Index] = '' then
+      Choice.Combo.Items.Add(TrF('settingsproject.globalValueFormat', [ValueCaption(FSettings.BaseText(Key))]))
+    else
+      Choice.Combo.Items.Add(ValueCaption(Values[Index]));
+    if Values[Index] = Current then
+      Choice.Combo.ItemIndex := Index;
+  end;
+  if Choice.Combo.ItemIndex < 0 then
+    Choice.Combo.ItemIndex := 0;
+  FChoices := FChoices + [Choice];
 end;
 
 function ChoiceValue(Combo: TComboBox): string;
@@ -203,7 +260,13 @@ end;
 procedure TProjectPages.Store;
 var
   Index: Integer;
+  Choice: TLabeledChoice;
 begin
+  for Choice in FChoices do
+    if Choice.IsBool then
+      FSettings.SetOverlayBool(Choice.Key, Choice.Values[Choice.Combo.ItemIndex])
+    else
+      FSettings.SetOverlayText(Choice.Key, Choice.Values[Choice.Combo.ItemIndex]);
   for Index := 0 to High(Roles) do
     FSettings.SetOverlayText('modelRoles.' + Roles[Index], FRoles[Index].Text);
   for Index := 0 to High(FToggles) do

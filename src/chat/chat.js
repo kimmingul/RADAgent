@@ -118,7 +118,8 @@
     }
   }
 
-  function handleUser(text) {
+  // queue: sent while omp worked, 'steer' (read at its next step) or 'followUp' (after the turn).
+  function handleUser(text, queue) {
     const wasNear = isNearBottom();
     closeAssistantBlock();
     currentTurn = null;
@@ -131,8 +132,17 @@
     body.className = 'user-text';
     body.textContent = text || '';
     bubble.appendChild(body);
+    if (queue) {
+      const tag = document.createElement('div');
+      tag.className = 'queue-tag';
+      tag.textContent = global.T(queue === 'followUp' ? 'page.chat.queuedFollowUp' : 'page.chat.queuedSteer');
+      bubble.appendChild(tag);
+    }
     turn.appendChild(bubble);
-    logEl.appendChild(turn);
+    // Above the working line: the turn goes on below the message.
+    const working = document.getElementById('working');
+    if (queue && working && logEl.lastElementChild === working) logEl.insertBefore(turn, working);
+    else logEl.appendChild(turn);
     handleNewContent(wasNear);
   }
 
@@ -179,6 +189,14 @@
     const notice = document.createElement(level === 'output' ? 'pre' : 'div');
     notice.className = 'notice notice-' + (level || 'info');
     appendWithLogos(notice, text || '', Array.isArray(models) ? models.filter(Boolean) : []);
+    // A retry waiting for its delay can be called off; the button goes when the turn ends.
+    if (level === 'retry' && !Array.isArray(models)) {
+      const stop = document.createElement('button');
+      stop.className = 'notice-btn retry-cancel';
+      stop.textContent = global.T('page.chat.cancelRetry');
+      stop.addEventListener('click', () => { postHost({ t: 'abortRetry' }); stop.remove(); });
+      notice.appendChild(stop);
+    }
     logEl.appendChild(notice);
     handleNewContent(wasNear);
   }
@@ -223,6 +241,7 @@
   }
 
   function handleTurnEnd() {
+    logEl.querySelectorAll('.retry-cancel').forEach(b => b.remove());
     closeAssistantBlock();
     global.ChatActivity.endTurn();
     global.ChatTools.endTurn();
@@ -280,7 +299,7 @@
     switch (msg.t) {
       case 'strings': handleStrings(msg); if (global.ChatModelPicker && logEl) global.ChatModelPicker.relabel(); break;
       case 'theme': handleTheme(msg.vars); break;
-      case 'user': handleUser(msg.text); break;
+      case 'user': handleUser(msg.text, msg.queue); break;
       case 'assistantDelta': handleAssistantDelta(msg.text); break;
       case 'assistantEnd': handleAssistantEnd(); break;
       case 'toolStart': global.ChatTools.start(msg.id, msg.name, msg.detail, msg.input); break;
@@ -317,48 +336,10 @@
       case 'turnEnd': handleTurnEnd(); break;
       case 'clear': handleClear(); break;
       case 'history': handleHistory(msg.items); break;
+      case 'sheet': global.ChatPanels.sheet(msg); break;
+      case 'usage': global.ChatPanels.usage(msg); break;
     }
   }
-
-  // Click delegation
-  document.addEventListener('click', (e) => {
-    const fileRef = e.target.closest('.file-ref');
-    if (fileRef) {
-      e.preventDefault();
-      e.stopPropagation();
-      postHost({
-        t: 'openFile',
-        path: fileRef.getAttribute('data-path') || '',
-        line: parseInt(fileRef.getAttribute('data-line') || '0', 10)
-      });
-      return;
-    }
-
-    const copyBtn = e.target.closest('.code-copy-btn');
-    if (copyBtn) {
-      e.preventDefault();
-      e.stopPropagation();
-      const code = copyBtn.getAttribute('data-code') || '';
-      if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(code).catch(() => {});
-      }
-      postHost({ t: 'copy', text: code });
-      copyBtn.textContent = global.T('page.chat.copied');
-      setTimeout(() => { copyBtn.textContent = global.T('page.chat.copy'); }, 1500);
-      return;
-    }
-
-    const link = e.target.closest('.chat-link');
-    if (link) {
-      e.preventDefault();
-      e.stopPropagation();
-      postHost({
-        t: 'openUrl',
-        url: link.getAttribute('data-url') || ''
-      });
-      return;
-    }
-  });
 
   window.addEventListener('DOMContentLoaded', () => {
     applyStrings();
@@ -383,6 +364,7 @@
     global.ChatPlusMenu.wire();
     global.ChatBtw.wire(ctx);
     global.ChatCheckpoints.init(postHost);
+    global.ChatPanels.wire();
     scrollBtn = document.getElementById('scroll-bottom-btn');
     if (scrollBtn) {
       scrollBtn.addEventListener('click', () => scrollToBottom(true));

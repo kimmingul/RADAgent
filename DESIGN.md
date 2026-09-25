@@ -60,7 +60,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | ChatCatalog | 설정 창용 모델, 생각 수준, 로그인 공급자 목록(RPC 응답). |
 | ChatActions | 보내기(저장, 체크포인트, 선택 영역 첨부), 컴파일, 새 세션, 세션 전환과 기록 불러오기, 내보내기, host-tool 실행, 상태줄 문구. |
 | ChatActivity | RPC 이벤트로 지금 하는 일(생각, 답 작성, 도구 실행, 압축)과 경과 시간을 정한다. |
-| ChatPageMessages | 채팅 페이지(`src\chat`)로 보내는 JSON 메시지. 페이지는 `chat.js`(기록), `tools.js`(도구 묶음·파일 카드), `activity.js`(생각·입력·하위 에이전트·작업 목록), `topbar.js`, `composer.js`(입력 상자와 아래 줄)로 나뉜다. |
+| ChatPageMessages | 채팅 페이지(`src\chat`)로 보내는 JSON 메시지. 페이지는 `chat.js`(기록), `tools.js`(도구 묶음·파일 카드), `activity.js`(생각·입력·하위 에이전트·작업 목록), `topbar.js`, `composer.js`(입력 상자와 아래 줄), `panels.js`(시트와 사용량 패널), `clicks.js`(파일·코드·링크 클릭)로 나뉜다. |
 | WebView2Host / WebView2Handlers | rtl `Winapi.WebView2`와 BPL 옆 `WebView2Loader.dll`로 WebView2를 띄운다. 가상 호스트로 페이지를 싣고, 페이지 밖 이동과 새 창을 막는다. |
 | ChatFallback | WebView2를 못 띄울 때의 글자 기록. |
 | ChatInput | WebView2 대체 화면의 VCL 입력칸: 여러 줄, 보낸 문장 기록, `/` 명령 목록. |
@@ -83,6 +83,11 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | RpcResponses / RpcJson | 명령 응답(명령 목록, 상태·작업 목록, 기록 페이지, 모델, 생각 수준, 로그인 공급자) 해석과 공용 JSON 읽기. ToolsAPI 없음. |
 | RpcProtocol | JSONL 프레임 생성과 판별. ToolsAPI 없음. |
 | RpcDispatch | stdout 줄을 프레임 종류별로 나눠 이벤트로 넘긴다. ToolsAPI 없음. |
+| SlashRoutes | omp 터미널 전용 명령의 처리 방식(RADAgent가 함, 터미널에서만, omp에 넘김). omp가 RPC 목록에 올린 이름이 먼저다. ToolsAPI 없음. |
+| ChatSlash | 터미널 전용 명령 실행: `/clear`, `/delete`, `/resume`, `/tree`, `/branch`, `/fork`, `/copy`, `/login`, `/hub` 등을 RPC 요청과 RADAgent 창으로, 하위 에이전트 대화 보기. |
+| ChatQueue | 턴 옆의 일: 작업 중 보낸 메시지(`steer`, `follow_up`), `!` 셸 명령(`bash`, `abort_bash`), 재시도 취소(`abort_retry`). |
+| ChatUsage / UsageReport | 컨텍스트 원의 사용량 패널: `get_session_stats`와 뒤에서 돌린 `omp usage --json --provider`(1분 보관), 공급자 한도를 창·그룹·재설정 시각으로. |
+| SessionData | 세션 응답 해석(갈라질 메시지, 트리, 마지막 답·코드 블록, 하위 에이전트 대화, 셸 결과). ToolsAPI 없음. |
 | ChatCommand | 채팅 입력을 기존 omp RPC 프레임으로 분류한다. 새 명령 `type`을 만들지 않는다. |
 | AskDialog | `extension_ui_request`와 슬래시 명령 선택 모달. |
 | Options | omp 실행 파일, 명령줄(인자 인용), `%TEMP%\RADAgent` 로그 경로(omp에 넘기는 파일과 stderr 로그는 IDE 프로세스마다 `-p<pid>`, 끝난 IDE의 것은 처음 쓸 때 지움), 자식이 일찍 끝난 이유(stderr 마지막 줄), 공통 `--config` 내용. |

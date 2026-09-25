@@ -20,7 +20,8 @@ implementation
 
 uses
   System.SysUtils, System.JSON, RADAgent.ChatSession, RADAgent.RpcResponses,
-  System.IOUtils, RADAgent.EditorContext, RADAgent.IdeContext, RADAgent.ChatPlan, RADAgent.Lang;
+  System.IOUtils, RADAgent.EditorContext, RADAgent.IdeContext, RADAgent.ChatPlan, RADAgent.Lang,
+  RADAgent.ChatQueue, RADAgent.SlashRoutes;
 
 function Finish(Obj: TJSONObject): string;
 begin
@@ -61,9 +62,13 @@ begin
   Obj.AddPair('state', StateText(Session, IsError));
   Obj.AddPair('error', TJSONBool.Create(IsError));
   Obj.AddPair('connected', TJSONBool.Create(Session.Connected));
-  Obj.AddPair('busy', TJSONBool.Create(Session.Busy));
+  Obj.AddPair('busy', TJSONBool.Create(Session.Busy or ShellRunning));
+  { A "!" command: only the stop button, nothing to queue. }
+  Obj.AddPair('shell', TJSONBool.Create(ShellRunning));
   if Session.Busy then
     Obj.AddPair('activity', Session.Activity.Text)
+  else if ShellRunning then
+    Obj.AddPair('activity', Tr('chatslash.shellRunning'))
   else
     Obj.AddPair('activity', '');
   if Session.State.ModelId <> '' then
@@ -148,7 +153,10 @@ var
   Obj, Item: TJSONObject;
   List: TJSONArray;
   Command: TSlashCommand;
+  Names: TArray<string>;
+  Name, Local, Args: string;
 begin
+  Names := nil;
   Obj := TJSONObject.Create;
   Obj.AddPair('t', 'commands');
   List := TJSONArray.Create;
@@ -165,7 +173,18 @@ begin
     Item.AddPair('description', Command.Description);
     Item.AddPair('hint', Command.Hint);
     List.AddElement(Item);
+    Names := Names + [Command.Name];
   end;
+  { The terminal-only commands RADAgent carries out itself, unless omp lists them now. }
+  for Name in LocalCommandNames do
+    if RouteSlash('/' + Name, Names, Local, Args) <> srNone then
+    begin
+      Item := TJSONObject.Create;
+      Item.AddPair('name', Name);
+      Item.AddPair('description', Tr('slash.' + Name));
+      Item.AddPair('hint', LocalCommandHint(Name));
+      List.AddElement(Item);
+    end;
   Obj.AddPair('items', List);
   Result := Finish(Obj);
 end;

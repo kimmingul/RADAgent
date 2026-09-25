@@ -7,7 +7,9 @@ interface
 
 { Prompt or slash command. Attachment goes to omp only; AttachmentLabel is shown in the chat. }
 { ImagesJson: ImageContent[] for attached pictures, or ''. }
-function SubmitChat(const Text, Attachment, AttachmentLabel: string; const ImagesJson: string = ''): Boolean;
+{ While omp works, a prompt joins the running turn: at its next step, or after it (FollowUp). }
+function SubmitChat(const Text, Attachment, AttachmentLabel: string; const ImagesJson: string = '';
+  FollowUp: Boolean = False): Boolean;
 procedure CompileActiveProject;
 procedure StartNewSession;
 procedure PickSession;
@@ -29,13 +31,13 @@ uses
   RADAgent.IdeContext, RADAgent.Compile, RADAgent.AgentSettings,
   RADAgent.ChatPageMessages, RADAgent.Sessions, RADAgent.Options, RADAgent.HostTools,
   RADAgent.OmpSettings, RADAgent.HostToolDefs, RADAgent.ChatPlan, RADAgent.ChatBtw,
-  RADAgent.ChatDiskSync, RADAgent.ChatCheckpoints, RADAgent.RpcJson, RADAgent.Lang;
+  RADAgent.ChatDiskSync, RADAgent.ChatCheckpoints, RADAgent.RpcJson, RADAgent.ChatSlash, RADAgent.ChatQueue, RADAgent.ChatUsage, RADAgent.Lang;
 
 var
   GPickModel: Boolean;
   GHistory: TArray<THistoryItem>;
 
-function SubmitChat(const Text, Attachment, AttachmentLabel, ImagesJson: string): Boolean;
+function SubmitChat(const Text, Attachment, AttachmentLabel, ImagesJson: string; FollowUp: Boolean): Boolean;
 var
   Session: TChatSession;
   Arg1, Arg2, Display: string;
@@ -50,15 +52,30 @@ begin
     AskBtw(Copy(Trim(Text), 5, MaxInt), '');
     Exit(True);
   end;
-  if not Session.Connected or Session.Busy or (Trim(Text) = '') then
+  if not Session.Connected or (Trim(Text) = '') then
     Exit;
+  { RADAgent's own commands (settings, copy, ...) also work while omp is busy. }
+  if Text.TrimLeft.StartsWith('/') and RunLocalSlash(Text) then
+    Exit(True);
+  Display := Text;
+  if AttachmentLabel <> '' then
+    Display := Display + sLineBreak + '(' + AttachmentLabel + ')';
+  if Session.Busy or ShellRunning then
+  begin
+    if ShellRunning or Text.TrimLeft.StartsWith('/') or Text.TrimLeft.StartsWith('!') then
+    begin
+      Session.Notice('warn', Tr('chatslash.busy'));
+      Exit;
+    end;
+    SaveProject;
+    Exit(QueueMessage(Text + Attachment, Display, ImagesJson, FollowUp));
+  end;
   { omp reads and edits files on disk: they must hold what the IDE shows. }
   SaveProject;
+  if Text.TrimLeft.StartsWith('!') then
+    Exit(RunShell(Copy(Trim(Text), 2, MaxInt)));
   if ClassifyChat(Text, Arg1, Arg2) = ccPrompt then
   begin
-    Display := Text;
-    if AttachmentLabel <> '' then
-      Display := Display + sLineBreak + '(' + AttachmentLabel + ')';
     Seq := CheckpointBeforePrompt(Text + Attachment);
     Result := Session.SendPrompt(Text + Attachment, Display, ImagesJson);
     if Result and (Seq > 0) then
@@ -224,6 +241,8 @@ var
   Root: TJSONValue;
   Ok: Boolean;
 begin
+  if HandleSlashResponse(Line) or HandleShellResponse(Line) or HandleUsageResponse(Line) then
+    Exit;
   Root := TJSONObject.ParseJSONValue(Line);
   try
     if not (Root is TJSONObject) then

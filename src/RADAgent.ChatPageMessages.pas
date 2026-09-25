@@ -8,6 +8,10 @@ uses
   RADAgent.RpcEvents, RADAgent.RpcResponses, RADAgent.AgentSettings;
 
 function PageUser(const Text: string): string;
+{ A message sent while omp works: Queue is 'steer' (read at the next step) or 'followUp'. }
+function PageQueuedUser(const Text, Queue: string): string;
+{ A panel over the chat with Markdown (a subagent transcript, the shortcut list). }
+function PageSheet(const Title, Markdown: string): string;
 function PageDelta(const Text: string): string;
 function PageAssistantEnd: string;
 function PageThinkingDelta(const Text: string): string;
@@ -57,6 +61,16 @@ end;
 function PageUser(const Text: string): string;
 begin
   Result := Build('user', ['text'], [Text]);
+end;
+
+function PageQueuedUser(const Text, Queue: string): string;
+begin
+  Result := Build('user', ['text', 'queue'], [Text, Queue]);
+end;
+
+function PageSheet(const Title, Markdown: string): string;
+begin
+  Result := Build('sheet', ['title', 'text'], [Title, Markdown]);
 end;
 
 function PageDelta(const Text: string): string;

@@ -31,15 +31,25 @@
     input.style.height = input.scrollHeight + 'px';
   }
 
+  // While omp works, typed text goes into the running turn; the button stops it when empty.
+  function canQueue() {
+    return state.busy && !state.shell && state.connected && !!(input.value.trim() || attachments.length);
+  }
+
+  function stopMode() { return state.busy && !canQueue() && !input.value.trim().startsWith('/btw'); }
+
   function refreshSend() {
-    sendBtn.classList.toggle('stop', state.busy);
-    sendBtn.textContent = state.busy ? '■' : '↑';
-    sendBtn.title = state.busy ? T('page.composer.stopTitle') : T('page.composer.sendTitle');
-    sendBtn.disabled = state.busy ? false : !(input.value.trim().startsWith('/btw') ||
+    const stop = stopMode();
+    sendBtn.classList.toggle('stop', stop);
+    sendBtn.textContent = stop ? '■' : '↑';
+    sendBtn.title = stop ? T('page.composer.stopTitle') :
+      state.busy ? T('page.composer.steerTitle') : T('page.composer.sendTitle');
+    sendBtn.disabled = stop ? false : !(input.value.trim().startsWith('/btw') ||
       (state.connected && (input.value.trim() || attachments.length)));
   }
 
-  function submit() {
+  // followUp: while omp works, send after the turn instead of at its next step.
+  function submit(followUp) {
     let text = input.value.trim();
     // Side question: its own omp child answers, so it also goes out while the agent works.
     const btw = /^\/btw(?:\s+([\s\S]*))?$/i.exec(text);
@@ -48,10 +58,10 @@
       else { input.value = ''; autosize(); refreshSend(); global.ChatBtw.open(); }
       return;
     }
-    if ((!text && !attachments.length) || state.busy || !state.connected) return;
+    if ((!text && !attachments.length) || state.shell || !state.connected) return;
     if (!text) text = T('page.composer.defaultAttachmentPrompt');
     post({ t: 'submit', text, withSelection: withSelection && !!selection,
-      attachments: attachments.map(a => a.path) });
+      attachments: attachments.map(a => a.path), followUp: !!followUp });
   }
 
   // The IDE accepted the prompt: remember it and clear the box.
@@ -163,8 +173,14 @@
       if (e.key === 'Enter' || e.key === 'Tab') { pick(active); e.preventDefault(); return; }
       if (e.key === 'Escape') { slash.hidden = true; e.preventDefault(); return; }
     }
-    if (e.key === 'Escape') { global.ChatPlusMenu.close(); e.preventDefault(); return; }
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); return; }
+    if (e.key === 'Escape') {
+      if (global.ChatPlusMenu.isOpen()) global.ChatPlusMenu.close();
+      else if (global.ChatPanels.isOpen()) return;
+      else if (state.busy && !input.value.trim()) post({ t: 'abort' });
+      e.preventDefault();
+      return;
+    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(e.ctrlKey); return; }
     const single = !input.value.includes('\n');
     if (e.key === 'ArrowUp' && single && input.selectionStart === 0 && recall(-1)) e.preventDefault();
     else if (e.key === 'ArrowDown' && single && historyIndex !== -1 && recall(1)) e.preventDefault();
@@ -249,6 +265,7 @@
     approval.classList.toggle('yolo', approval.value === 'yolo');
     approval.classList.toggle('plan', approval.value === 'plan');
     approval.disabled = !msg.connected;
+    input.placeholder = msg.busy && !msg.shell ? T('page.composer.busyPlaceholder') : T('page.composer.placeholder');
     const pct = msg.context >= 0 ? Math.min(100, msg.context) : 0;
     $('ctx-arc').setAttribute('stroke-dasharray', (pct / 100 * 50.3).toFixed(1) + ' 50.3');
     $('ctx-ring').setAttribute('title', msg.context >= 0 ? T('page.composer.contextPct', pct.toFixed(0)) : T('page.composer.noContext'));
@@ -272,7 +289,7 @@
     input.addEventListener('click', () => updateSlash());
     input.addEventListener('keydown', onKeyDown);
     input.addEventListener('blur', () => { setTimeout(() => { slash.hidden = true; }, 150); });
-    sendBtn.addEventListener('click', () => { if (state.busy) post({ t: 'abort' }); else submit(); });
+    sendBtn.addEventListener('click', () => { if (stopMode()) post({ t: 'abort' }); else submit(false); });
     $('thinking-select').addEventListener('change', e => post({ t: 'setThinking', value: e.target.value }));
     $('approval-select').addEventListener('change', e => post({ t: 'setApproval', value: e.target.value }));
     input.focus();

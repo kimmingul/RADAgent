@@ -13,7 +13,7 @@ type
 function HandlePageRequest(const Json: string): TPageAction;
 { Submits Text as if typed in the composer, with attached files; True when it reached omp. }
 function SubmitFromPage(const Text: string; WithSelection: Boolean;
-  const Attachments: TArray<string> = nil): Boolean;
+  const Attachments: TArray<string> = nil; FollowUp: Boolean = False): Boolean;
 
 implementation
 
@@ -22,7 +22,7 @@ uses
   RADAgent.ChatSession, RADAgent.ChatActions, RADAgent.ChatCommand,
   RADAgent.EditorContext, RADAgent.SettingsDialog, RADAgent.ChatExtensions,
   RADAgent.ChatApprovalCard, RADAgent.ChatPlan, RADAgent.ChatStatus, RADAgent.ChatBtw,
-  RADAgent.ChatCheckpoints, RADAgent.ChatStop, RADAgent.Lang;
+  RADAgent.ChatCheckpoints, RADAgent.ChatStop, RADAgent.ChatSlash, RADAgent.ChatQueue, RADAgent.ChatUsage, RADAgent.Lang;
 
 function Post(const Kind, Field, Value: string): string;
 var
@@ -40,7 +40,7 @@ begin
 end;
 
 function SubmitFromPage(const Text: string; WithSelection: Boolean;
-  const Attachments: TArray<string>): Boolean;
+  const Attachments: TArray<string>; FollowUp: Boolean): Boolean;
 var
   Info: TEditorInfo;
   Attachment, AttachmentLabel, FilesText, ImagesJson, FilesLabel: string;
@@ -61,7 +61,7 @@ begin
       AttachmentLabel := FilesLabel
     else
       AttachmentLabel := AttachmentLabel + ', ' + FilesLabel;
-  Result := SubmitChat(Text, Attachment + FilesText, AttachmentLabel, ImagesJson);
+  Result := SubmitChat(Text, Attachment + FilesText, AttachmentLabel, ImagesJson, FollowUp);
 end;
 
 function StringsOf(Value: TJSONValue): TArray<string>;
@@ -124,7 +124,7 @@ begin
     if Kind = 'submit' then
     begin
       if SubmitFromPage(Text, Obj.GetValue<Boolean>('withSelection', False),
-        StringsOf(Obj.GetValue('attachments'))) then
+        StringsOf(Obj.GetValue('attachments')), Obj.GetValue<Boolean>('followUp', False)) then
         Session.PostToView(Post('submitted', '', ''));
     end
     else if Kind = 'btw' then
@@ -202,7 +202,15 @@ begin
         ShellExecute(0, 'open', PChar(Text), nil, nil, SW_SHOWNORMAL);
     end
     else if Kind = 'copy' then
-      Clipboard.AsText := Text;
+      Clipboard.AsText := Text
+    else if Kind = 'runCommand' then
+      SubmitChat(Text, '', '')
+    else if Kind = 'abortRetry' then
+      AbortRetry
+    else if Kind = 'subagentLog' then
+      ShowSubagentLog(Obj.GetValue<string>('id', ''))
+    else if Kind = 'usage' then
+      RequestUsage;
     { Most requests change what the top bar or composer shows. }
     if Result = paNone then
       Result := paRefresh;

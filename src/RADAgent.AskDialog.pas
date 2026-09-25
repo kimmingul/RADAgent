@@ -10,6 +10,8 @@ uses
 function AskChoice(const Title: string; Items: TStrings; out Choice: string;
   Logos: Boolean = False): Boolean;
 function AskCsv(const Title, Csv: string; out Choice: string): Boolean;
+{ Index of the chosen line, -1 when cancelled. Start: the line selected first. }
+function AskIndex(const Title: string; Items: TStrings; Start: Integer = 0): Integer;
 function AskYes(const Title, Message: string): Boolean;
 function AskText(const Title, Prompt: string; out Value: string): Boolean;
 { Read-only text (a report) with an OK button. }
@@ -28,7 +30,7 @@ function DispatchSlash(const Original: string; const Send: TRawSend;
 implementation
 
 uses
-  Winapi.Windows, Winapi.ShellAPI, Vcl.Forms, Vcl.StdCtrls, Vcl.Controls, Vcl.Graphics, Vcl.Dialogs,
+  System.Math, Winapi.Windows, Winapi.ShellAPI, Vcl.Forms, Vcl.StdCtrls, Vcl.Controls, Vcl.Graphics, Vcl.Dialogs,
   RADAgent.ChatCommand, RADAgent.RpcProtocol, RADAgent.ChatPlan, RADAgent.ChatSession,
   RADAgent.ChatApprovalCard, RADAgent.Lang, RADAgent.BrandTable, RADAgent.BrandIcons,
   RADAgent.ChatTheme;
@@ -91,6 +93,30 @@ begin
     Result := (Form.ShowModal = mrOk) and (List.ItemIndex >= 0);
     if Result then
       Choice := List.Items[List.ItemIndex];
+  finally
+    Form.Free;
+  end;
+end;
+
+function AskIndex(const Title: string; Items: TStrings; Start: Integer): Integer;
+var
+  Form: TForm;
+  List: TListBox;
+begin
+  Result := -1;
+  Form := NewDialog(Title, 620, 420);
+  try
+    List := TListBox.Create(Form);
+    List.Parent := Form;
+    List.SetBounds(8, 8, 604, 360);
+    List.Items.Assign(Items);
+    if List.Items.Count > 0 then
+      List.ItemIndex := Max(0, Min(Start, List.Items.Count - 1));
+    MakeButton(Form, Tr('askdialog.ok'), 420, 380, mrOk);
+    MakeButton(Form, Tr('askdialog.cancel'), 516, 380, mrCancel);
+    ThemeForm(Form);
+    if Form.ShowModal = mrOk then
+      Result := List.ItemIndex;
   finally
     Form.Free;
   end;

@@ -24,6 +24,9 @@ uses
   RADAgent.ProcessRun in '..\src\RADAgent.ProcessRun.pas',
   RADAgent.GitRepo in '..\src\RADAgent.GitRepo.pas',
   RADAgent.Lang in '..\src\RADAgent.Lang.pas',
+  RADAgent.SlashRoutes in '..\src\RADAgent.SlashRoutes.pas',
+  RADAgent.SessionData in '..\src\RADAgent.SessionData.pas',
+  RADAgent.UsageReport in '..\src\RADAgent.UsageReport.pas',
   TestCheck in 'TestCheck.pas',
   RpcEventsTests in 'RpcEventsTests.pas',
   LineDiffTests in 'LineDiffTests.pas',
@@ -214,7 +217,6 @@ var
 begin
   CheckClass('안녕', ccPrompt, '', '', 'plain text is prompt');
   CheckClass('  a/b 경로  ', ccPrompt, '', '', 'slash inside text is prompt');
-  CheckClass('/clear', ccNewSession, '', '', '/clear new session');
   CheckClass('/NEW', ccNewSession, '', '', '/new case-insensitive');
   CheckClass('/abort', ccAbort, '', '', '/abort');
   CheckClass('/model', ccListModels, '', '', '/model lists');

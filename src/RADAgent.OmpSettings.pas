@@ -26,6 +26,9 @@ type
     function OverlayText(const Key: string): string;
     function BaseText(const Key: string): string;
     procedure SetOverlayText(const Key, Value: string);
+    { Booleans: 'true', 'false', or '' for none. }
+    function OverlayBool(const Key: string): string;
+    procedure SetOverlayBool(const Key, Value: string);
     function Toggles: TArray<TToggleItem>;
     procedure ApplyToggles(const Items: TArray<TToggleItem>);
     { One disabledExtensions id (e.g. extension-module:foo) on or off for this project. }
@@ -161,6 +164,21 @@ begin
     SetPath(FOverlay, Key, nil)
   else
     SetPath(FOverlay, Key, TJSONString.Create(Trim(Value)));
+end;
+
+function TOmpProjectSettings.OverlayBool(const Key: string): string;
+begin
+  Result := '';
+  if OverlayValue(Key) is TJSONBool then
+    Result := LowerCase(BoolToStr(TJSONBool(OverlayValue(Key)).AsBoolean, True));
+end;
+
+procedure TOmpProjectSettings.SetOverlayBool(const Key, Value: string);
+begin
+  if Value = '' then
+    SetPath(FOverlay, Key, nil)
+  else
+    SetPath(FOverlay, Key, TJSONBool.Create(SameText(Value, 'true')));
 end;
 
 function TOmpProjectSettings.EffectiveList(const Key: string): TArray<string>;

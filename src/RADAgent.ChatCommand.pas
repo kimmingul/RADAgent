@@ -77,7 +77,7 @@ begin
   Arg1 := '';
   Arg2 := '';
   Head := FirstToken(Trim(Text), Rest);
-  if SameText(Head, '/clear') or SameText(Head, '/new') then
+  if SameText(Head, '/new') then
     Exit(ccNewSession);
   if SameText(Head, '/abort') then
     Exit(ccAbort);

@@ -13,7 +13,7 @@ implementation
 
 uses
   System.SysUtils, Winapi.Windows, Vcl.ExtCtrls, RADAgent.ChatSession, RADAgent.ChatApprovalCard,
-  RADAgent.ChatPageMessages, RADAgent.Lang;
+  RADAgent.ChatPageMessages, RADAgent.ChatQueue, RADAgent.Lang;
 
 const
   StopGraceMs = 5000;
@@ -51,6 +51,11 @@ end;
 procedure StopTurn;
 begin
   RefuseAllApprovals;
+  if ShellRunning then
+  begin
+    AbortShell;
+    Exit;
+  end;
   if (ChatSession.Client = nil) or not ChatSession.Busy then
   begin
     if ChatSession.Client <> nil then

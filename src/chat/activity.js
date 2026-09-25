@@ -126,6 +126,9 @@
       row.appendChild(el('span', 'subagent-name'));
       row.appendChild(el('span', 'subagent-text'));
       row.appendChild(el('span', 'subagent-meta'));
+      // Its transcript, read from omp on click.
+      row.title = T('page.activity.subagentLog');
+      row.addEventListener('click', () => ctx.post({ t: 'subagentLog', id: msg.id }));
       ctx.ensureGroup('subagent', msg.id).appendChild(row);
       subagents.set(msg.id, row);
     }

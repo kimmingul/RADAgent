@@ -73,7 +73,8 @@ omp가 업데이트돼도 RADAgent가 계속 동작하도록 다음을 한다.
   - RPC 시작과 프로토콜
   - `rad.*` 도구 등록과 xd:// 장치 연결
   - `get_state`, 명령 목록, 생각 수준 응답
-  - `config list --json`
+  - 세션 요청(`get_tree`, `get_branch_messages`, `get_last_assistant_text`, `get_session_stats`, `get_subagents`)
+  - `config list --json`(고급 페이지가 쓰는 설정 키), `usage --json`
 
   모두 통과하면 그 버전을 기억한다. 검증 버전(18.2.11)과 다르면 채팅에 "통과"를 한 번 알린다. 실패하면 무엇이 깨졌는지 경고한다. 설정 → 고급 → `omp 호환성 검사`로 언제든 다시 볼 수 있다.
 - **프로토콜**: omp가 RPC v2를 제공하면 v2로 협상해 1MiB가 넘는 응답도 조각(`rpc_chunk`)으로 잃지 않고 받는다. 둘 다 없으면 이유를 보여 주고 연결하지 않는다.
@@ -142,7 +143,22 @@ IDE 기능을 omp에 맞춰 넘긴다:
 
 승인은 채팅 안의 카드로 묻는다. 바뀌는 줄 diff(빨강 삭제, 초록 추가, 앞뒤 3줄)와 승인/거부 단추가 있고, 중지를 누르면 떠 있는 카드는 거부된다. 채팅 페이지가 없을 때(WebView2 실패)만 모달 승인 창을 쓴다.
 
-`/model`은 omp가 준 목록으로 모델을 고른다. `/fast`, `/thinking`, `/effort`는 모달에서 고른 뒤 기존 RPC만 보낸다. `/clear`는 확인 후 새 세션이다. 그 외 `/`로 시작하는 문장은 omp에 원문 그대로 넘긴다. `파일` 버튼은 고른 경로를 입력칸에 붙인다. `@file`은 쓰지 않는다.
+`/model`은 omp가 준 목록으로 모델을 고른다. `/fast`, `/thinking`, `/effort`는 모달에서 고른 뒤 기존 RPC만 보낸다. `/new`는 확인 후 새 세션이다. omp가 RPC 명령 목록에 올린 명령(`/usage`, `/context`, `/compact`, `/handoff`, `/mcp`, `/skill:*` 등)은 omp에 원문 그대로 넘긴다.
+
+omp가 터미널 화면에서만 처리하는 명령은 모델에 글로 넘어가지 않게 RADAgent가 받는다. omp가 나중에 그 명령을 RPC 목록에 올리면 다시 omp가 처리한다.
+
+- `/clear`: 컨텍스트를 비우고 같은 이름으로 이어 간다(`new_session` + 이전 세션을 부모로, 이름 유지). 이전 부분은 세션 목록에 남는다.
+- `/delete`: 확인 후 이 세션 파일과 부속 폴더를 지우고 새 세션.
+- `/resume`: 세션 목록. `/tree`: 세션 트리(● 현재 경로), `/branch`(`/rewind`)·`/fork`: 내 메시지 목록. 고른 메시지 직전에서 새 세션 파일로 갈라지고 그 메시지는 입력칸에 들어간다. 파일은 되돌리지 않는다(파일까지 되돌리려면 메시지의 체크포인트).
+- `/copy`: 마지막 답, `/copy code`: 그 마지막 코드 블록을 클립보드로.
+- `/login [provider]`, `/restart`, `/settings`, `/extensions`(`/status`), `/agents`(역할별 모델), `/plan`, `/hotkeys`(단축키 표), `/hub`(하위 에이전트 목록), `/queue <메시지>`(턴이 끝난 뒤 보내기).
+- `/goal`, `/loop`, `/vibe`, `/tan`, `/omfg`, `/cleanse`, `/plan-review`, `/collab`, `/join`, `/leave`, `/pause`, `/live`, `/record`, `/git`, `/debug`, `/setup`, `/skills`, `/logout`, `/open`: omp가 RPC로 제공하지 않아 "터미널 omp에서만"이라고 알린다. `/exit`·`/quit`은 채팅 창을 닫으라고 알린다.
+
+omp가 작업 중일 때도 입력할 수 있다. Enter는 진행 중인 턴에 끼워 넣고(`steer`, omp가 다음 단계에서 읽음), Ctrl+Enter는 턴이 끝난 뒤 보낸다(`follow_up`). 보낸 메시지에는 어느 쪽인지 표시가 붙는다. 입력칸이 비어 있으면 단추는 중지(■)이고 Esc도 중지다. `!명령`은 omp 셸에서 실행하고 출력은 채팅과 컨텍스트에 들어간다(중지 단추는 `abort_bash`). 자동 재시도를 기다리는 알림에는 `재시도 취소`가 붙는다(`abort_retry`). 하위 에이전트 줄을 누르면 그 대화가 창에 뜬다(`get_subagent_messages`).
+
+입력 아래 컨텍스트 원을 누르면 사용량 패널이 뜬다: 컨텍스트 윈도우 사용률과 토큰(`get_session_stats`), 이 세션의 입력·출력·캐시 토큰과 비용, 지금 모델 공급자의 플랜 한도(5시간·주간·모델별, 재설정 시각, `omp usage --json --provider`, 1분 동안 재사용). 제목 줄을 누르면 `/usage` 전체 보고서.
+
+설정 → 고급 → 대화 진행: 자동 압축(`compaction.enabled`), 자동 재시도(`retry.enabled`), 끼워 넣은 메시지·턴 뒤 메시지 처리(`steeringMode`, `followUpMode`: 하나씩/한 번에), 끼워 넣기 시점(`interruptMode`: 도구 사이/턴 뒤). 프로젝트 overlay에 쓰고 omp를 다시 시작한다. `파일` 버튼은 고른 경로를 입력칸에 붙인다. `@file`은 쓰지 않는다.
 
 IDE 도구는 `rad.compile`, `rad.open_buffer`, `rad.insert_at_caret`이다. 코드는 omp가 자기 read/edit/write 도구로 디스크에서 고치고, IDE가 다시 읽는다.
 

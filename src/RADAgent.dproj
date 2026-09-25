@@ -88,6 +88,12 @@
     <DCCReference Include="RADAgent.ClangdInstall.pas"/>
     <DCCReference Include="RADAgent.FormText.pas"/>
     <DCCReference Include="RADAgent.FormShot.pas"/>
+    <DCCReference Include="RADAgent.ChatQueue.pas"/>
+    <DCCReference Include="RADAgent.UsageReport.pas"/>
+    <DCCReference Include="RADAgent.ChatUsage.pas"/>
+    <DCCReference Include="RADAgent.ChatSlash.pas"/>
+    <DCCReference Include="RADAgent.SlashRoutes.pas"/>
+    <DCCReference Include="RADAgent.SessionData.pas"/>
     <DCCReference Include="RADAgent.ProcessRun.pas"/>
     <DCCReference Include="RADAgent.Lang.pas"/>
     <DCCReference Include="RADAgent.RpcProtocol.pas"/>

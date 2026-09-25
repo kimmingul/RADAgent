@@ -113,5 +113,5 @@
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden) close(); });
   }
 
-  global.ChatPlusMenu = { wire, setData, close };
+  global.ChatPlusMenu = { wire, setData, close, isOpen: () => !document.getElementById('plus-menu').hidden };
 })(typeof window !== 'undefined' ? window : globalThis);

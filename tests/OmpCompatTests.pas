@@ -18,7 +18,8 @@ implementation
 uses
   System.SysUtils, System.Classes, System.JSON, System.NetEncoding, Winapi.Windows,
   RADAgent.RpcProtocol, RADAgent.RpcDispatch, RADAgent.RpcEvents, RADAgent.ChatCommand,
-  RADAgent.OmpProbe, RADAgent.Options;
+  RADAgent.OmpProbe, RADAgent.Options, RADAgent.SlashRoutes, RADAgent.SessionData,
+  RADAgent.UsageReport;
 
 type
   TLineSink = class
@@ -211,8 +212,66 @@ begin
     'command output arrives without terminal colours');
 end;
 
+procedure TestSlashRoutes(const Check: TCheckProc);
+var
+  Name, Args: string;
+begin
+  Check((RouteSlash('/clear', ['usage'], Name, Args) = srClear) and (Name = 'clear'),
+    'a terminal-only command RADAgent can do is routed to RADAgent');
+  Check(RouteSlash('/usage', ['usage'], Name, Args) = srNone, 'a command omp lists over RPC goes to omp');
+  Check(RouteSlash('/tree', ['tree'], Name, Args) = srNone, 'once omp lists a command over RPC, omp gets it');
+  Check(RouteSlash('/goal ship it', [], Name, Args) = srTerminalOnly, 'a terminal-only command is not sent to the model');
+  Check((RouteSlash('/Copy code', [], Name, Args) = srCopy) and (Args = 'code'), 'name case-insensitive, args kept');
+  Check(RouteSlash('/myfilecmd x', [], Name, Args) = srNone, 'unknown commands still reach omp');
+end;
+
+procedure TestSessionReplies(const Check: TCheckProc);
+const
+  Tree = '{"type":"response","command":"get_tree","success":true,"data":{"leafId":"a2","tree":[' +
+    '{"entry":{"type":"model_change","id":"m"},"children":[' +
+    '{"entry":{"type":"message","id":"u1","message":{"role":"user","content":"one"}},"children":[' +
+    '{"entry":{"type":"message","id":"a1","message":{"role":"assistant","content":[{"type":"text","text":"1"}]}},"children":[]},' +
+    '{"entry":{"type":"message","id":"a2","message":{"role":"assistant","content":[{"type":"text","text":"2"}]}},"children":[]}]}]}]}}';
+  Usage = '{"reports":[{"provider":"anthropic","metadata":{},"limits":[' +
+    '{"label":"Claude 5 Hour","scope":{"windowId":"5h"},"window":{"id":"5h","label":"5 Hour","resetsAt":100},"amount":{"usedFraction":0.25}},' +
+    '{"label":"Claude 7 Day (Fable)","scope":{"tier":"fable"},"window":{"id":"7d","label":"7 Day","resetsAt":200},"amount":{"usedFraction":0}}]},' +
+    '{"provider":"google-antigravity","limits":[' +
+    '{"label":"Gemini","scope":{},"window":{"id":"5h","label":"5 Hour","resetsAt":1},"amount":{"usedFraction":0.5}},' +
+    '{"label":"Gemini","scope":{},"window":{"id":"5h","label":"5 Hour","resetsAt":1},"amount":{"usedFraction":0.5}}]}]}';
+var
+  Lines: TArray<TTreeLine>;
+  Limits: TJSONObject;
+  Rows: TJSONArray;
+begin
+  Check(ParseTree(Tree, Lines) and (Length(Lines) = 3), 'tree keeps only messages');
+  Check((Lines[0].Depth = 0) and (Lines[1].Depth = 1) and (Lines[2].Depth = 1),
+    'depth grows where the tree forks, not along a chain');
+  Check(Lines[0].OnPath and not Lines[1].OnPath and Lines[2].OnPath, 'the path to the leaf is marked');
+  Limits := UsageLimits(Usage, 'anthropic');
+  try
+    Rows := Limits.GetValue('limits') as TJSONArray;
+    Check((Rows.Count = 2) and ((Rows.Items[0] as TJSONObject).GetValue<string>('group') = '') and
+      ((Rows.Items[1] as TJSONObject).GetValue<string>('group') = 'Fable'),
+      'a limit named after its window has no group; a tier becomes the group');
+  finally
+    Limits.Free;
+  end;
+  Limits := UsageLimits(Usage, 'google-antigravity');
+  try
+    Rows := Limits.GetValue('limits') as TJSONArray;
+    Check((Rows.Count = 1) and ((Rows.Items[0] as TJSONObject).GetValue<string>('group') = 'Gemini'),
+      'repeated limits appear once; a model-named limit keeps its name');
+  finally
+    Limits.Free;
+  end;
+  Check(UsageLimits(Usage, 'openai') = nil, 'no report for the provider: nothing');
+  Check(LastCodeBlock('a'#10'```pas'#10'x := 1;'#10'```'#10'b'#10'```'#10'y'#10'```') = 'y', 'the last code block');
+end;
+
 procedure RunOmpCompatTests(const Check: TCheckProc);
 begin
+  TestSlashRoutes(Check);
+  TestSessionReplies(Check);
   TestReader(Check);
   TestProtocolChoice(Check);
   TestApprovalMatching(Check);

@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="chrome.css">
   <link rel="stylesheet" href="btw.css">
   <link rel="stylesheet" href="brands.css">
+  <link rel="stylesheet" href="panels.css">
 </head>
 <body>
   <div id="topbar">
@@ -38,6 +39,14 @@
       <textarea id="btw-new-input" rows="2" placeholder="New side question (Enter to send) · Answered separately using current context, not added to chat" data-i18n-placeholder="page.btw.newPlaceholder"></textarea>
     </div>
   </div>
+  <div id="sheet" hidden>
+    <div class="sheet-head">
+      <span id="sheet-title" class="sheet-title"></span>
+      <span class="spacer"></span>
+      <button id="sheet-close" class="icon-btn" title="Close (Esc)" data-i18n-title="page.btw.closeTitle">×</button>
+    </div>
+    <div id="sheet-body" class="markdown-body"></div>
+  </div>
   <div id="composer">
     <div class="composer-col">
       <div id="slash-menu" class="popup" hidden></div>
@@ -51,6 +60,7 @@
         <div class="popup-item" data-action="compile"><span class="menu-icon">▶</span><span class="popup-name" data-i18n="page.plusmenu.compile">Compile project</span></div>
       </div>
       <div id="sub-menu" class="popup" hidden></div>
+      <div id="usage-pop" class="popup" hidden></div>
       <div id="model-menu" class="popup" hidden>
         <input id="model-search" type="search" placeholder="Search models" data-i18n-placeholder="page.modelpicker.search">
         <div id="model-list"></div>
@@ -71,7 +81,7 @@
         <span class="spacer"></span>
         <button id="model-btn" class="footer-btn" type="button"></button>
         <select id="thinking-select" title="Thinking level" data-i18n-title="page.composer.thinkingTitle"></select>
-        <svg id="ctx-ring" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="none" stroke="var(--border)" stroke-width="3"/><circle id="ctx-arc" cx="10" cy="10" r="8" fill="none" stroke="var(--muted)" stroke-width="3" stroke-dasharray="0 50.3" transform="rotate(-90 10 10)"/></svg>
+        <svg id="ctx-ring" viewBox="0 0 20 20" role="button"><circle cx="10" cy="10" r="8" fill="none" stroke="var(--border)" stroke-width="3"/><circle id="ctx-arc" cx="10" cy="10" r="8" fill="none" stroke="var(--muted)" stroke-width="3" stroke-dasharray="0 50.3" transform="rotate(-90 10 10)"/></svg>
         <span id="conn-dot" class="off" title="Connecting" data-i18n-title="page.composer.connectingTitle"></span>
       </div>
     </div>
@@ -87,6 +97,8 @@
   <script src="modelpicker.js"></script>
   <script src="composer.js"></script>
   <script src="plusmenu.js"></script>
+  <script src="panels.js"></script>
+  <script src="clicks.js"></script>
   <script src="chat.js"></script>
 </body>
 </html>

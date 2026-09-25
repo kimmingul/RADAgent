@@ -45,6 +45,12 @@ const
     '--approval-mode', '--no-tools', '--no-skills', '--no-extensions', '--no-lsp', '--no-title',
     '--session-dir', '--resume', '--model', '--thinking');
   RpcTimeoutMs = 30000;
+  { Read-only session requests behind /tree, /branch, /copy, /hub and the usage panel. }
+  SessionCommands: array[0..4] of string = ('get_tree', 'get_branch_messages', 'get_last_assistant_text',
+    'get_session_stats', 'get_subagents');
+  { omp settings on the Advanced page. }
+  UsedSettings: array[0..5] of string = ('tools.approvalMode', 'compaction.enabled', 'retry.enabled',
+    'steeringMode', 'followUpMode', 'interruptMode');
 
 function OmpVersionText(const Executable: string): string;
 var
@@ -133,7 +139,7 @@ end;
 
 procedure Handle(const Pipes: TRpcPipes; const Line: string; var Found: TRpcFindings; var NextId: Integer);
 var
-  Kind: string;
+  Kind, Command: string;
   Obj: TJSONObject;
 begin
   Kind := FrameTypeOf(Line);
@@ -147,6 +153,8 @@ begin
     WriteLine(Pipes, BuildIdTypeFrame(NewRequestId(NextId), 'get_state'));
     WriteLine(Pipes, BuildIdTypeFrame(NewRequestId(NextId), 'get_available_commands'));
     WriteLine(Pipes, BuildIdTypeFrame(NewRequestId(NextId), 'get_available_thinking_levels'));
+    for Command in SessionCommands do
+      WriteLine(Pipes, BuildIdTypeFrame(NewRequestId(NextId), Command));
   end
   else if Kind = 'response' then
   begin
@@ -198,8 +206,8 @@ begin
     begin
       if Assigned(Stop) and Stop() then
         Break;
-      { All four replies in, and the xd:// notice (or 3 s without it): done. }
-      if Result.Responses.Count >= 4 then
+      { All replies in, and the xd:// notice (or 3 s without it): done. }
+      if Result.Responses.Count >= 4 + Length(SessionCommands) then
       begin
         if Quiet = 0 then
           Quiet := GetTickCount64;
@@ -314,14 +322,31 @@ begin
     Result := Result + [Check(Tr('ompprobe.checkThinkingLevels'),
       ParseThinkingLevels(Found.Responses.Values['get_available_thinking_levels'], Levels) and (Length(Levels) > 0),
       string.Join(', ', Levels))];
+    Missing := '';
+    for Flag in SessionCommands do
+      if not ResponseOk(Found.Responses.Values[Flag]) or (Found.Responses.Values[Flag] = '') then
+        Missing := Missing + ' ' + Flag;
+    Result := Result + [Check(Tr('ompprobe.checkSessionCommands'), Missing = '', IfThen(Missing = '',
+      TrF('ompprobe.countItems', [Length(SessionCommands)]), TrF('ompprobe.commandsFailed', [Missing])))];
   finally
     Found.Responses.Free;
   end;
   Config := RunOmp(Executable, 'config list --json', WorkDir, 20000);
   Settings := JsonObject(Config);
   try
-    Result := Result + [Check(Tr('ompprobe.checkConfigList'), (Settings <> nil) and
-      (Settings.GetValue('tools.approvalMode') <> nil), Tr('ompprobe.approvalModeKey'))];
+    Missing := '';
+    for Flag in UsedSettings do
+      if (Settings = nil) or (Settings.GetValue(Flag) = nil) then
+        Missing := Missing + ' ' + Flag;
+    Result := Result + [Check(Tr('ompprobe.checkConfigList'), Missing = '', IfThen(Missing = '',
+      TrF('ompprobe.countItems', [Length(UsedSettings)]), TrF('ompprobe.settingsMissing', [Missing])))];
+  finally
+    Settings.Free;
+  end;
+  Settings := JsonObject(RunOmp(Executable, 'usage --json', WorkDir, 30000));
+  try
+    Result := Result + [Check(Tr('ompprobe.checkUsage'), (Settings <> nil) and
+      (Settings.GetValue('reports') is TJSONArray), 'usage --json')];
   finally
     Settings.Free;
   end;
