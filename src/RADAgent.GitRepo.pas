@@ -20,7 +20,7 @@ const
 function GitExecutable: string;
 { Top folder of the repository holding Dir, or ''. }
 function GitRoot(const Dir: string): string;
-{ git init in Dir, a Delphi .gitignore when there is none, and a first commit of what is there. }
+{ git init in Dir, a Delphi/C++Builder .gitignore when there is none, and a first commit of what is there. }
 function InitRepo(const Dir: string; out Problem: string): Boolean;
 { Commits the working tree of Root under RefPrefix (numbered). Prompt is the commit body. }
 function CreateCheckpoint(const Root, RefPrefix, Prompt: string; out Seq: Integer;
@@ -38,12 +38,13 @@ function BranchAtCheckpoint(const Root, Commit, Name: string; out Problem: strin
 implementation
 
 uses
-  System.SysUtils, System.Classes, System.IOUtils, Winapi.Windows, RADAgent.Lang;
+  System.SysUtils, System.Classes, System.IOUtils, Winapi.Windows, RADAgent.Lang, RADAgent.ProcessRun;
 
 const
   RecordEnd = '<<RADAgent-end>>';
   GitIgnore =
-    '# Delphi build output and IDE state (RADAgent)'#13#10'__history/'#13#10'__recovery/'#13#10 +
+    '# Delphi and C++Builder build output and IDE state (RADAgent)'#13#10'__history/'#13#10 +
+    '__recovery/'#13#10'__astcache/'#13#10'*.obj'#13#10'*.o'#13#10'*.pch'#13#10'*.tds'#13#10'*.il?'#13#10 +
     '*.dcu'#13#10'*.local'#13#10'*.identcache'#13#10'*.stat'#13#10'*.dsk'#13#10'*.tvsconfig'#13#10 +
     '*.delphilsp.json'#13#10'Win32/'#13#10'Win64/'#13#10'Win64x/'#13#10'Linux64/'#13#10'OSX64/'#13#10 +
     'OSXARM64/'#13#10'Android/'#13#10'Android64/'#13#10'iOSDevice64/'#13#10'.omp/lsp.json'#13#10;
@@ -61,101 +62,19 @@ begin
     Result := '';
 end;
 
-function EnvironmentWith(const Name, Value: string): string;
-var
-  Block, Item: PChar;
-begin
-  Result := '';
-  Block := GetEnvironmentStrings;
-  try
-    Item := Block;
-    while Item^ <> #0 do
-    begin
-      if not string(Item).StartsWith(Name + '=', True) then
-        Result := Result + string(Item) + #0;
-      Inc(Item, StrLen(Item) + 1);
-    end;
-  finally
-    FreeEnvironmentStrings(Block);
-  end;
-  Result := Result + Name + '=' + Value + #0#0;
-end;
-
 { Runs git in Dir; stdout and stderr together in Output. IndexFile, when set, is GIT_INDEX_FILE.
   Returns the exit code, -1 when git could not run. }
 function RunGit(const Dir, Args: string; out Output: string; const IndexFile: string = ''): Integer;
 var
-  Security: TSecurityAttributes;
-  ReadPipe, WritePipe: THandle;
-  Startup: TStartupInfo;
-  Info: TProcessInformation;
-  CommandLine, Env: string;
-  EnvPtr: Pointer;
-  Buffer: array[0..8191] of Byte;
-  Bytes: TBytesStream;
-  Available, Count, Code: DWORD;
-  Deadline: UInt64;
-  Finished: Boolean;
+  Env: string;
 begin
-  Result := -1;
   Output := '';
   if GitExecutable = '' then
-    Exit;
-  Security := Default(TSecurityAttributes);
-  Security.nLength := SizeOf(Security);
-  Security.bInheritHandle := True;
-  if not CreatePipe(ReadPipe, WritePipe, @Security, 0) then
-    Exit;
-  SetHandleInformation(ReadPipe, HANDLE_FLAG_INHERIT, 0);
-  Startup := Default(TStartupInfo);
-  Startup.cb := SizeOf(Startup);
-  Startup.dwFlags := STARTF_USESTDHANDLES or STARTF_USESHOWWINDOW;
-  Startup.wShowWindow := SW_HIDE;
-  Startup.hStdOutput := WritePipe;
-  Startup.hStdError := WritePipe;
-  CommandLine := '"' + GitExecutable + '" -c core.quotepath=false ' + Args;
-  UniqueString(CommandLine);
-  EnvPtr := nil;
+    Exit(-1);
+  Env := '';
   if IndexFile <> '' then
-  begin
     Env := EnvironmentWith('GIT_INDEX_FILE', IndexFile);
-    EnvPtr := PChar(Env);
-  end;
-  Bytes := TBytesStream.Create;
-  try
-    if not CreateProcess(nil, PChar(CommandLine), nil, nil, True, CREATE_NO_WINDOW or
-      CREATE_UNICODE_ENVIRONMENT, EnvPtr, PChar(Dir), Startup, Info) then
-    begin
-      CloseHandle(WritePipe);
-      CloseHandle(ReadPipe);
-      Exit;
-    end;
-    CloseHandle(WritePipe);
-    Deadline := GetTickCount64 + 60000;
-    Finished := False;
-    repeat
-      if PeekNamedPipe(ReadPipe, nil, 0, nil, @Available, nil) and (Available > 0) then
-      begin
-        if ReadFile(ReadPipe, Buffer, SizeOf(Buffer), Count, nil) and (Count > 0) then
-          Bytes.WriteBuffer(Buffer, Count);
-      end
-      else if Finished then
-        Break
-      else
-        Finished := WaitForSingleObject(Info.hProcess, 20) = WAIT_OBJECT_0;
-    until GetTickCount64 > Deadline;
-    if not Finished then
-      TerminateProcess(Info.hProcess, 1);
-    GetExitCodeProcess(Info.hProcess, Code);
-    CloseHandle(Info.hThread);
-    CloseHandle(Info.hProcess);
-    CloseHandle(ReadPipe);
-    Output := TEncoding.UTF8.GetString(Bytes.Bytes, 0, Bytes.Size);
-    if Finished then
-      Result := Integer(Code);
-  finally
-    Bytes.Free;
-  end;
+  Result := RunCaptured('"' + GitExecutable + '" -c core.quotepath=false ' + Args, Dir, Output, 60000, Env);
 end;
 
 function Git(const Dir, Args: string; out Output: string; const IndexFile: string = ''): Boolean;

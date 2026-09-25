@@ -72,6 +72,44 @@
     return out;
   }
 
+  const CPP_KEYWORDS = new Set([
+    'alignas', 'alignof', 'auto', 'bool', 'break', 'case', 'catch', 'char', 'class', 'const',
+    'constexpr', 'const_cast', 'continue', 'decltype', 'default', 'delete', 'do', 'double',
+    'dynamic_cast', 'else', 'enum', 'explicit', 'extern', 'false', 'float', 'for', 'friend', 'goto',
+    'if', 'inline', 'int', 'long', 'mutable', 'namespace', 'new', 'noexcept', 'nullptr', 'operator',
+    'override', 'private', 'protected', 'public', 'register', 'reinterpret_cast', 'return', 'short',
+    'signed', 'sizeof', 'static', 'static_assert', 'static_cast', 'struct', 'switch', 'template',
+    'this', 'throw', 'true', 'try', 'typedef', 'typeid', 'typename', 'union', 'unsigned', 'using',
+    'virtual', 'void', 'volatile', 'wchar_t', 'while', 'final',
+    // C++Builder extensions
+    '__fastcall', '__published', '__property', '__closure', '__classid', '__declspec', '__int64',
+    '__finally', '__try', '__except', '__automated', '__rtti', 'PACKAGE'
+  ]);
+
+  // C and C++ (C++Builder included): comments, strings and chars, preprocessor lines, numbers.
+  function highlightCpp(code) {
+    const TOKEN_RE = /(\/\/[^\r\n]*)|(\/\*[\s\S]*?(?:\*\/|$))|((?:^|(?<=\n))[ \t]*#[^\r\n]*)|((?:L|u8|u|U)?"(?:[^"\\\r\n]|\\.)*(?:"|$)|'(?:[^'\\\r\n]|\\.)*(?:'|$))|(\b0x[0-9A-Fa-f]+\b|\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?[uUlLfF]*\b)|(\b[A-Za-z_][A-Za-z0-9_]*\b)|([^\sA-Za-z0-9_"'\/#]+|\s+|.)/g;
+    let out = '';
+    let m;
+    while ((m = TOKEN_RE.exec(code)) !== null) {
+      const [, lineComm, blockComm, pre, str, num, ident, other] = m;
+      if (lineComm || blockComm) {
+        out += `<span class="tok-comment">${linkFileRefs(escapeHtml(lineComm || blockComm))}</span>`;
+      } else if (pre) {
+        out += `<span class="tok-keyword">${linkFileRefs(escapeHtml(pre))}</span>`;
+      } else if (str) {
+        out += `<span class="tok-string">${linkFileRefs(escapeHtml(str))}</span>`;
+      } else if (num) {
+        out += `<span class="tok-number">${escapeHtml(num)}</span>`;
+      } else if (ident) {
+        out += CPP_KEYWORDS.has(ident) ? `<span class="tok-keyword">${escapeHtml(ident)}</span>` : linkFileRefs(escapeHtml(ident));
+      } else if (other) {
+        out += linkFileRefs(escapeHtml(other));
+      }
+    }
+    return out;
+  }
+
   function renderInline(raw) {
     let text = escapeHtml(raw);
     const ph = [];
@@ -214,7 +252,9 @@
         const rawCode = codeLines.join('\n');
         const highlighted = ['pascal', 'delphi', 'pas'].includes(lang)
           ? highlightPascal(rawCode)
-          : linkFileRefs(escapeHtml(rawCode));
+          : ['cpp', 'c++', 'c', 'h', 'hpp', 'cxx', 'cc'].includes(lang)
+            ? highlightCpp(rawCode)
+            : linkFileRefs(escapeHtml(rawCode));
 
         const copyLabel = typeof global.T === 'function' ? global.T('page.markdown.copy') : 'Copy';
         html += `<div class="code-block">` +

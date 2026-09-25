@@ -21,6 +21,7 @@ uses
   RADAgent.RpcChunks in '..\src\RADAgent.RpcChunks.pas',
   RADAgent.OmpCli in '..\src\RADAgent.OmpCli.pas',
   RADAgent.OmpProbe in '..\src\RADAgent.OmpProbe.pas',
+  RADAgent.ProcessRun in '..\src\RADAgent.ProcessRun.pas',
   RADAgent.GitRepo in '..\src\RADAgent.GitRepo.pas',
   RADAgent.Lang in '..\src\RADAgent.Lang.pas',
   TestCheck in 'TestCheck.pas',

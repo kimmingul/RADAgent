@@ -14,7 +14,8 @@ procedure RemoveCompileNotifier;
 implementation
 
 uses
-  System.SysUtils, System.Variants, Winapi.Windows, Vcl.Forms, ToolsAPI, RADAgent.IdeContext, RADAgent.Lang;
+  System.SysUtils, System.Variants, Winapi.Windows, Vcl.Forms, ToolsAPI, RADAgent.IdeContext, RADAgent.Lang,
+  RADAgent.CppDiagnostics;
 
 const
   HideProgressDialog = True;
@@ -188,7 +189,7 @@ var
   Project: IOTAProject;
   Configs: IOTAProjectOptionsConfigurations;
   ConfigName, PlatformName: string;
-  Ok: Boolean;
+  Ok, IsCpp: Boolean;
   Errors: TArray<TAgentCompileError>;
   Messages: IOTAMessageServices;
 begin
@@ -220,21 +221,28 @@ begin
     begin
       Ok := Project.ProjectBuilder.BuildProject(cmOTABuild, True);
     end);
+  IsCpp := SameText(Project.Personality, sCBuilderPersonality);
   if Ok then
   begin
     Messages.AddToolMessage('', Tr('compile.buildSuccess'), 'RADAgent', 0, 0);
     SetLength(Errors, 0);
+    if IsCpp then
+      NoteCppBuildOk;
   end
   else
   begin
-    Errors := CollectErrorsAfterFailure;
+    { Error Insight has nothing for C++; its compiler is asked again instead. }
+    if IsCpp then
+      Errors := CppBuildErrors(Project, PlatformName)
+    else
+      Errors := CollectErrorsAfterFailure;
     if Length(Errors) = 0 then
     begin
       SetLength(Errors, 1);
       Errors[0].FileName := Project.FileName;
       Errors[0].Line := 0;
       Errors[0].Col := 0;
-      Errors[0].Msg := 'Build failed';
+      Errors[0].Msg := 'Build failed; no compiler error found in the sources (see the IDE Messages view, e.g. a linker error).';
     end;
     Messages.AddToolMessage(Project.FileName, Tr('compile.buildFailed'), 'RADAgent', 0, 0);
   end;

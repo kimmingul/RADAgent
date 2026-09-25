@@ -110,7 +110,7 @@ IDE 기능을 omp에 맞춰 넘긴다:
 
 - 프로젝트를 보고 도구를 고른다. 폼이 있을 때만 폼 도구를 등록하고, VCL/FMX와 Delphi/C++Builder에 맞는 사용법을 준다. 도구 사용법은 시스템 프롬프트에 들어 있어 omp가 따로 읽지 않는다.
 - 프로젝트 안내(언어, 프레임워크, 폼 목록, 작업 규칙)를 omp 시스템 프롬프트에 덧붙인다.
-- Delphi 프로젝트에 `<프로젝트>.delphilsp.json`이 있으면 `.omp/lsp.json`을 만들어 DelphiLSP를 연결한다. 없으면 IDE의 Generate LSP Config를 켜라고 한 번 알린다. C++Builder 프로젝트는 omp에 쓸 LSP가 없다.
+- Delphi 프로젝트에 `<프로젝트>.delphilsp.json`이 있으면 `.omp/lsp.json`을 만들어 DelphiLSP를 연결한다. 없으면 IDE의 Generate LSP Config를 켜라고 한 번 알린다. C++Builder 프로젝트는 omp에 쓸 LSP가 없다(아래 C++Builder 절).
 - 묶음 도구: `rad.form_apply`(컴포넌트 추가·속성·이벤트를 한 번에, 승인 한 번).
 - 프로젝트 도구: `rad.project_info`, `rad.set_build_config`(구성·플랫폼), `rad.new_module`(폼·프레임·데이터 모듈·유닛), `rad.list_components`(팔레트 클래스).
 - 승인 방식 하나로 omp 도구와 IDE 변경을 함께 정한다: 항상 묻기(IDE 변경마다 승인), 쓰기 허용(턴마다 한 번 승인), 권한 무시(묻지 않음, 처음 값). 어느 쪽이든 저장은 하지 않는다. `rad.*` 호출에 대한 omp 자체 확인은 RADAgent가 대신 통과시켜 두 번 묻지 않는다.
@@ -148,17 +148,19 @@ IDE 도구는 `rad.compile`, `rad.open_buffer`, `rad.insert_at_caret`이다. 코
 
 디버거 읽기 도구는 `rad.debug_state`, `rad.debug_stack`, `rad.debug_evaluate`, `rad.debug_breakpoints`이다. 식 평가는 부작용 없이 한다. 실행 제어 도구는 `rad.debug_run`(실행 또는 계속), `rad.debug_step`(over, into, return), `rad.debug_pause`, `rad.debug_reset`, `rad.debug_add_breakpoint`이다. 모두 승인 창에서 승인해야 동작하고, 끝나면 디버거 상태를 돌려준다. 디버기 메모리는 쓰지 않는다.
 
-폼 디자이너 도구는 `rad.form_components`, `rad.form_properties`(읽기), `rad.form_set_property`, `rad.form_add_component`, `rad.form_delete_component`, `rad.form_rename_component`, `rad.form_set_event`이다. 바꾸는 도구는 승인한 뒤에 디자이너에만 반영하고 저장하지 않는다. 필드 선언과 이벤트 메서드는 디자이너가 유닛 버퍼에 고친다.
+폼 디자이너 도구는 `rad.form_components`, `rad.form_properties`(읽기), `rad.form_set_property`, `rad.form_add_component`, `rad.form_delete_component`, `rad.form_rename_component`, `rad.form_set_event`이다. 바꾸는 도구는 승인한 뒤에 디자이너에만 반영하고 저장하지 않는다. 필드 선언과 이벤트 메서드는 디자이너가 유닛 버퍼에 고친다(C++ 이벤트 메서드는 RADAgent가 쓴다).
 
 RPC 원문은 `%TEMP%\RADAgent\rpc.log`에만 남긴다. 채팅 로그에는 사용자 문장과 모델 응답만 보인다.
 
-## 향후 계획: C++Builder 프로젝트
+## C++Builder 프로젝트
 
-지금은 C++Builder 프로젝트를 도구 문구(C++, `.cpp/.h`)로만 구분하고, LSP를 연결하지 않는다. 이 PC의 RAD Studio에 C++Builder가 설치되지 않아 확인하지 못했다. C++Builder를 추가 설치한 뒤 다음을 한다.
+`.cbproj`(VCL, FMX)도 Delphi 프로젝트와 같은 도구를 쓴다. 폼 도구, `rad.form_apply`, `rad.new_module`, `rad.compile`, 디버거(중단점, 호출 스택, C++ 식 평가), 체크포인트가 C++에서 동작한다.
 
-1. 예제 C++Builder VCL 프로젝트(`.cbproj`, `.cpp`, `.h`, `.dfm`)를 만들어 폼 도구, `rad.compile`, 디버거, `rad.new_module`이 C++에서 되는지 확인한다.
-2. clangd 연결: 활성 `.cbproj`의 구성·플랫폼에서 인클루드 경로·매크로·옵션을 읽어 `compile_commands.json`을 만들고, `.omp/lsp.json`에 clangd를 등록한다. clangd는 RAD Studio에 있으면 그것을, 없으면 PATH나 설정 창의 경로를 쓴다.
-3. C++Builder 확장(`__property`, `__published`, `__closure`)에서 나오는 clangd 진단은 매크로로 줄이고, 남는 것은 omp 안내에 무시하라고 적는다.
+- 이벤트 핸들러: C++ 디자이너는 이벤트를 연결해도 코드를 쓰지 않는다. 그래서 RADAgent가 C++ IDE와 같은 모양으로 `.h`의 `__published`에 `void __fastcall 이름(인자);`를, `.cpp`에 본문을 쓴 뒤 연결한다. 인자는 이벤트 형식에서 만든다(`TObject *Sender` 등). IDE는 저장할 때 본문이 빈 핸들러를 지우고 연결도 끊으므로, 새 핸들러 본문에는 주석 한 줄을 넣는다(Delphi도 같다).
+- 새 모듈: `rad.new_module`은 `UnitN.cpp/.h`(Delphi는 `UnitN.pas`)를 이름을 정해 만든다. 폼 이름을 주어도(`AboutForm`) 클래스 이름이 맞는 소스를 직접 준다. IDE 기본 소스는 이름을 바꾸면 폼을 열지 못한다.
+- 컴파일 오류: IDE는 C++ 오류를 Messages 창에만 보이고 Error Insight에도 없다. 빌드가 실패하면 활성 플랫폼의 컴파일러(Win64x `bcc64x`, Win64 `bcc64`, Win32 `bcc32c`)로 지난 성공 빌드 뒤 바뀐 `.cpp`(와 바뀐 헤더를 쓰는 `.cpp`)를 한 번 더 컴파일해 파일·줄·열·메시지를 돌려준다. 링크 오류는 Messages 창을 보라고 알린다.
+- LSP: 설치본의 `cquery.exe`는 LLVM 5 기반이라 VCL 헤더에서 멈추고, clangd는 설치본에 없다. 그래서 C++은 LSP 없이 grep/read로 찾는다(omp 안내문에 적힘).
+- 시험 프로젝트: `scripts\prepare-smoke-cpp.cmd`가 `tests\smoke-cpp`를 `%TEMP%\RADAgentSmokeCpp\SmokeCpp.cbproj`로 복사한다. 64-bit IDE는 처음 열 때 플랫폼을 Windows 64-bit (Modern)로 바꾼다.
 
 ## 고지
 

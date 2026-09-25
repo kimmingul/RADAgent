@@ -40,7 +40,7 @@ implementation
 
 uses
   System.SysUtils, System.StrUtils, System.Classes, System.TypInfo, Vcl.Controls, Vcl.Menus, DesignIntf,
-  RADAgent.FormDesigner, RADAgent.Lang;
+  RADAgent.FormDesigner, RADAgent.Lang, RADAgent.HandlerCode;
 
 function Approved(const Approval: IAgentApproval; const Path, Preview: string;
   out Problem: string): Boolean;
@@ -347,14 +347,22 @@ begin
     Exit;
   end;
   try
-    { CreateMethod returns the existing method when the name exists, or adds a stub. }
+    { CreateMethod returns the existing method when the name exists, or adds a stub (Delphi).
+      The C++ designer writes no code, so the handler is written first (RADAgent.HandlerCode). }
     if Args.Handler = '' then
     begin
       Method.Code := nil;
       Method.Data := nil;
     end
     else
+    begin
+      if IsCppForm(Editor) and not EnsureCppHandler(Editor, RootOf(Editor).ClassName, Args.Handler,
+        Prop.PropType^, Problem) then
+        Exit;
       Method := Designer.CreateMethod(Args.Handler, GetTypeData(Prop.PropType^));
+      if not IsCppForm(Editor) then
+        KeepDelphiHandler(Editor, RootOf(Editor).ClassName, Args.Handler);
+    end;
     SetMethodProp(Instance, Prop, Method);
   except
     on E: Exception do

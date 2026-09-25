@@ -114,7 +114,8 @@ begin
   Depth := 0;
   while (Dir <> '') and (Depth < 8) do
   begin
-    Found := TDirectory.GetFiles(Dir, '*.dproj', TSearchOption.soTopDirectoryOnly);
+    Found := TDirectory.GetFiles(Dir, '*.dproj', TSearchOption.soTopDirectoryOnly) +
+      TDirectory.GetFiles(Dir, '*.cbproj', TSearchOption.soTopDirectoryOnly);
     if Length(Found) > 0 then
       Exit(Found[0]);
     Parent := ExpandFileName(IncludeTrailingPathDelimiter(Dir) + '..');
