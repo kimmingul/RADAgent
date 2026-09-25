@@ -178,8 +178,8 @@ var
 begin
   Result := Default(TRpcFindings);
   Result.Responses := TStringList.Create;
-  Config := AgentTempRoot + 'omp-probe.yml';
-  Stderr := AgentTempRoot + 'omp-probe.stderr.log';
+  Config := ProcessTempFile('omp-probe.yml');
+  Stderr := ProcessTempFile('omp-probe.stderr.log');
   ForceDirectories(AgentTempRoot);
   TFile.WriteAllBytes(Config, TEncoding.UTF8.GetBytes(OmpHostConfig));
   if not SpawnRpcProcess(BuildOmpCommandLine(Executable, WorkDir, [Config], '',

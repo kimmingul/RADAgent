@@ -10,6 +10,10 @@ const
 
 function OmpExecutable: string;
 function AgentTempRoot: string;
+{ AgentTempRoot + Name with this process's id before the extension ("omp-1234.stderr.log"). Two
+  IDEs (32- and 64-bit, or two of one kind) each run their own omp; a shared file would be held open
+  by the other one's child. Files of IDEs that are gone are removed on first use. }
+function ProcessTempFile(const Name: string): string;
 function OmpStderrLog: string;
 procedure AppendRpcLog(const Line: string);
 { Why an omp child ended early: the last line it wrote to StderrPath (e.g. "Error: unknown flag"). }
@@ -59,9 +63,43 @@ begin
   Result := Result + 'RADAgent\';
 end;
 
+var
+  GPruned: Boolean;
+
+{ Deletes other IDEs' per-process files; a file still held open by a running omp stays. }
+procedure PruneProcessFiles;
+var
+  Path, Own: string;
+begin
+  GPruned := True;
+  if not DirectoryExists(AgentTempRoot) then
+    Exit;
+  Own := '-p' + IntToStr(GetCurrentProcessId) + '.';
+  for Path in TDirectory.GetFiles(AgentTempRoot, '*-p*.*') do
+    if not ExtractFileName(Path).Contains(Own) then
+      System.SysUtils.DeleteFile(Path);
+  { The shared names versions before per-process files used. }
+  for Path in ['omp.stderr.log', 'omp-host.yml', 'project-guide.md', 'btw-guide.md',
+    'omp-probe.yml', 'omp-probe.stderr.log'] do
+    System.SysUtils.DeleteFile(AgentTempRoot + Path);
+end;
+
+function ProcessTempFile(const Name: string): string;
+var
+  Dot: Integer;
+begin
+  if not GPruned then
+    PruneProcessFiles;
+  Dot := Pos('.', Name);
+  if Dot = 0 then
+    Dot := Length(Name) + 1;
+  Result := AgentTempRoot + Copy(Name, 1, Dot - 1) + '-p' + IntToStr(GetCurrentProcessId) +
+    Copy(Name, Dot, MaxInt);
+end;
+
 function OmpStderrLog: string;
 begin
-  Result := AgentTempRoot + 'omp.stderr.log';
+  Result := ProcessTempFile('omp.stderr.log');
 end;
 
 procedure AppendRpcLog(const Line: string);

@@ -60,7 +60,7 @@ end;
 
 function GuideFile: string;
 begin
-  Result := AgentTempRoot + 'btw-guide.md';
+  Result := ProcessTempFile('btw-guide.md');
   { Rewritten only when it differs: a running side child may be reading it. }
   if not FileExists(Result) or (TEncoding.UTF8.GetString(TFile.ReadAllBytes(Result)) <> Guide) then
   begin
@@ -161,7 +161,7 @@ begin
   Active := TActiveBtw.Create;
   Active.ProjectDir := Dir;
   Active.Run := TBtwRun.Create;
-  Active.Run.Start(CommandLine(Dir, Topic), Dir, AgentTempRoot + 'btw-' + Topic.Id + '.stderr.log',
+  Active.Run.Start(CommandLine(Dir, Topic), Dir, ProcessTempFile('btw-' + Topic.Id + '.stderr.log'),
     Turn.Question);
   Active.Topic := Topic;
   GActive.Add(Topic.Id, Active);

@@ -38,7 +38,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | ChatStatus | 위 막대와 입력 상자용 상태 메시지(연결, 모델, 생각 수준, 승인 방식, 컨텍스트, 하는 일, 세션 제목, 활성 파일·선택, 명령 목록). |
 | ChatPageCommands | 페이지 요청(보내기, 중지, 승인 카드 답, 계획 진행, `@` 파일 목록, 세션, 내보내기, 설정, 컴파일, 파일 경로, 모델·생각 수준·승인 방식 변경, 링크) 처리. |
 | ProjectProfile | 활성 프로젝트의 언어(Delphi, C++Builder), 프레임워크(VCL, FMX, 없음), 폼 목록. `rad.project_info`, `rad.set_build_config`, `rad.list_components`. |
-| OmpLaunch | omp를 띄우기 전에 쓰는 파일: rad.* 문서를 시스템 프롬프트에 넣는 `omp-host.yml`(`tools.xdevInlineDevices`), 프로젝트 안내 `project-guide.md`(`--append-system-prompt`), Delphi 프로젝트의 `.omp/lsp.json`. |
+| OmpLaunch | omp를 띄우기 전에 쓰는 파일: rad.* 문서를 시스템 프롬프트에 넣는 `omp-host-p<pid>.yml`(`tools.xdevInlineDevices`), 프로젝트 안내 `project-guide-p<pid>.md`(`--append-system-prompt`), Delphi 프로젝트의 `.omp/lsp.json`. |
 | HostToolDefs | 프로필에 맞춘 rad.* 목록: 폼이 있을 때만 폼 도구, VCL/FMX와 Delphi/C++ 문구. |
 | FormBatch / ModuleCreator | `rad.form_apply`(폼 변경 묶음, 승인 한 번), `rad.new_module`(폼·프레임·데이터 모듈·유닛 추가). |
 | ChatExtensions | 입력 상자 `＋` 메뉴의 IDE 쪽: 첨부 파일·사진(prompt images), 작업 폴더 추가, 커넥터(MCP)와 플러그인 목록과 켜기/끄기. |
@@ -78,7 +78,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | RpcDispatch | stdout 줄을 프레임 종류별로 나눠 이벤트로 넘긴다. ToolsAPI 없음. |
 | ChatCommand | 채팅 입력을 기존 omp RPC 프레임으로 분류한다. 새 명령 `type`을 만들지 않는다. |
 | AskDialog | `extension_ui_request`와 슬래시 명령 선택 모달. |
-| Options | omp 실행 파일, 명령줄(인자 인용), `%TEMP%\RADAgent` 로그 경로, 자식이 일찍 끝난 이유(stderr 마지막 줄), 공통 `--config` 내용. |
+| Options | omp 실행 파일, 명령줄(인자 인용), `%TEMP%\RADAgent` 로그 경로(omp에 넘기는 파일과 stderr 로그는 IDE 프로세스마다 `-p<pid>`, 끝난 IDE의 것은 처음 쓸 때 지움), 자식이 일찍 끝난 이유(stderr 마지막 줄), 공통 `--config` 내용. |
 | RpcChunks | RPC v2 `rpc_chunk` 조각을 원래 프레임으로 되돌린다(순서·크기·끊김 검사). |
 | OmpProbe | 설치된 omp 호환성 검사: 버전, 명령줄 옵션, RPC 시작·프로토콜, `rad.*` 등록과 xd:// 연결, 응답 필드, `config list`. 모델 호출 없음. 시험과 IDE가 같이 쓴다. |
 | OmpCheck | omp 버전이 바뀌면 첫 시작 때 OmpProbe를 뒤에서 돌려 채팅에 알리고, 설정 창에서 바로 돌린다. |

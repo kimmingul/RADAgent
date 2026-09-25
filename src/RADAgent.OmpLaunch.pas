@@ -9,9 +9,9 @@ interface
 uses
   RADAgent.ProjectProfile, RADAgent.HostToolDefs;
 
-{ %TEMP%\RADAgent\omp-host.yml: tools.xdevInlineDevices = rad.* }
+{ %TEMP%\RADAgent\omp-host-p<pid>.yml: tools.xdevInlineDevices = rad.* }
 function HostConfigFile: string;
-{ %TEMP%\RADAgent\project-guide.md for Profile. }
+{ %TEMP%\RADAgent\project-guide-p<pid>.md for Profile. }
 function WriteProjectGuide(const Profile: TProjectProfile; LspReady: Boolean): string;
 { Writes <project>\.omp\lsp.json when the IDE generated <project>.delphilsp.json. }
 function EnsureDelphiLsp(const Profile: TProjectProfile): Boolean;
@@ -37,7 +37,7 @@ end;
 
 function HostConfigFile: string;
 begin
-  Result := AgentTempRoot + 'omp-host.yml';
+  Result := ProcessTempFile('omp-host.yml');
   WriteText(Result, OmpHostConfig);
 end;
 
@@ -147,7 +147,7 @@ var
   Module: TProjectModule;
   Forms: Integer;
 begin
-  Result := AgentTempRoot + 'project-guide.md';
+  Result := ProcessTempFile('project-guide.md');
   Lines := TStringList.Create;
   try
     Lines.Add('# RAD Studio IDE host (RADAgent)');
