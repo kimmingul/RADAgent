@@ -12,6 +12,8 @@ function AskChoice(const Title: string; Items: TStrings; out Choice: string;
 function AskCsv(const Title, Csv: string; out Choice: string): Boolean;
 function AskYes(const Title, Message: string): Boolean;
 function AskText(const Title, Prompt: string; out Value: string): Boolean;
+{ Read-only text (a report) with an OK button. }
+procedure ShowReport(const Title, Text: string);
 function AskOpenFile(out Path: string): Boolean;
 function ChooseModel(const ListText: string; out Provider, ModelId: string): Boolean;
 { InputCancelled: the user closed an input prompt without a value. }
@@ -28,19 +30,23 @@ implementation
 uses
   Winapi.Windows, Winapi.ShellAPI, Vcl.Forms, Vcl.StdCtrls, Vcl.Controls, Vcl.Graphics, Vcl.Dialogs,
   RADAgent.ChatCommand, RADAgent.RpcProtocol, RADAgent.ChatPlan, RADAgent.ChatSession,
-  RADAgent.ChatApprovalCard, RADAgent.Lang, RADAgent.BrandTable, RADAgent.BrandIcons;
+  RADAgent.ChatApprovalCard, RADAgent.Lang, RADAgent.BrandTable, RADAgent.BrandIcons,
+  RADAgent.ChatTheme;
 
 var
   { The open AskText form, so an omp "cancel" (login finished in the browser) can close it. }
   GActiveAsk: TForm;
 
-procedure PaintDark(Form: TForm);
+{ A dialog that follows the IDE theme (dark or light); ThemeForm runs once its controls exist. }
+function NewDialog(const Title: string; Width, Height: Integer): TForm;
 begin
-  Form.BorderStyle := bsDialog;
-  Form.Position := poScreenCenter;
-  Form.Color := clBlack;
-  Form.Font.Name := 'Malgun Gothic';
-  Form.Font.Color := clWhite;
+  Result := TAgentForm.CreateNew(nil);
+  Result.BorderStyle := bsDialog;
+  Result.Position := poScreenCenter;
+  Result.Font.Name := 'Malgun Gothic';
+  Result.Caption := Title;
+  Result.ClientWidth := Width;
+  Result.ClientHeight := Height;
 end;
 
 function MakeButton(Form: TForm; const Caption: string; Left, Top, Modal: Integer): TButton;
@@ -63,18 +69,11 @@ var
   Index: Integer;
 begin
   Choice := '';
-  Form := TForm.CreateNew(nil);
+  Form := NewDialog(Title, 420, 360);
   try
-    PaintDark(Form);
-    Form.Caption := Title;
-    Form.ClientWidth := 420;
-    Form.ClientHeight := 360;
     List := TListBox.Create(Form);
     List.Parent := Form;
     List.SetBounds(8, 8, 404, 300);
-    List.Color := clBlack;
-    List.Font.Color := clWhite;
-    List.Font.Name := 'Malgun Gothic';
     if Logos then
     begin
       MakeBrandList(List);
@@ -88,6 +87,7 @@ begin
       List.ItemIndex := 0;
     MakeButton(Form, Tr('askdialog.ok'), 220, 320, mrOk);
     MakeButton(Form, Tr('askdialog.cancel'), 316, 320, mrCancel);
+    ThemeForm(Form);
     Result := (Form.ShowModal = mrOk) and (List.ItemIndex >= 0);
     if Result then
       Choice := List.Items[List.ItemIndex];
@@ -116,12 +116,8 @@ var
   Form: TForm;
   LabelText: TLabel;
 begin
-  Form := TForm.CreateNew(nil);
+  Form := NewDialog(Title, 420, 140);
   try
-    PaintDark(Form);
-    Form.Caption := Title;
-    Form.ClientWidth := 420;
-    Form.ClientHeight := 140;
     LabelText := TLabel.Create(Form);
     LabelText.Parent := Form;
     LabelText.AutoSize := False;
@@ -130,6 +126,7 @@ begin
     LabelText.Caption := Message;
     MakeButton(Form, Tr('askdialog.ok'), 220, 96, mrYes);
     MakeButton(Form, Tr('askdialog.cancel'), 316, 96, mrNo);
+    ThemeForm(Form);
     Result := Form.ShowModal = mrYes;
   finally
     Form.Free;
@@ -143,12 +140,8 @@ var
   Edit: TEdit;
 begin
   Value := '';
-  Form := TForm.CreateNew(nil);
+  Form := NewDialog(Title, 420, 140);
   try
-    PaintDark(Form);
-    Form.Caption := Title;
-    Form.ClientWidth := 420;
-    Form.ClientHeight := 140;
     LabelText := TLabel.Create(Form);
     LabelText.Parent := Form;
     LabelText.AutoSize := False;
@@ -158,10 +151,9 @@ begin
     Edit := TEdit.Create(Form);
     Edit.Parent := Form;
     Edit.SetBounds(12, 52, 396, 24);
-    Edit.Color := clBlack;
-    Edit.Font.Color := clWhite;
     MakeButton(Form, Tr('askdialog.ok'), 220, 96, mrOk);
     MakeButton(Form, Tr('askdialog.cancel'), 316, 96, mrCancel);
+    ThemeForm(Form);
     GActiveAsk := Form;
     try
       Result := (Form.ShowModal = mrOk) and (Trim(Edit.Text) <> '');
@@ -170,6 +162,28 @@ begin
     end;
     if Result then
       Value := Trim(Edit.Text);
+  finally
+    Form.Free;
+  end;
+end;
+
+procedure ShowReport(const Title, Text: string);
+var
+  Form: TForm;
+  Memo: TMemo;
+begin
+  Form := NewDialog(Title, 560, 360);
+  try
+    Memo := TMemo.Create(Form);
+    Memo.Parent := Form;
+    Memo.SetBounds(8, 8, 544, 300);
+    Memo.ReadOnly := True;
+    Memo.ScrollBars := ssVertical;
+    Memo.Text := Text;
+    Form.ActiveControl := MakeButton(Form, Tr('askdialog.ok'), 464, 320, mrOk);
+    TButton(Form.ActiveControl).Default := True;
+    ThemeForm(Form);
+    Form.ShowModal;
   finally
     Form.Free;
   end;

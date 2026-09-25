@@ -1,4 +1,4 @@
-unit RADAgent.ApprovalDialog;
+﻿unit RADAgent.ApprovalDialog;
 
 { Modal approval dialog displaying line diffs with IDE theme support. }
 
@@ -15,7 +15,7 @@ uses
   Vcl.Forms, Vcl.Controls, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls,
   Vcl.Graphics, Vcl.Themes,
   ToolsAPI,
-  RADAgent.LineDiff, RADAgent.Lang;
+  RADAgent.LineDiff, RADAgent.Lang, RADAgent.ChatTheme;
 
 procedure SetSelectionBackColor(RichEdit: TRichEdit; Color: TColor);
 var
@@ -46,26 +46,8 @@ var
 begin
   C := RichEdit.Color;
   if (C = clWindow) or (C = clDefault) then
-  begin
-    if TStyleManager.IsCustomStyleActive then
-      Exit(TStyleManager.ActiveStyle.GetSystemColor(clWindow))
-    else
-      Exit(GetSysColor(COLOR_WINDOW));
-  end;
+    Exit(ColorToRGB(CurrentPalette.Bg));
   Result := ColorToRGB(C);
-end;
-
-procedure ApplyIdeTheme(Form: TForm);
-var
-  Theming: IOTAIDEThemingServices250;
-begin
-  if BorlandIDEServices = nil then
-    Exit;
-  if Supports(BorlandIDEServices, IOTAIDEThemingServices250, Theming) then
-  begin
-    if Theming.IDEThemingEnabled then
-      Theming.ApplyTheme(Form);
-  end;
 end;
 
 procedure AppendRichLine(RichEdit: TRichEdit; const S: string; TextColor, BackColor: TColor);
@@ -89,7 +71,7 @@ end;
 
 function AskApprovalDiff(const Target, Before, After: string): Boolean;
 var
-  Form: TForm;
+  Form: TAgentForm;
   TopPanel, BottomPanel: TPanel;
   LblTarget, LblSummary: TLabel;
   RichEdit: TRichEdit;
@@ -101,7 +83,7 @@ var
   RemovedCount, AddedCount, I: Integer;
   Line: string;
 begin
-  Form := TForm.CreateNew(nil);
+  Form := TAgentForm.CreateNew(nil);
   try
     Form.Caption := Tr('approvaldialog.title');
     Form.Position := poScreenCenter;
@@ -176,7 +158,7 @@ begin
     RichEdit.Font.Size := 10;
 
     { Apply IDE theme before calculating colors }
-    ApplyIdeTheme(Form);
+    ThemeForm(Form);
     Form.HandleNeeded;
     RichEdit.HandleNeeded;
 

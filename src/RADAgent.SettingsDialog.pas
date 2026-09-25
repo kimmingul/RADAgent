@@ -16,10 +16,10 @@ uses
   Vcl.ComCtrls, System.UITypes, RADAgent.AskDialog, RADAgent.SettingsUi, RADAgent.SettingsAccount,
   RADAgent.SettingsProject, RADAgent.OmpSettings, RADAgent.AgentSettings,
   RADAgent.ChatSession, RADAgent.ChatTheme, RADAgent.IdeContext, RADAgent.Options,
-  RADAgent.OmpCheck, RADAgent.Lang, Vcl.Dialogs;
+  RADAgent.OmpCheck, RADAgent.Lang;
 
 type
-  TSettingsForm = class(TForm)
+  TSettingsForm = class(TAgentForm)
   private
     FPages: TPageControl;
     FShows: TListView;
@@ -194,7 +194,7 @@ begin
   finally
     Screen.Cursor := crDefault;
   end;
-  MessageDlg(Tr('settingsdialog.checkOmpTitle') + sLineBreak + sLineBreak + Report, mtInformation, [mbOK], 0);
+  ShowReport(Tr('settingsdialog.checkOmpTitle'), Report);
 end;
 
 procedure TSettingsForm.OkClick(Sender: TObject);
@@ -260,6 +260,7 @@ var
 begin
   Form := TSettingsForm.CreateDialog;
   try
+    ThemeForm(Form);
     if (Page >= 0) and (Page < Form.FPages.PageCount) then
       Form.FPages.ActivePageIndex := Page;
     Form.ShowModal;
