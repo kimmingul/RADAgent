@@ -4,6 +4,8 @@
 
 RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키지(BPL)로 설치하고, 에이전트 루프는 사용자가 설치한 [oh-my-pi](https://github.com/can1357/oh-my-pi)(omp)가 맡는다. RAD Agent는 omp를 `omp --mode rpc` 자식 프로세스로 띄우고, 채팅 화면과 IDE 기능(에디터, 폼 디자이너, 컴파일, 디버거, 메시지 뷰)을 omp에 이어 준다. 창은 Tools 또는 View 메뉴의 RAD Agent다.
 
+제품 페이지: https://kimmingul.github.io/RADAgent/ · 다운로드: [Releases](https://github.com/kimmingul/RADAgent/releases)
+
 ## 요구사항
 
 - Windows, RAD Studio 13.2(BDS 37.0) 32-bit 또는 64-bit IDE. 10.4 Sydney, 11 Alexandria, 12 Athens도 빌드되게 맞춰 두었다(아래 "한계").
