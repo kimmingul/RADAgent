@@ -5,15 +5,16 @@ description: RAD Studio 13.2 ToolsAPI로 RADAgent design-time BPL을 만들 때 
 
 # RADAgent ToolsAPI
 
-대상은 BDS 37.0 design-time 패키지다. 공개 ToolsAPI만 사용한다. 비공개 IDE 유닛, KAI 패키지, designide 재배포는 하지 않는다.
+대상은 BDS 37.0 design-time 패키지이고, 10.4(21.0)·11(22.0)·12(23.0)에서도 컴파일되게 유지한다(AGENTS.md "구버전"). 공개 ToolsAPI만 사용한다. 비공개 IDE 유닛, KAI 패키지, designide 재배포는 하지 않는다.
 
 ## 패키지
 
 1. design-time 패키지. `Requires`: `rtl`, `vcl`, `designide`.
 2. 플랫폼은 Win32와 Win64. 다른 플랫폼은 추가하지 않는다.
 3. 출력:
-   - Win32 → `$(BDSCOMMONDIR)\Bpl\RADAgent370.bpl`
-   - Win64 → `$(BDSCOMMONDIR)\Bpl\Win64\RADAgent370.bpl`
+   - Win32 → `$(BDSCOMMONDIR)\Bpl\RADAgent370.bpl` (`{$LIBSUFFIX AUTO}`: 10.4 `270`, 11 `280`, 12 `290`)
+   - Win64 → `$(BDSCOMMONDIR)\Bpl\Win64\RADAgent370.bpl` (64-bit IDE가 있는 13만)
+   - 숫자 접미사 280 이상 ToolsAPI 인터페이스는 `{$IF CompilerVersion >= 35}`처럼 감싼다.
 4. BPL은 패키지다. IDE가 `Register`를 호출한다. 같은 코드를 일반 DLL로 빼지 않는다.
 5. 32-bit IDE는 `Known Packages`에 Win32 BPL만 둔다. 64-bit IDE는 `Known Packages x64`에 Win64 BPL만 둔다. 한 파일을 양쪽에 등록하지 않는다.
    - `HKCU\Software\Embarcadero\BDS\37.0\Known Packages`

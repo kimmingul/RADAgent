@@ -2,6 +2,8 @@
 
 RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp이고 검증 버전은 18.2.11이다. Delphi로 다시 구현하지 않는다.
 
+기준 버전은 13.2이고, 10.4 Sydney(BDS 21.0)부터 11, 12도 빌드되게 유지한다(아래 "구버전").
+
 상세 절차는 스킬에 있다. 여기 규칙과 스킬이 충돌하면 여기 규칙을 따른다.
 
 - ToolsAPI: `.agents/skills/delphi-toolsapi/SKILL.md`
@@ -23,9 +25,9 @@ RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp이고 검
 
 - design-time BPL. `Requires`: `rtl`, `vcl`, `designide`.
 - 다른 패키지를 Requires에 넣지 않는다. designide는 IDE에 있는 것을 참조만 한다. 재배포하지 않는다.
-- Win32와 Win64를 각각 빌드한다. 출력 경로를 같이 쓰지 않는다.
+- Win32와 Win64를 각각 빌드한다. 출력 경로를 같이 쓰지 않는다. 파일 이름은 `{$LIBSUFFIX AUTO}`로 릴리스마다 다르다(10.4 `270`, 11 `280`, 12 `290`, 13 `370`).
   - Win32 → `$(BDSCOMMONDIR)\Bpl\RADAgent370.bpl`
-  - Win64 → `$(BDSCOMMONDIR)\Bpl\Win64\RADAgent370.bpl`
+  - Win64 → `$(BDSCOMMONDIR)\Bpl\Win64\RADAgent370.bpl` (64-bit IDE가 있는 13부터)
 - Win32 BPL은 `%BDS%\bin\bds.exe`에만 등록한다.
 - Win64 BPL은 `%BDS%\bin64\bds.exe`에만 등록한다.
 - 한 BPL을 양쪽 Known Packages에 넣지 않는다. 비트가 다른 BPL은 그 IDE가 로드하지 못한다.
@@ -61,8 +63,8 @@ RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp이고 검
 
 - DelphiLSP는 omp가 LSP 설정으로 띄우는 별도 프로세스다.
 - IDE 프로세스 안의 DelphiLSP에 attach하지 않는다.
-- `%BDS%\bin\DelphiLSP.exe`는 32-bit IDE용이다. omp에는 쓰지 않는다.
 - omp에 연결하는 바이너리는 `%BDS%\bin64\DelphiLSP.exe`이다. 템플릿의 자리표시자를 그 경로로 바꾼다.
+- `%BDS%\bin\DelphiLSP.exe`는 `bin64`에 서버가 없는 릴리스(64-bit IDE 이전, 10.4~12)에서만 쓴다.
 - 설치본을 사용한다. DelphiLSP.exe를 저장소에 넣거나 재배포하지 않는다.
 - pasls, delphi-lookup, ACP Registry로 LSP를 대체하지 않는다.
 - 설정 파일 생성과 `.omp/lsp.json` 필드는 delphi-lsp 스킬과 `templates/omp.lsp.json`이 기준이다.
@@ -82,6 +84,15 @@ RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp이고 검
 - 그 전에 Ghost Text, `IOTAAIPlugin`, 폼 디자이너를 넣지 않는다.
 - 동작하는 MVP 전에 큰 리팩터를 하지 않는다. 실패하는 테스트나 깨진 수동 확인이 있을 때만 구조를 바꾼다.
 - `src/` 밖에 앱 코드를 두지 않는다. 하네스 문서와 템플릿은 루트, `.agents/`, `.grok/`에 둔다.
+
+## 구버전
+
+- 지원 하한은 RAD Studio 10.4 Sydney다. 도킹 폼 API(`INTAServices270`)가 10.4에서 생겼다.
+- 13에만 있는 문법(`is not`, `not in`, 조건식 `if`, `NameOf`)과 12의 여러 줄 문자열을 쓰지 않는다.
+- 새 ToolsAPI 인터페이스(숫자 접미사 `280` 이상)는 `{$IF CompilerVersion >= ...}`로 감싸고 없을 때의 동작을 둔다(10.4 34, 11 35, 12 36, 13 37).
+- WebView2는 rtl `Winapi.WebView2` 대신 `RADAgent.WebView2Api`의 선언을 쓴다(릴리스마다 rtl 유닛 내용이 다르다).
+- 설치 경로·레지스트리 키·패키지 이름을 코드에 박지 않는다. 설정은 `GetBaseRegistryKey`, BDS는 `%BDS%`에서 읽는다.
+- 빌드 스크립트는 `-Version 22.0`처럼 릴리스를 고를 수 있다(`scripts\bds.ps1`).
 
 ## 검증
 

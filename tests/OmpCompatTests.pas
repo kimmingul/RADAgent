@@ -112,7 +112,8 @@ begin
       Obj.AddPair('index', TJSONNumber.Create(Index));
       Obj.AddPair('count', TJSONNumber.Create(Count));
       Obj.AddPair('byteLength', TJSONNumber.Create(Length(Bytes)));
-      Obj.AddPair('data', TNetEncoding.Base64String.EncodeBytesToString(Part));
+      Obj.AddPair('data', StringReplace(StringReplace(TNetEncoding.Base64.EncodeBytesToString(Part), #13, '',
+        [rfReplaceAll]), #10, '', [rfReplaceAll]));
       Result := Result + Obj.ToJSON + #10;
     finally
       Obj.Free;

@@ -42,11 +42,10 @@
     <DCC_DcpOutput>$(BDSCOMMONDIR)\Dcp</DCC_DcpOutput>
     <DCC_Description>RADAgent — an agentic coding assistant for Delphi, powered by oh-my-pi</DCC_Description>
     <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;$(DCC_Namespace)</DCC_Namespace>
-    <SanitizedProjectName>RADAgent370</SanitizedProjectName>
-    <OutputName>RADAgent370</OutputName>
+    <SanitizedProjectName>RADAgent</SanitizedProjectName>
     <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
     <VerInfo_MajorVer>1</VerInfo_MajorVer>
-    <VerInfo_Keys>CompanyName=;FileDescription=RADAgent — an agentic coding assistant for Delphi, powered by oh-my-pi;FileVersion=1.0.0.0;InternalName=RADAgent370;LegalCopyright=;LegalTrademarks=;OriginalFilename=RADAgent370.bpl;ProductName=RADAgent;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+    <VerInfo_Keys>CompanyName=;FileDescription=RADAgent — an agentic coding assistant for Delphi, powered by oh-my-pi;FileVersion=1.0.0.0;InternalName=RADAgent;LegalCopyright=;LegalTrademarks=;OriginalFilename=RADAgent.bpl;ProductName=RADAgent;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
     <Debugger_Parameters>-pDelphi</Debugger_Parameters>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)'=='Win32'">
@@ -88,6 +87,7 @@
     <DCCReference Include="RADAgent.ClangdInstall.pas"/>
     <DCCReference Include="RADAgent.FormText.pas"/>
     <DCCReference Include="RADAgent.FormShot.pas"/>
+    <DCCReference Include="RADAgent.WebView2Api.pas"/>
     <DCCReference Include="RADAgent.ChatQueue.pas"/>
     <DCCReference Include="RADAgent.UsageReport.pas"/>
     <DCCReference Include="RADAgent.ChatUsage.pas"/>
@@ -170,16 +170,6 @@
   </ItemGroup>
   <Import Project="$(BDS)\Bin\CodeGear.Delphi.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')"/>
   <Import Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj" Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')"/>
-  <Target Name="NameRADAgentBpl" AfterTargets="Make;Build">
-    <PropertyGroup>
-      <_Src>$(DCC_BplOutput)RADAgent.bpl</_Src>
-      <_Dst>$(DCC_BplOutput)RADAgent370.bpl</_Dst>
-    </PropertyGroup>
-    <Copy SourceFiles="$(_Src)" DestinationFiles="$(_Dst)" Condition="Exists('$(_Src)')"/>
-    <Delete Files="$(_Src)" Condition="Exists('$(_Src)')"/>
-    <Error Text="RADAgent370.bpl was not written to $(_Dst)" Condition="!Exists('$(_Dst)')"/>
-    <Error Text="RADAgent.bpl was left at $(_Src)" Condition="Exists('$(_Src)')"/>
-  </Target>
   <ProjectExtensions>
     <Borland.Personality>Delphi.Personality.12</Borland.Personality>
     <Borland.ProjectType>Package</Borland.ProjectType>

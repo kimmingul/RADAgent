@@ -61,7 +61,8 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | ChatActions | 보내기(저장, 체크포인트, 선택 영역 첨부), 컴파일, 새 세션, 세션 전환과 기록 불러오기, 내보내기, host-tool 실행, 상태줄 문구. |
 | ChatActivity | RPC 이벤트로 지금 하는 일(생각, 답 작성, 도구 실행, 압축)과 경과 시간을 정한다. |
 | ChatPageMessages | 채팅 페이지(`src\chat`)로 보내는 JSON 메시지. 페이지는 `chat.js`(기록), `tools.js`(도구 묶음·파일 카드), `activity.js`(생각·입력·하위 에이전트·작업 목록), `topbar.js`, `composer.js`(입력 상자와 아래 줄), `panels.js`(시트와 사용량 패널), `clicks.js`(파일·코드·링크 클릭)로 나뉜다. |
-| WebView2Host / WebView2Handlers | rtl `Winapi.WebView2`와 BPL 옆 `WebView2Loader.dll`로 WebView2를 띄운다. 가상 호스트로 페이지를 싣고, 페이지 밖 이동과 새 창을 막는다. |
+| WebView2Api | WebView2 COM 인터페이스 선언(WebView2.h vtable 순서, 쓰지 않는 메서드는 자리만). 릴리스마다 다른 rtl `Winapi.WebView2`를 쓰지 않으려고 둔다. |
+| WebView2Host / WebView2Handlers | `RADAgent.WebView2Api`와 BPL 옆 `WebView2Loader.dll`로 WebView2를 띄운다. 가상 호스트로 페이지를 싣고, 페이지 밖 이동과 새 창을 막는다. |
 | ChatFallback | WebView2를 못 띄울 때의 글자 기록. |
 | ChatInput | WebView2 대체 화면의 VCL 입력칸: 여러 줄, 보낸 문장 기록, `/` 명령 목록. |
 | ChatTheme | IDE 테마 색(IOTAIDEThemingServices), 고대비·글자 크기 반영, 테마 변경 통지. |
@@ -94,7 +95,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | RpcChunks | RPC v2 `rpc_chunk` 조각을 원래 프레임으로 되돌린다(순서·크기·끊김 검사). |
 | OmpProbe | 설치된 omp 호환성 검사: 버전, 명령줄 옵션, RPC 시작·프로토콜, `rad.*` 등록과 xd:// 연결, 응답 필드, `config list`. 모델 호출 없음. 시험과 IDE가 같이 쓴다. |
 | OmpCheck | omp 버전이 바뀌면 첫 시작 때 OmpProbe를 뒤에서 돌려 채팅에 알리고, 설정 창에서 바로 돌린다. |
-| MenuIcon | `resources\MenuIcon-16/32.png`(`RADAgentResources.rc`의 RCDATA)를 IDE 이미지 목록에 넣어 View 메뉴 항목 아이콘으로 쓴다. |
+| MenuIcon | `resources\MenuIcon-16/32.png`(`RADAgentResources.rc`의 RCDATA)를 IDE 이미지 목록에 넣어 View 메뉴 항목 아이콘으로 쓴다. `INTAServices280`이 없는 10.4에서는 아이콘 없이 둔다. |
 | IdeContext | 활성 `.dproj` 경로, 열린 모듈, 에디터 버퍼 위치. |
 | IdeFiles | 프로젝트 모듈 저장, 디스크에서 바뀐 모듈 다시 읽기(`Refresh`), 사용자가 고치던 모듈은 충돌로 돌려준다. 지워진 파일의 모듈은 닫는다. |
 | ChatDiskSync | 프롬프트 전·`rad.*` 변경 후 저장, omp 도구가 끝날 때와 턴 끝에 다시 읽기, 충돌 알림. |

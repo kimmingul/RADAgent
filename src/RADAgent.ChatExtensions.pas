@@ -168,7 +168,9 @@ begin
       begin
         Image := TJSONObject.Create;
         Image.AddPair('type', 'image');
-        Image.AddPair('data', TNetEncoding.Base64String.EncodeBytesToString(TFile.ReadAllBytes(Path)));
+        { TNetEncoding.Base64 breaks lines; JSON wants one line (Base64String is 11+ only). }
+        Image.AddPair('data', StringReplace(StringReplace(TNetEncoding.Base64.EncodeBytesToString(
+          TFile.ReadAllBytes(Path)), #13, '', [rfReplaceAll]), #10, '', [rfReplaceAll]));
         Image.AddPair('mimeType', MimeOf(Path));
         Images.AddElement(Image);
       end

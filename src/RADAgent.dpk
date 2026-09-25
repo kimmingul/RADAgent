@@ -1,10 +1,12 @@
-﻿package RADAgent370;
+﻿package RADAgent;
 
 {$R RADAgent.res}
 {$R 'RADAgentResources.res' 'RADAgentResources.rc'}
 {$DESCRIPTION 'RADAgent — an agentic coding assistant for Delphi, powered by oh-my-pi'}
 {$DESIGNONLY}
 {$IMPLICITBUILD OFF}
+{ RADAgent270.bpl (10.4) ... RADAgent370.bpl (13): each release gets its own file name. }
+{$LIBSUFFIX AUTO}
 
 requires
   rtl,
@@ -23,6 +25,7 @@ contains
   RADAgent.ClangdInstall in 'RADAgent.ClangdInstall.pas',
   RADAgent.FormText in 'RADAgent.FormText.pas',
   RADAgent.FormShot in 'RADAgent.FormShot.pas',
+  RADAgent.WebView2Api in 'RADAgent.WebView2Api.pas',
   RADAgent.ChatQueue in 'RADAgent.ChatQueue.pas',
   RADAgent.UsageReport in 'RADAgent.UsageReport.pas',
   RADAgent.ChatUsage in 'RADAgent.ChatUsage.pas',

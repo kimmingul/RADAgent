@@ -2,7 +2,7 @@ unit RADAgent.MenuIcon;
 
 { The RADAgent icon (resources\MenuIcon-16.png and -32.png, linked as RCDATA from
   RADAgentIcons.rc) in the IDE image list, for the main-menu entry. Both sizes go in so the
-  IDE picks the sharp one at high DPI. IDE context menus draw only from their own image lists and
+  IDE picks the sharp one at high DPI (RAD Studio 11 and later). IDE context menus draw only from their own image lists and
   ignore item bitmaps, so our items there stay text-only. Main thread only. }
 
 interface
@@ -34,6 +34,7 @@ begin
   end;
 end;
 
+{$IF CompilerVersion >= 35}
 function AgentImageIndex: Integer;
 var
   Services: INTAServices280;
@@ -61,5 +62,12 @@ begin
   end;
   Result := GIndex;
 end;
+{$ELSE}
+{ RAD Studio 10.4 has no INTAServices280.AddImage: the menu entry stays text-only. }
+function AgentImageIndex: Integer;
+begin
+  Result := -1;
+end;
+{$IFEND}
 
 end.

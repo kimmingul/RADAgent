@@ -73,6 +73,9 @@ var
 begin
   Settings := DelphiLspSettingsFile(Profile);
   Server := IncludeTrailingPathDelimiter(BdsDir) + 'bin64\DelphiLSP.exe';
+  { Releases without a 64-bit IDE (10.4 to 12) ship only the 32-bit server. }
+  if not FileExists(Server) then
+    Server := IncludeTrailingPathDelimiter(BdsDir) + 'bin\DelphiLSP.exe';
   Result := (Settings <> '') and FileExists(Server);
   if not Result then
     Exit;

@@ -1,14 +1,14 @@
 unit RADAgent.WebView2Host;
 
-{ WebView2 control hosted directly through Winapi.WebView2 (rtl) and WebView2Loader.dll next to
-  the BPL, so the package needs no vcledge. Serves <bpl>\RADAgent\chat through a virtual host
+{ WebView2 control hosted directly through RADAgent.WebView2Api and WebView2Loader.dll next to
+  the BPL, so the package needs no vcledge and no release-specific Winapi.WebView2. Serves <bpl>\RADAgent\chat through a virtual host
   and exchanges JSON messages with the page. Main thread only. }
 
 interface
 
 uses
   System.Classes, System.SysUtils, Winapi.Windows, Winapi.Messages, Vcl.Controls, Vcl.Graphics,
-  Winapi.WebView2;
+  RADAgent.WebView2Api;
 
 type
   TWebJsonEvent = procedure(const Json: string) of object;

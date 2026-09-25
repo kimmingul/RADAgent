@@ -5,7 +5,7 @@ unit RADAgent.WebView2Handlers;
 interface
 
 uses
-  Winapi.Windows, Winapi.WebView2;
+  Winapi.Windows, RADAgent.WebView2Api;
 
 type
   TEnvironmentReadyProc = procedure(ErrorCode: HResult; const Env: ICoreWebView2Environment) of object;

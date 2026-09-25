@@ -14,40 +14,53 @@ RAD Studio 13.2 IDE 안의 design-time BPL이다. 에이전트 루프는 설치�
 
 ## 요구사항
 
-- Windows. RAD Studio 13.2 (BDS 37.0) 32-bit IDE와 64-bit IDE.
-- `%BDS%` 기본값: `C:\Program Files (x86)\Embarcadero\Studio\37.0`
-- 32-bit IDE: `%BDS%\bin\bds.exe`. 그 IDE 안의 DelphiLSP는 `%BDS%\bin\DelphiLSP.exe`이며, omp는 이 파일을 쓰지 않는다.
-- 64-bit IDE: `%BDS%\bin64\bds.exe`. omp가 쓸 DelphiLSP는 항상 `%BDS%\bin64\DelphiLSP.exe`다.
+- Windows. 기준은 RAD Studio 13.2 (BDS 37.0) 32-bit IDE와 64-bit IDE다.
+- 구버전: RAD Studio 10.4 Sydney(21.0), 11 Alexandria(22.0), 12 Athens(23.0)도 빌드되게 맞췄다. 이 PC에는 13.2만 있어 구버전은 아직 빌드·실행 확인을 하지 않았다(아래 "구버전").
+- `%BDS%`: 설치된 RAD Studio 폴더(예 `C:\Program Files (x86)\Embarcadero\Studio\37.0`). 빌드 스크립트는 레지스트리에서 찾는다.
+- omp가 쓸 DelphiLSP는 `%BDS%\bin64\DelphiLSP.exe`, 그 파일이 없는 릴리스(64-bit IDE 이전)에서는 `%BDS%\bin\DelphiLSP.exe`다.
 - `omp`: 검증 버전 18.2.11. PATH에 없으면 `%LOCALAPPDATA%\omp\omp.exe`. 진입점: `omp --mode rpc`. 다른 버전은 아래 "omp 업데이트"대로 확인한다.
+- Edge WebView2 런타임(Windows 10/11에 보통 설치됨). 없으면 채팅은 글자 화면으로 동작한다.
 
 DelphiLSP.exe는 IDE 설치본만 사용한다. 이 저장소에 복사하지 않는다. BPL은 `DelphiLSP.exe`를 실행하지 않는다. omp가 `templates/omp.lsp.json`을 활성 프로젝트의 `.omp/lsp.json`으로 펼쳐 별도 프로세스로 띄운다. 절차는 [docs/lsp-setup.md](docs/lsp-setup.md)다.
 
 ## BPL 설치 위치
 
-한 BPL을 양쪽 IDE에 등록하지 않는다. 클릭 경로는 [docs/install.md](docs/install.md)와 같다.
+한 BPL을 양쪽 IDE에 등록하지 않는다. 클릭 경로는 [docs/install.md](docs/install.md)와 같다. 파일 이름의 숫자는 릴리스마다 다르다(`{$LIBSUFFIX AUTO}`).
 
-| IDE | 출력 | 레지스트리 |
-| --- | --- | --- |
-| Win32 (`bin\bds.exe`) | `$(BDSCOMMONDIR)\Bpl\RADAgent370.bpl` | `HKCU\Software\Embarcadero\BDS\37.0\Known Packages` |
-| Win64 (`bin64\bds.exe`) | `$(BDSCOMMONDIR)\Bpl\Win64\RADAgent370.bpl` | `HKCU\Software\Embarcadero\BDS\37.0\Known Packages x64` |
+| RAD Studio | BDS | Win32 BPL | Win64 BPL (64-bit IDE) |
+| --- | --- | --- | --- |
+| 10.4 Sydney | 21.0 | `Bpl\RADAgent270.bpl` | 없음 |
+| 11 Alexandria | 22.0 | `Bpl\RADAgent280.bpl` | 없음 |
+| 12 Athens | 23.0 | `Bpl\RADAgent290.bpl` | 없음 |
+| 13 Florence | 37.0 | `Bpl\RADAgent370.bpl` | `Bpl\Win64\RADAgent370.bpl` |
 
-### 64-bit IDE 설치
+`Bpl`은 `$(BDSCOMMONDIR)\Bpl`이다. Win32 BPL은 `bin\bds.exe`의 `Known Packages`, Win64 BPL은 `bin64\bds.exe`의 `Known Packages x64`에 들어간다.
 
-1. 64-bit IDE가 켜져 있으면 종료한다.
-2. `scripts\build-win64.cmd`를 실행한다.
-3. `%BDS%\bin64\bds.exe`를 실행한다.
-4. Component → Install Packages → Add 에서 `$(BDSCOMMONDIR)\Bpl\Win64\RADAgent370.bpl`만 고른다.
-5. Tools 또는 View → RADAgent 로 도킹 Chat을 연다. RAD Studio 13.2의 View 메뉴 이름은 `ViewsMenu`다.
+### 빌드
 
-### 32-bit IDE 설치
+IDE가 켜져 있으면 종료한 뒤 실행한다. `-Version`이 없으면 `%BDS%`, 그다음 설치된 가장 새 릴리스를 쓴다.
 
-1. 32-bit IDE가 켜져 있으면 종료한다.
-2. `scripts\build-win32.cmd`를 실행한다.
-3. `%BDS%\bin\bds.exe`를 실행한다.
-4. Component → Install Packages → Add 에서 `$(BDSCOMMONDIR)\Bpl\RADAgent370.bpl`만 고른다.
-5. Tools 또는 View → RADAgent 로 도킹 Chat을 연다.
+```bat
+scripts\build-win32.cmd                 rem 32-bit IDE용
+scripts\build-win64.cmd                 rem 64-bit IDE용 (13만, 그 외 릴리스는 건너뜀)
+scripts\build-win32.cmd -Version 22.0   rem RAD Studio 11용
+scripts\build-tests.cmd -Version 22.0   rem 그 릴리스 컴파일러로 시험
+```
 
-`%BDS%`가 없고 `C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\rsvars.bat`도 없으면 빌드 스크립트는 `call rsvars.bat` 단계에서 실패한다. 그 경우 가정한 경로는 `C:\Program Files (x86)\Embarcadero\Studio\37.0`이다.
+### 설치
+
+1. 그 IDE(`bin\bds.exe` 또는 13의 `bin64\bds.exe`)를 실행한다.
+2. Component → Install Packages → Add 에서 위 표의 같은 비트 BPL만 고른다.
+3. Tools 또는 View → RADAgent 로 도킹 Chat을 연다.
+
+### 구버전
+
+- 지원 하한은 10.4 Sydney다. 도킹 창 API(`INTAServices270`)가 10.4에서 생겼다. 10.3 이하는 지원하지 않는다.
+- 10.4는 View 메뉴 항목에 아이콘이 없다(아이콘 API `INTAServices280`이 11부터).
+- 11·12에는 64-bit IDE가 없어 Win32 BPL만 쓴다.
+- 채팅의 WebView2는 rtl `Winapi.WebView2`가 아니라 RADAgent가 선언한 인터페이스(`RADAgent.WebView2Api`)로 띄워 릴리스별 rtl 차이를 타지 않는다.
+- C++Builder: 컴파일러 `bcc64x`(Win64x 플랫폼)는 12.1부터다. 없으면 그 플랫폼의 C++ 오류 읽기만 꺼진다.
+- 13.2에서 맞춘 IDE 동작(빈 이벤트 핸들러, FMX 디자이너 캡처, 도킹 복원, 테마 색)은 구버전에서 다시 확인해야 한다.
 
 ## 파일 저장과 git 체크포인트
 
