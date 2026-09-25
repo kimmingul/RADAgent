@@ -69,7 +69,8 @@ scripts\package.ps1 -NoSign          # 서명 없는 시험용
 1. 릴리스마다 Win32(64-bit IDE가 있으면 Win64도)를 `build.ps1`로 빌드한다. 구버전 BPL은 그 릴리스가 설치된 PC에서만 만들 수 있다.
 2. `artifacts\package\payload\<BDS 버전>\<Win32|Win64>\`에 BPL, `RADAgent\chat\`, 그 비트의 `WebView2Loader.dll`(Microsoft 서명 확인)을 모은다.
 3. BPL에 Nanum Space 인증서로 서명하고 타임스탬프를 붙인다(SHA-256, GlobalSign RFC 3161).
-4. Inno Setup 6(`installer\RADAgent.iss`)으로 설치 파일을 만들고, 설치 파일과 제거 프로그램에도 같은 인증서로 서명한다. 서명과 타임스탬프를 확인한 뒤 SHA-256을 출력한다.
+4. omp: `RADAgent.OmpProbe`의 `TestedOmpVersion`(검증 버전)과 GitHub가 공개한 그 릴리스 `omp-windows-x64.exe`의 SHA-256을 설치 파일에 넣는다. 설치할 때 omp가 없으면 그 파일을 받아 해시를 확인하고 `%LOCALAPPDATA%\omp`에 둔다.
+5. Inno Setup 6(`installer\RADAgent.iss`)으로 설치 파일을 만들고, 설치 파일과 제거 프로그램에도 같은 인증서로 서명한다. 서명과 타임스탬프를 확인한 뒤 SHA-256을 출력한다.
 
 버전은 `src\RADAgent.dproj`의 버전 정보(`VerInfo_*`)다. 회사 이름과 저작권도 거기 있다.
 

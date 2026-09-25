@@ -62,7 +62,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 3. Not included, used when installed by the user
    - oh-my-pi (omp), MIT License, https://github.com/can1357/oh-my-pi
-     RADAgent runs the omp that the user installs; it does not ship omp.
+     RADAgent does not ship omp. When omp is missing, the setup downloads the official
+     release from GitHub (checked against its published SHA-256) to %LOCALAPPDATA%\omp.
    - clangd, part of the LLVM project, Apache License 2.0 with LLVM Exceptions,
      https://github.com/clangd/clangd - downloaded only when the user asks for it in Settings.
    - Microsoft Edge WebView2 Runtime, provided by Windows.

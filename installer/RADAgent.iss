@@ -1,6 +1,7 @@
 ﻿; RADAgent setup (Inno Setup 6). Built by scripts\package.ps1, which stages the signed BPLs under
 ; PayloadDir\<BDS version>\<Win32|Win64>\ and passes AppVersion, PayloadDir, OutputDir and, when
-; signing, Sign=1 with the SignTool "nanum".
+; signing, Sign=1 with the SignTool "nanum". OmpVersion/OmpSha256 pin the omp release that is
+; downloaded when omp is missing (the version RADAgent is tested with).
 ;
 ; Per-user install (no administrator rights): files go to %LOCALAPPDATA%\Programs\RADAgent and
 ; each chosen IDE gets the package in HKCU\Software\Embarcadero\BDS\<version>\Known Packages
@@ -14,6 +15,9 @@
 #endif
 #ifndef OutputDir
   #define OutputDir "..\dist"
+#endif
+#ifndef OmpVersion
+  #error OmpVersion and OmpSha256 are required. Run scripts\package.ps1.
 #endif
 
 #define Publisher "Nanum Space Co., Ltd."
@@ -57,6 +61,8 @@ WizardStyle=modern
 ShowLanguageDialog=auto
 LanguageDetectionMethod=uilanguage
 CloseApplications=no
+; The omp folder may be added to the user PATH.
+ChangesEnvironment=yes
 #ifdef Sign
 SignTool=nanum
 SignedUninstaller=yes
@@ -75,7 +81,10 @@ english.Ide64=64-bit IDE
 english.NoIde=No supported RAD Studio was found on this PC (13 Florence, 12 Athens, 11 Alexandria or 10.4 Sydney that this setup carries).
 english.CloseIde=RAD Studio is running. Close every RAD Studio window, then click Next.
 english.CloseIdeUninstall=RAD Studio is running. Close every RAD Studio window and run the uninstaller again.
-english.OpenOmp=Open the oh-my-pi (omp) install page (omp was not found; RADAgent needs it)
+english.OpenOmp=Open the oh-my-pi (omp) install page (omp is not installed; RADAgent needs it)
+english.OmpMemo=oh-my-pi (omp) %1, which RADAgent runs, is downloaded from GitHub (about 230 MB) to:
+english.OmpDownloading=Downloading oh-my-pi (omp)
+english.OmpDownloadFailed=omp could not be downloaded: %1%n%nContinue without omp? RADAgent cannot chat until omp is installed.
 english.OpenWebView2=Open the Microsoft Edge WebView2 Runtime page (not found; without it the chat is plain text)
 english.DeleteSettings=Also delete RADAgent settings and data (IDE settings, side-question notes, downloaded clangd, chat browser data)?
 english.TypeCustom=Custom
@@ -85,7 +94,10 @@ korean.Ide64=64비트 IDE
 korean.NoIde=이 PC에서 지원하는 RAD Studio를 찾지 못했습니다(이 설치 파일이 담은 13 Florence, 12 Athens, 11 Alexandria, 10.4 Sydney).
 korean.CloseIde=RAD Studio가 실행 중입니다. RAD Studio 창을 모두 닫은 뒤 다음을 누르세요.
 korean.CloseIdeUninstall=RAD Studio가 실행 중입니다. RAD Studio 창을 모두 닫고 제거를 다시 실행하세요.
-korean.OpenOmp=oh-my-pi(omp) 설치 페이지 열기 (omp를 찾지 못했습니다. RADAgent에 필요합니다)
+korean.OpenOmp=oh-my-pi(omp) 설치 페이지 열기 (omp가 설치되지 않았습니다. RADAgent에 필요합니다)
+korean.OmpMemo=RADAgent가 쓰는 oh-my-pi(omp) %1을(를) GitHub에서 받아(약 230MB) 설치합니다:
+korean.OmpDownloading=oh-my-pi(omp) 받는 중
+korean.OmpDownloadFailed=omp를 받지 못했습니다: %1%n%nomp 없이 계속할까요? omp를 설치하기 전까지 RADAgent 채팅을 쓸 수 없습니다.
 korean.OpenWebView2=Microsoft Edge WebView2 런타임 페이지 열기 (없으면 채팅이 글자 화면으로 보입니다)
 korean.DeleteSettings=RADAgent 설정과 데이터(IDE 설정, 곁가지 질문 메모, 받은 clangd, 채팅 브라우저 데이터)도 지울까요?
 korean.TypeCustom=사용자 지정
@@ -95,7 +107,10 @@ japanese.Ide64=64 ビット IDE
 japanese.NoIde=この PC で対応する RAD Studio が見つかりません (このセットアップに含まれる 13 Florence、12 Athens、11 Alexandria、10.4 Sydney)。
 japanese.CloseIde=RAD Studio が実行中です。RAD Studio のウィンドウをすべて閉じてから [次へ] をクリックしてください。
 japanese.CloseIdeUninstall=RAD Studio が実行中です。RAD Studio のウィンドウをすべて閉じてから、アンインストールをもう一度実行してください。
-japanese.OpenOmp=oh-my-pi (omp) のインストール ページを開く (omp が見つかりません。RADAgent に必要です)
+japanese.OpenOmp=oh-my-pi (omp) のインストール ページを開く (omp が未インストールです。RADAgent に必要です)
+japanese.OmpMemo=RADAgent が使う oh-my-pi (omp) %1 を GitHub からダウンロード (約 230 MB) してインストールします:
+japanese.OmpDownloading=oh-my-pi (omp) をダウンロード中
+japanese.OmpDownloadFailed=omp をダウンロードできませんでした: %1%n%nomp なしで続行しますか? omp をインストールするまで RADAgent のチャットは使えません。
 japanese.OpenWebView2=Microsoft Edge WebView2 ランタイムのページを開く (ない場合、チャットはテキスト表示になります)
 japanese.DeleteSettings=RADAgent の設定とデータ (IDE 設定、サイド質問のメモ、ダウンロードした clangd、チャットのブラウザー データ) も削除しますか?
 japanese.TypeCustom=カスタム
@@ -105,7 +120,10 @@ german.Ide64=64-Bit-IDE
 german.NoIde=Auf diesem PC wurde kein unterstütztes RAD Studio gefunden (13 Florence, 12 Athens, 11 Alexandria oder 10.4 Sydney, die dieses Setup enthält).
 german.CloseIde=RAD Studio läuft. Schließen Sie alle RAD Studio-Fenster und klicken Sie dann auf Weiter.
 german.CloseIdeUninstall=RAD Studio läuft. Schließen Sie alle RAD Studio-Fenster und starten Sie die Deinstallation erneut.
-german.OpenOmp=Installationsseite von oh-my-pi (omp) öffnen (omp wurde nicht gefunden; RADAgent benötigt es)
+german.OpenOmp=Installationsseite von oh-my-pi (omp) öffnen (omp ist nicht installiert; RADAgent benötigt es)
+german.OmpMemo=oh-my-pi (omp) %1, das RADAgent ausführt, wird von GitHub heruntergeladen (etwa 230 MB) nach:
+german.OmpDownloading=oh-my-pi (omp) wird heruntergeladen
+german.OmpDownloadFailed=omp konnte nicht heruntergeladen werden: %1%n%nOhne omp fortfahren? Bis omp installiert ist, kann RADAgent nicht chatten.
 german.OpenWebView2=Seite der Microsoft Edge WebView2-Laufzeit öffnen (nicht gefunden; ohne sie zeigt der Chat nur Text)
 german.DeleteSettings=Auch die Einstellungen und Daten von RADAgent löschen (IDE-Einstellungen, Notizen zu Nebenfragen, heruntergeladenes clangd, Browserdaten des Chats)?
 german.TypeCustom=Benutzerdefiniert
@@ -115,7 +133,10 @@ french.Ide64=EDI 64 bits
 french.NoIde=Aucun RAD Studio pris en charge n'a été trouvé sur ce PC (13 Florence, 12 Athens, 11 Alexandria ou 10.4 Sydney que contient ce programme d'installation).
 french.CloseIde=RAD Studio est en cours d'exécution. Fermez toutes les fenêtres de RAD Studio, puis cliquez sur Suivant.
 french.CloseIdeUninstall=RAD Studio est en cours d'exécution. Fermez toutes les fenêtres de RAD Studio et relancez la désinstallation.
-french.OpenOmp=Ouvrir la page d'installation d'oh-my-pi (omp) (introuvable ; RADAgent en a besoin)
+french.OpenOmp=Ouvrir la page d'installation d'oh-my-pi (omp) (omp n'est pas installé ; RADAgent en a besoin)
+french.OmpMemo=oh-my-pi (omp) %1, qu'exécute RADAgent, est téléchargé depuis GitHub (environ 230 Mo) vers :
+french.OmpDownloading=Téléchargement d'oh-my-pi (omp)
+french.OmpDownloadFailed=Impossible de télécharger omp : %1%n%nContinuer sans omp ? RADAgent ne peut pas discuter tant qu'omp n'est pas installé.
 french.OpenWebView2=Ouvrir la page du runtime Microsoft Edge WebView2 (introuvable ; sans lui, le chat s'affiche en texte)
 french.DeleteSettings=Supprimer aussi les paramètres et données de RADAgent (paramètres de l'EDI, notes des questions annexes, clangd téléchargé, données du navigateur du chat) ?
 french.TypeCustom=Personnalisée
@@ -142,6 +163,8 @@ Name: "rs270w32"; Description: "RAD Studio 10.4 Sydney - {cm:Ide32}"; Types: cus
 #endif
 
 [Files]
+; omp downloaded on the Ready page (see NextButtonClick); it stays when RADAgent is removed.
+Source: "{tmp}\omp.exe"; DestDir: "{localappdata}\omp"; Flags: external ignoreversion uninsneveruninstall; Check: OmpDownloaded
 Source: "..\resources\RADAgent.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "THIRD-PARTY-NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion
 #if Has370w64
@@ -160,9 +183,13 @@ Source: "{#PayloadDir}\22.0\Win32\*"; DestDir: "{app}\22.0\Win32"; Flags: ignore
 Source: "{#PayloadDir}\21.0\Win32\*"; DestDir: "{app}\21.0\Win32"; Flags: ignoreversion recursesubdirs; Components: rs270w32
 #endif
 
+; omp's own installer puts its folder on the user PATH too; RADAgent finds it there or in
+; %LOCALAPPDATA%\omp.
+[Registry]
+Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{localappdata}\omp"; Check: OmpPathNeeded
+
 ; Known Packages: value name = BPL path, data = description. A disabled entry for the same path
 ; would keep the IDE from loading it, so that one goes.
-[Registry]
 #if Has370w64
 Root: HKCU; Subkey: "Software\Embarcadero\BDS\37.0\Known Packages x64"; ValueType: string; ValueName: "{app}\37.0\Win64\RADAgent370.bpl"; ValueData: "{#Description}"; Flags: uninsdeletevalue; Components: rs370w64
 Root: HKCU; Subkey: "Software\Embarcadero\BDS\37.0\Disabled Packages x64"; ValueType: none; ValueName: "{app}\37.0\Win64\RADAgent370.bpl"; Flags: deletevalue; Components: rs370w64
@@ -190,6 +217,7 @@ Filename: "https://developer.microsoft.com/microsoft-edge/webview2/"; Descriptio
 
 [Code]
 const
+  OmpUrl = 'https://github.com/can1357/oh-my-pi/releases/download/v{#OmpVersion}/omp-windows-x64.exe';
   WebView2Client = 'SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
 
 function IdeRoot(const Version: String): String;
@@ -238,10 +266,34 @@ begin
   Result := FindWindowByClassName('TAppBuilder') <> 0;
 end;
 
+var
+  DownloadPage: TDownloadWizardPage;
+  OmpFetched: Boolean;
+
 function OmpMissing: Boolean;
 begin
   Result := not FileExists(ExpandConstant('{localappdata}\omp\omp.exe')) and
     (FileSearch('omp.exe', GetEnv('PATH')) = '');
+end;
+
+{ omp was fetched on the Ready page and goes to %LOCALAPPDATA%\omp. }
+function OmpDownloaded: Boolean;
+begin
+  Result := OmpFetched;
+end;
+
+function OmpPathNeeded: Boolean;
+var
+  Path: String;
+begin
+  if not OmpFetched then
+    Result := False
+  else
+  begin
+    if not RegQueryStringValue(HKCU, 'Environment', 'Path', Path) then
+      Path := '';
+    Result := Pos(';' + Uppercase(ExpandConstant('{localappdata}\omp')) + ';', ';' + Uppercase(Path) + ';') = 0;
+  end;
 end;
 
 function WebView2Missing: Boolean;
@@ -264,6 +316,42 @@ end;
 procedure InitializeWizard;
 begin
   WizardForm.SelectComponentsLabel.Caption := CustomMessage('ComponentsLabel');
+  DownloadPage := CreateDownloadPage(CustomMessage('OmpDownloading'),
+    FmtMessage(CustomMessage('OmpMemo'), ['{#OmpVersion}']), nil);
+end;
+
+function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo, MemoTypeInfo,
+  MemoComponentsInfo, MemoGroupInfo, MemoTasksInfo: String): String;
+begin
+  Result := MemoDirInfo + NewLine + NewLine + MemoComponentsInfo;
+  if OmpMissing then
+    Result := Result + NewLine + NewLine + FmtMessage(CustomMessage('OmpMemo'), ['{#OmpVersion}']) +
+      NewLine + Space + ExpandConstant('{localappdata}\omp\omp.exe');
+end;
+
+{ RADAgent is useless without omp: fetch the pinned release (SHA-256 checked) before installing. }
+function NextButtonClick(CurPageID: Integer): Boolean;
+begin
+  Result := True;
+  if (CurPageID <> wpReady) or not OmpMissing or OmpFetched then
+    Exit;
+  DownloadPage.Clear;
+  DownloadPage.Add(OmpUrl, 'omp.exe', '{#OmpSha256}');
+  DownloadPage.Show;
+  try
+    try
+      DownloadPage.Download;
+      OmpFetched := True;
+    except
+      if DownloadPage.AbortedByUser then
+        Result := False
+      else
+        Result := SuppressibleMsgBox(FmtMessage(CustomMessage('OmpDownloadFailed'), [GetExceptionMessage]),
+          mbError, MB_YESNO, IDNO) = IDYES;
+    end;
+  finally
+    DownloadPage.Hide;
+  end;
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;

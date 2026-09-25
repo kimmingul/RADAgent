@@ -36,6 +36,16 @@ if (-not $NoSign) {
   Unlock-SigningToken
 }
 
+# The omp release the setup downloads when omp is missing: the one RADAgent is tested with
+# (TestedOmpVersion in RADAgent.OmpProbe), checked by the SHA-256 GitHub publishes for it.
+$probe = Get-Content -LiteralPath (Join-Path $root 'src\RADAgent.OmpProbe.pas') -Raw
+if ($probe -notmatch "TestedOmpVersion = '([0-9.]+)'") { Fail 'TestedOmpVersion not found in RADAgent.OmpProbe.pas.' }
+$ompVersion = $Matches[1]
+$release = Invoke-RestMethod -Uri "https://api.github.com/repos/can1357/oh-my-pi/releases/tags/v$ompVersion" -Headers @{ 'User-Agent' = 'RADAgent-package' } -TimeoutSec 60
+$asset = @($release.assets | Where-Object { $_.name -eq 'omp-windows-x64.exe' })
+if ($asset.Count -ne 1 -or "$($asset[0].digest)" -notmatch '^sha256:([0-9a-f]{64})$') { Fail "No SHA-256 for omp $ompVersion omp-windows-x64.exe on GitHub." }
+$ompSha256 = $Matches[1]
+
 $stage = Join-Path $root 'artifacts\package'
 $payload = Join-Path $stage 'payload'
 if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
@@ -77,7 +87,8 @@ $dist = Join-Path $root 'dist'
 $null = New-Item -ItemType Directory -Path $dist -Force
 $setup = Join-Path $dist "RADAgent-Setup-$version.exe"
 if (Test-Path -LiteralPath $setup) { Remove-Item -LiteralPath $setup -Force }
-$arguments = @('/Q', "/DAppVersion=$version", "/DPayloadDir=$payload", "/DOutputDir=$dist")
+$arguments = @('/Q', "/DAppVersion=$version", "/DPayloadDir=$payload", "/DOutputDir=$dist",
+  "/DOmpVersion=$ompVersion", "/DOmpSha256=$ompSha256")
 if (-not $NoSign) { $arguments += @('/DSign=1', ('/Snanum=' + (Get-InnoSignCommand))) }
 $arguments += (Join-Path $root 'installer\RADAgent.iss')
 & $iscc @arguments
@@ -90,5 +101,6 @@ if (-not $NoSign -and -not (Test-NanumSignature $setup)) { Fail 'The setup is no
   Version = $version
   Releases = ($Versions -join ', ')
   Signed = -not $NoSign
+  Omp = $ompVersion
   SHA256 = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash
 }
