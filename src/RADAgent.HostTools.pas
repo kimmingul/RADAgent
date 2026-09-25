@@ -20,7 +20,8 @@ uses
   RADAgent.IdeContext, RADAgent.Compile, RADAgent.BufferEdits,
   RADAgent.HostToolDefs, RADAgent.DebugTools, RADAgent.DebugControl,
   RADAgent.FormEdits, RADAgent.FormTools, RADAgent.ProjectProfile,
-  RADAgent.ModuleCreator, RADAgent.ChatPlan, RADAgent.FormShot, RADAgent.FormText;
+  RADAgent.ModuleCreator, RADAgent.ChatPlan, RADAgent.FormShot, RADAgent.FormText,
+  RADAgent.AgentSettings;
 
 function ArgText(const ArgumentsJson, Name: string): string;
 var
@@ -186,7 +187,12 @@ begin
   else if ToolName = ToolFormScreenshot then
     IsError := not FormScreenshot(ArgText(ArgumentsJson, 'path'), ImagePng, ResultText)
   else if ToolName = ToolFormTextEdit then
-    IsError := not EditFormText(ArgumentsJson, Approval, ResultText)
+  begin
+    if FormTextAllowed(ExcludeTrailingPathDelimiter(ActiveProjectDir)) then
+      IsError := not EditFormText(ArgumentsJson, Approval, ResultText)
+    else
+      ResultText := 'This project edits forms in the designer only; use rad.form_apply.';
+  end
   else if IsFormTool(ToolName) then
     ExecuteFormTool(ToolName, FormArgs(ArgumentsJson), ArgumentsJson, Approval, ResultText, IsError)
   else

@@ -30,6 +30,10 @@ function OmpPathOverride: string;
 procedure SetOmpPathOverride(const Value: string);
 { The omp to start: the override or the one found on PATH. }
 function OmpCommand: string;
+{ Per project (<project>\.omp\radagent-ide.json, not the omp --config): whether omp may edit
+  form files as text through rad.form_text_edit ("auto") or only use the designer ("designer"). }
+function FormTextAllowed(const ProjectDir: string): Boolean;
+procedure SetFormTextAllowed(const ProjectDir: string; Value: Boolean);
 { clangd.exe (or its folder) for C++Builder projects; '' means search PATH. }
 function ClangdPath: string;
 procedure SetClangdPath(const Value: string);
@@ -49,7 +53,7 @@ procedure SetCheckedOmpVersion(const Value: string);
 implementation
 
 uses
-  System.SysUtils, System.Variants, System.Win.Registry, Winapi.Windows, ToolsAPI,
+  System.SysUtils, System.Variants, System.Win.Registry, System.IOUtils, System.JSON, Winapi.Windows, ToolsAPI,
   RADAgent.Options, RADAgent.LegacyNames, RADAgent.Lang;
 
 var
@@ -185,6 +189,40 @@ begin
   Result := OmpPathOverride;
   if Result = '' then
     Result := OmpExecutable;
+end;
+
+function IdeSettingsFile(const ProjectDir: string): string;
+begin
+  Result := TPath.Combine(TPath.Combine(ProjectDir, '.omp'), 'radagent-ide.json');
+end;
+
+function FormTextAllowed(const ProjectDir: string): Boolean;
+var
+  Root: TJSONValue;
+begin
+  Result := True;
+  if (ProjectDir = '') or not FileExists(IdeSettingsFile(ProjectDir)) then
+    Exit;
+  Root := TJSONObject.ParseJSONValue(TFile.ReadAllText(IdeSettingsFile(ProjectDir), TEncoding.UTF8));
+  try
+    if Root is TJSONObject then
+      Result := TJSONObject(Root).GetValue<string>('formEditing', 'auto') <> 'designer';
+  finally
+    Root.Free;
+  end;
+end;
+
+procedure SetFormTextAllowed(const ProjectDir: string; Value: Boolean);
+begin
+  if ProjectDir = '' then
+    Exit;
+  if Value then
+    System.SysUtils.DeleteFile(IdeSettingsFile(ProjectDir))
+  else
+  begin
+    ForceDirectories(ExtractFileDir(IdeSettingsFile(ProjectDir)));
+    TFile.WriteAllText(IdeSettingsFile(ProjectDir), '{"formEditing":"designer"}', TEncoding.UTF8);
+  end;
 end;
 
 function ClangdPath: string;

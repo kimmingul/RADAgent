@@ -16,7 +16,8 @@ type
     FRoles: array of TComboBox;
     FToggles: TArray<TToggleItem>;
     FToggleList: TListView;
-    FApproval, FThinking: TComboBox;
+    FApproval, FThinking, FFormEditing: TComboBox;
+    FFormEditingChanged: Boolean;
     procedure ToggleChanging(Sender: TObject; Item: TListItem; Change: TItemChange;
       var AllowChange: Boolean);
     procedure BuildRoles(Page: TWinControl; const Models: TArray<string>);
@@ -25,14 +26,17 @@ type
   public
     constructor Create(AOwner: TComponent; Settings: TOmpProjectSettings;
       RolePage, ExtensionPage, DefaultsPage: TWinControl; const Models: TArray<string>); reintroduce;
-    { Copies the controls into the overlay (not yet saved). }
+    { Copies the controls into the overlay (not yet saved); the form editing choice is saved now. }
     procedure Store;
+    { Store changed the form editing choice: omp must restart to get the other tool list. }
+    property FormEditingChanged: Boolean read FFormEditingChanged;
   end;
 
 implementation
 
 uses
-  System.SysUtils, RADAgent.SettingsUi, RADAgent.Lang, RADAgent.BrandTable, RADAgent.BrandIcons;
+  System.SysUtils, RADAgent.SettingsUi, RADAgent.Lang, RADAgent.BrandTable, RADAgent.BrandIcons,
+  RADAgent.AgentSettings;
 
 const
   Roles: array[0..8] of string = ('default', 'smol', 'slow', 'plan', 'task', 'advisor', 'commit',
@@ -179,6 +183,13 @@ begin
   FillChoices(FThinking, ThinkingLevels, FSettings.OverlayText('defaultThinkingLevel'),
     FSettings.BaseText('defaultThinkingLevel'));
   AddNote(Page, Tr('settingsproject.noteApproval'));
+  FFormEditing := TComboBox.Create(Page);
+  FFormEditing.Style := csDropDownList;
+  AddRow(Page, Tr('settingsproject.formEditing'), FFormEditing);
+  FFormEditing.Items.Add(Tr('settingsproject.formEditingAuto'));
+  FFormEditing.Items.Add(Tr('settingsproject.formEditingDesigner'));
+  FFormEditing.ItemIndex := Ord(not FormTextAllowed(FSettings.ProjectDir));
+  AddNote(Page, Tr('settingsproject.noteFormEditing'));
 end;
 
 function ChoiceValue(Combo: TComboBox): string;
@@ -201,6 +212,9 @@ begin
   FSettings.ApplyToggles(FToggles);
   FSettings.SetOverlayText('tools.approvalMode', ChoiceValue(FApproval));
   FSettings.SetOverlayText('defaultThinkingLevel', ChoiceValue(FThinking));
+  FFormEditingChanged := (FFormEditing.ItemIndex = 0) <> FormTextAllowed(FSettings.ProjectDir);
+  if FFormEditingChanged then
+    SetFormTextAllowed(FSettings.ProjectDir, FFormEditing.ItemIndex = 0);
 end;
 
 end.

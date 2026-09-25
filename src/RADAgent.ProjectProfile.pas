@@ -32,7 +32,7 @@ function ComponentsJson(const Filter: string): string;
 implementation
 
 uses
-  System.SysUtils, System.JSON, ToolsAPI, RADAgent.IdeContext, RADAgent.Lang;
+  System.SysUtils, System.JSON, ToolsAPI, RADAgent.IdeContext, RADAgent.Lang, RADAgent.AgentSettings;
 
 function ActiveProfile: TProjectProfile;
 var
@@ -43,11 +43,13 @@ var
 begin
   Result := Default(TProjectProfile);
   Result.Tools.Language := 'delphi';
+  Result.Tools.FormText := True;
   Project := CurrentProject;
   if Project = nil then
     Exit;
   Result.ProjectFile := Project.FileName;
   Result.ProjectDir := ExtractFileDir(Project.FileName);
+  Result.Tools.FormText := FormTextAllowed(Result.ProjectDir);
   if SameText(Project.Personality, sCBuilderPersonality) then
     Result.Tools.Language := 'cpp';
   if SameText(Project.FrameworkType, sFrameworkTypeVCL) or SameText(Project.FrameworkType, sFrameworkTypeFMX) then

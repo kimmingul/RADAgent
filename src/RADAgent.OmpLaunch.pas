@@ -194,8 +194,10 @@ begin
       'reloads the files you change. Read and edit code with your own read/edit/write tools.');
     Lines.Add('- Never edit form files (.dfm/.fmx) or the project files (.dproj/.dpr/.cbproj/.groupproj) ' +
       'with your own write/edit tools; forms change only through the rad.form_* tools, modules through ' +
-      'rad.new_module. For bulk property changes across many forms, rad.form_text_edit edits the form ' +
-      'text (properties only) with one approval.');
+      'rad.new_module.');
+    if Profile.Tools.HasForms and Profile.Tools.FormText then
+      Lines.Add('- For bulk property changes across many forms or components, rad.form_text_edit edits ' +
+        'the form text (properties only) with one approval.');
     if Profile.Tools.HasForms then
       Lines.Add('- After building or changing a layout, look at it with rad.form_screenshot and fix ' +
         'overlaps, alignment and clipped text before answering.');

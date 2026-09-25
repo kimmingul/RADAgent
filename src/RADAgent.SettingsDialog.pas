@@ -281,7 +281,7 @@ begin
     After := '';
     if FileExists(OverlayPath(FProject.ProjectDir)) then
       After := TFile.ReadAllText(OverlayPath(FProject.ProjectDir));
-    Restart := Restart or (Before <> After);
+    Restart := Restart or (Before <> After) or FProjectPages.FormEditingChanged;
     { The + menu edits the same file through the catalog's copy; keep it current. }
     if Before <> After then
       ChatSession.Catalog.LoadProject(OmpCommand, FProject.ProjectDir);

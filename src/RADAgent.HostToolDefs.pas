@@ -44,6 +44,8 @@ type
     HasForms: Boolean;
     { RADAgent plan mode: read-only rad.* tools plus rad.submit_plan. }
     PlanMode: Boolean;
+    { rad.form_text_edit is offered (project setting "auto"); False: designer only. }
+    FormText: Boolean;
   end;
 
 { Delphi VCL with forms: every tool. }
@@ -64,6 +66,7 @@ begin
   Result.Framework := 'VCL';
   Result.HasForms := True;
   Result.PlanMode := False;
+  Result.FormText := True;
 end;
 
 function IsChangingTool(const Name: string): Boolean;
@@ -183,7 +186,8 @@ begin
   Tools.AddElement(ToolDef(ToolFormScreenshot,
     'PNG image of the form as the designer shows it (absolute unit path). Use it after layout ' +
     'changes to check overlaps, alignment and clipped text. Read-only.', 'path'));
-  Tools.AddElement(SchemaDef(ToolFormTextEdit,
+  if P.FormText then
+    Tools.AddElement(SchemaDef(ToolFormTextEdit,
     'Bulk property changes as text in .dfm/.fmx files (many forms or many components at once): ' +
     'each edit replaces old text (must occur once) with new in the form file of path. Only property ' +
     'lines; no object/inherited/end lines (use rad.form_apply for components and events). New ' +
