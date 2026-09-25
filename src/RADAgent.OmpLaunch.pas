@@ -192,8 +192,13 @@ begin
     Lines.Add('## How to work');
     Lines.Add('- Files on disk are current: the IDE saves every open file before each of your turns and ' +
       'reloads the files you change. Read and edit code with your own read/edit/write tools.');
-    Lines.Add('- Never edit form files (.dfm/.fmx) or the project files (.dproj/.dpr/.cbproj/.groupproj) as text; ' +
-      'forms change only through the rad.form_* tools, modules through rad.new_module.');
+    Lines.Add('- Never edit form files (.dfm/.fmx) or the project files (.dproj/.dpr/.cbproj/.groupproj) ' +
+      'with your own write/edit tools; forms change only through the rad.form_* tools, modules through ' +
+      'rad.new_module. For bulk property changes across many forms, rad.form_text_edit edits the form ' +
+      'text (properties only) with one approval.');
+    if Profile.Tools.HasForms then
+      Lines.Add('- After building or changing a layout, look at it with rad.form_screenshot and fix ' +
+        'overlaps, alignment and clipped text before answering.');
     if Profile.Tools.HasForms and (Profile.Tools.Language = 'cpp') then
       Lines.Add('- Build UI in the designer with rad.form_apply (one call, one approval). Its events (and ' +
         'rad.form_set_event) add each handler: the __fastcall declaration in the form class''s ' +

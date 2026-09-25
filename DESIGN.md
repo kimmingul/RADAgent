@@ -41,6 +41,8 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | OmpLaunch | omp를 띄우기 전에 쓰는 파일(C++은 clangd 연결 포함): rad.* 문서를 시스템 프롬프트에 넣는 `omp-host-p<pid>.yml`(`tools.xdevInlineDevices`), 프로젝트 안내 `project-guide-p<pid>.md`(`--append-system-prompt`), Delphi 프로젝트의 `.omp/lsp.json`. |
 | HostToolDefs | 프로필에 맞춘 rad.* 목록: 폼이 있을 때만 폼 도구, VCL/FMX와 Delphi/C++ 문구. |
 | FormBatch / ModuleCreator | `rad.form_apply`(폼 변경 묶음, 승인 한 번), `rad.new_module`(폼·프레임·데이터 모듈·유닛 추가, 파일 이름 `UnitN`을 정하고 폼 소스는 Delphi·C++ 모두 직접 준다). |
+| FormShot | `rad.form_screenshot`: VCL은 `PaintTo`, FMX는 디자이너의 `FMTForm` 창을 화면에서 복사해 PNG. 도구 결과에 image 부분으로 보낸다. |
+| FormText | `rad.form_text_edit`: 속성 줄만 텍스트로 일괄 수정, 구문(`ObjectTextToBinary`)과 속성 이름(살아 있는 컴포넌트) 검사, 승인 한 번, `Refresh`. |
 | HandlerCode | 이벤트 핸들러 코드: Delphi는 디자이너 스텁에 주석 한 줄(빈 핸들러는 저장 때 지워짐), C++은 `.h` `__published` 선언과 `.cpp` 본문을 버퍼에 쓴다(C++ 디자이너는 코드를 쓰지 않음). |
 | CppDiagnostics | C++ 빌드 실패 때 바뀐 `.cpp`를 활성 플랫폼 컴파일러(bcc64x/bcc64/bcc32c)로 다시 컴파일해 오류를 읽는다. |
 | CppLsp | C++ 프로젝트의 clangd 연결: 활성 플랫폼 컴파일러의 헤더·타깃·매크로와 프로젝트 옵션으로 `.omp\clangd\compile_commands.json`, `.omp\lsp.json`. clangd는 설정 또는 PATH. |

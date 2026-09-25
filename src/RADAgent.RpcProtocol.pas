@@ -36,7 +36,8 @@ function NewRequestId(var NextId: Integer): string;
 { ImagesJson: optional ImageContent[] (objects with type "image", data, mimeType). }
 function BuildPromptFrame(const Id, Message: string; const ImagesJson: string = ''): string;
 function BuildAbortFrame(const Id: string): string;
-function BuildHostToolResultFrame(const Id, Text: string; IsError: Boolean): string;
+{ ImagePng: base64 PNG added as an image part after the text, or ''. }
+function BuildHostToolResultFrame(const Id, Text: string; IsError: Boolean; const ImagePng: string = ''): string;
 function BuildExtensionUiResponse(const RequestLine: string): string;
 function TryBuildPromptFrame(Ready, HostToolsSent: Boolean; const Id, Message: string;
   out Frame: string; const ImagesJson: string = ''): Boolean;
@@ -202,7 +203,7 @@ begin
   end;
 end;
 
-function BuildHostToolResultFrame(const Id, Text: string; IsError: Boolean): string;
+function BuildHostToolResultFrame(const Id, Text: string; IsError: Boolean; const ImagePng: string): string;
 var
   Obj, Content, Part: TJSONObject;
   Parts: TJSONArray;
@@ -219,6 +220,14 @@ begin
     Part.AddPair('type', 'text');
     Part.AddPair('text', Text);
     Parts.AddElement(Part);
+    if ImagePng <> '' then
+    begin
+      Part := TJSONObject.Create;
+      Part.AddPair('type', 'image');
+      Part.AddPair('data', ImagePng);
+      Part.AddPair('mimeType', 'image/png');
+      Parts.AddElement(Part);
+    end;
     Content.AddPair('content', Parts);
     Obj.AddPair('result', Content);
     Result := Obj.ToJSON;

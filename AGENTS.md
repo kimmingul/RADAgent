@@ -71,7 +71,7 @@ RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp이고 검
 
 - 디스크가 기준이다. 프롬프트 직전과 승인된 `rad.*` 변경 직후에 프로젝트의 저장 안 한 모듈을 저장한다(`IOTAModule.Save`).
 - omp는 자기 read/edit/write 도구로 디스크 파일을 고친다. 도구가 끝날 때와 턴이 끝날 때 바뀐 파일을 IDE에 다시 읽힌다(`IOTAModule.Refresh`). 그 사이 사용자가 같은 모듈을 고쳤으면 덮어쓰지 않고 충돌로 알린다.
-- 폼(`.dfm`/`.fmx`)과 프로젝트 파일은 텍스트로 고치지 않는다. 폼은 `rad.form_*`, 모듈은 `rad.new_module`로만 바꾼다.
+- 폼(`.dfm`/`.fmx`)과 프로젝트 파일은 omp의 write/edit로 고치지 않는다. 폼은 `rad.form_*`, 모듈은 `rad.new_module`로만 바꾼다. 여러 폼의 속성 일괄 변경만 `rad.form_text_edit`(속성 줄만, 구문·속성 이름 검사, 승인 한 번, IDE가 다시 읽음)로 텍스트를 고친다.
 - IDE 변경과 omp 도구의 승인은 입력 아래 승인 방식(omp `tools.approvalMode`)을 따른다: 항상 묻기 = 변경마다, 쓰기 허용 = 턴마다 한 번, 권한 무시 = 묻지 않음. 처음 값은 권한 무시다. 승인은 채팅 안 카드로 묻는다. `계획` 방식은 아무것도 바꾸지 않고 `docs\plans`에 계획서만 쓴다.
 - 프로젝트 폴더는 항상 git 저장소다. 없으면 `git init`과 Delphi `.gitignore`, 첫 커밋을 만든다.
 - 사용자 메시지마다 보내기 직전 상태를 체크포인트로 남긴다. 체크포인트는 사용자의 index, HEAD, 브랜치를 건드리지 않는다(별도 index, `refs/radagent/cp/`). 되돌리기는 파일과 omp 대화를 함께 되돌리고, 되돌리기 전 상태도 `refs/radagent/before-restore/`에 남긴다.

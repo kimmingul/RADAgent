@@ -86,6 +86,8 @@
     <DCCReference Include="RADAgent.CppDiagnostics.pas"/>
     <DCCReference Include="RADAgent.CppLsp.pas"/>
     <DCCReference Include="RADAgent.ClangdInstall.pas"/>
+    <DCCReference Include="RADAgent.FormText.pas"/>
+    <DCCReference Include="RADAgent.FormShot.pas"/>
     <DCCReference Include="RADAgent.ProcessRun.pas"/>
     <DCCReference Include="RADAgent.Lang.pas"/>
     <DCCReference Include="RADAgent.RpcProtocol.pas"/>

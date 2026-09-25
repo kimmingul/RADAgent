@@ -293,19 +293,20 @@ end;
 procedure HandleHostToolCall(const CallId, ToolName, ArgumentsJson: string);
 var
   Session: TChatSession;
-  Text: string;
+  Text, Image: string;
   IsError: Boolean;
 begin
   Session := ChatSession;
   if (Session.Client = nil) or Session.Client.WasCancelled(CallId) then
     Exit;
+  Image := '';
   if PlanActive and IsChangingTool(ToolName) then
   begin
     Text := 'The IDE cannot be modified in plan mode. Investigate only, and submit the plan via rad.submit_plan.';
     IsError := True;
   end
   else
-    ExecuteHostTool(ToolName, ArgumentsJson, Session.Approval, Text, IsError);
+    ExecuteHostTool(ToolName, ArgumentsJson, Session.Approval, Text, IsError, Image);
   { A first form makes the form tools available. }
   if (ToolName = ToolNewModule) and not IsError then
     Session.RefreshHostTools;
@@ -313,7 +314,7 @@ begin
   if IsChangingTool(ToolName) and not IsError then
     SaveProject;
   if (Session.Client <> nil) and not Session.Client.WasCancelled(CallId) then
-    Session.Client.SendHostResult(CallId, Text, IsError);
+    Session.Client.SendHostResult(CallId, Text, IsError, Image);
 end;
 
 procedure HandleUiRequest(const Line: string);

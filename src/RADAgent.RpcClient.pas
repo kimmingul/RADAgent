@@ -63,7 +63,7 @@ type
     function SendPrompt(const Message: string; const ImagesJson: string = ''): Boolean;
     procedure SendAbort;
     procedure SendRaw(const FrameType, Frame: string);
-    procedure SendHostResult(const CallId, Text: string; IsError: Boolean);
+    procedure SendHostResult(const CallId, Text: string; IsError: Boolean; const ImagePng: string = '');
     procedure ResendHostTools(const Profile: TToolProfile);
     function WasCancelled(const CallId: string): Boolean;
     property Ready: Boolean read FReady;
@@ -380,11 +380,11 @@ begin
   Line := WithRequestId(FrameType, Frame, FNextId);
   if Line <> '' then WriteFrame(Line, FrameType);
 end;
-procedure TAgentRpcClient.SendHostResult(const CallId, Text: string; IsError: Boolean);
+procedure TAgentRpcClient.SendHostResult(const CallId, Text: string; IsError: Boolean; const ImagePng: string);
 begin
   if not FReady or WasCancelled(CallId) then
     Exit;
-  WriteFrame(BuildHostToolResultFrame(CallId, Text, IsError), 'host_tool_result');
+  WriteFrame(BuildHostToolResultFrame(CallId, Text, IsError, ImagePng), 'host_tool_result');
 end;
 { The rad.* tools again for a changed project, e.g. after its first form. }
 procedure TAgentRpcClient.ResendHostTools(const Profile: TToolProfile);

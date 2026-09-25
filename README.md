@@ -148,7 +148,10 @@ IDE 도구는 `rad.compile`, `rad.open_buffer`, `rad.insert_at_caret`이다. 코
 
 디버거 읽기 도구는 `rad.debug_state`, `rad.debug_stack`, `rad.debug_evaluate`, `rad.debug_breakpoints`이다. 식 평가는 부작용 없이 한다. 실행 제어 도구는 `rad.debug_run`(실행 또는 계속), `rad.debug_step`(over, into, return), `rad.debug_pause`, `rad.debug_reset`, `rad.debug_add_breakpoint`이다. 모두 승인 창에서 승인해야 동작하고, 끝나면 디버거 상태를 돌려준다. 디버기 메모리는 쓰지 않는다.
 
-폼 디자이너 도구는 `rad.form_components`, `rad.form_properties`(읽기), `rad.form_set_property`, `rad.form_add_component`, `rad.form_delete_component`, `rad.form_rename_component`, `rad.form_set_event`이다. 바꾸는 도구는 승인한 뒤에 디자이너에만 반영하고 저장하지 않는다. 필드 선언과 이벤트 메서드는 디자이너가 유닛 버퍼에 고친다(C++ 이벤트 메서드는 RADAgent가 쓴다).
+폼 디자이너 도구는 `rad.form_components`, `rad.form_properties`, `rad.form_screenshot`(읽기), `rad.form_set_property`, `rad.form_add_component`, `rad.form_delete_component`, `rad.form_rename_component`, `rad.form_set_event`이다. 바꾸는 도구는 승인한 뒤에 디자이너에만 반영하고 저장하지 않는다. 필드 선언과 이벤트 메서드는 디자이너가 유닛 버퍼에 고친다(C++ 이벤트 메서드는 RADAgent가 쓴다).
+
+- `rad.form_screenshot`: 디자이너에 보이는 폼을 PNG로 돌려준다(VCL은 폼이 직접 그리고, FMX는 디자이너 창을 화면에서 복사한다). 레이아웃을 바꾼 뒤 모델이 겹침·정렬·잘린 글자를 눈으로 확인한다.
+- `rad.form_text_edit`: 여러 폼·여러 컴포넌트의 속성을 한 번에 바꿀 때 `.dfm/.fmx` 텍스트를 고친다. 편집은 정확한 old/new 텍스트이고, object/inherited/end 줄은 바꿀 수 없어 컴포넌트 추가·삭제·이름 변경과 이벤트는 여전히 디자이너로 한다. 고친 텍스트가 폼 구문으로 읽히는지, 새 속성이 실제 컴포넌트에 있는지 검사한 뒤 전체 diff를 한 번 승인받고, 파일 인코딩을 지켜 쓰고 IDE가 폼을 다시 읽는다. 바이너리 폼 파일은 거절한다.
 
 RPC 원문은 `%TEMP%\RADAgent\rpc.log`에만 남긴다. 채팅 로그에는 사용자 문장과 모델 응답만 보인다.
 

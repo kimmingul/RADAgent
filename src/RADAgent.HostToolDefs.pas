@@ -26,6 +26,8 @@ const
   ToolFormDeleteComponent = 'rad.form_delete_component';
   ToolFormRenameComponent = 'rad.form_rename_component';
   ToolFormSetEvent = 'rad.form_set_event';
+  ToolFormScreenshot = 'rad.form_screenshot';
+  ToolFormTextEdit = 'rad.form_text_edit';
   ToolDebugRun = 'rad.debug_run';
   ToolDebugStep = 'rad.debug_step';
   ToolDebugPause = 'rad.debug_pause';
@@ -69,7 +71,7 @@ begin
   Result := (Name = ToolInsertAtCaret) or
     (Name = ToolSetBuildConfig) or (Name = ToolNewModule) or (Name = ToolFormApply) or
     (Name = ToolFormSetProperty) or (Name = ToolFormAddComponent) or (Name = ToolFormDeleteComponent) or
-    (Name = ToolFormRenameComponent) or (Name = ToolFormSetEvent) or (Name = ToolDebugRun) or
+    (Name = ToolFormRenameComponent) or (Name = ToolFormSetEvent) or (Name = ToolFormTextEdit) or (Name = ToolDebugRun) or
     (Name = ToolDebugStep) or (Name = ToolDebugPause) or (Name = ToolDebugReset) or
     (Name = ToolDebugAddBreakpoint);
 end;
@@ -120,6 +122,9 @@ const
     '"slug":{"type":"string"},"goal":{"type":"string"},"context":{"type":"string"},"steps":{"type":' +
     '"array","items":{"type":"string"}},"files":{"type":"array","items":{"type":"string"}},"risks":' +
     '{"type":"array","items":{"type":"string"}},"verification":{"type":"array","items":{"type":"string"}}}}';
+  FormTextSchema = '{"type":"object","required":["edits"],"properties":{"edits":{"type":"array",' +
+    '"items":{"type":"object","required":["path","old","new"],"properties":{"path":{"type":"string"},' +
+    '"old":{"type":"string"},"new":{"type":"string"}}}}}}';
   FormApplySchema = '{"type":"object","required":["path"],"properties":{"path":{"type":"string"},' +
     '"delete":{"type":"array","items":{"type":"string"}},"components":{"type":"array","items":' +
     '{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"class":' +
@@ -175,6 +180,14 @@ begin
   Tools.AddElement(ToolDef(ToolFormSetEvent,
     'After approval connect event (OnClick) to handler; empty handler disconnects.',
     'path,component,event,handler'));
+  Tools.AddElement(ToolDef(ToolFormScreenshot,
+    'PNG image of the form as the designer shows it (absolute unit path). Use it after layout ' +
+    'changes to check overlaps, alignment and clipped text. Read-only.', 'path'));
+  Tools.AddElement(SchemaDef(ToolFormTextEdit,
+    'Bulk property changes as text in .dfm/.fmx files (many forms or many components at once): ' +
+    'each edit replaces old text (must occur once) with new in the form file of path. Only property ' +
+    'lines; no object/inherited/end lines (use rad.form_apply for components and events). New ' +
+    'properties must exist. One approval for all edits; the IDE reloads the forms.', FormTextSchema));
 end;
 
 function BuildSetHostToolsFrame(const Id: string): string;

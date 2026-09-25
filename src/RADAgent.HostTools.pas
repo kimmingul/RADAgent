@@ -9,8 +9,9 @@ interface
 uses
   RADAgent.Approval;
 
+{ ImagePng: base64 PNG sent with the result (rad.form_screenshot), else ''. }
 procedure ExecuteHostTool(const ToolName, ArgumentsJson: string;
-  const Approval: IAgentApproval; out ResultText: string; out IsError: Boolean);
+  const Approval: IAgentApproval; out ResultText: string; out IsError: Boolean; out ImagePng: string);
 
 implementation
 
@@ -19,7 +20,7 @@ uses
   RADAgent.IdeContext, RADAgent.Compile, RADAgent.BufferEdits,
   RADAgent.HostToolDefs, RADAgent.DebugTools, RADAgent.DebugControl,
   RADAgent.FormEdits, RADAgent.FormTools, RADAgent.ProjectProfile,
-  RADAgent.ModuleCreator, RADAgent.ChatPlan;
+  RADAgent.ModuleCreator, RADAgent.ChatPlan, RADAgent.FormShot, RADAgent.FormText;
 
 function ArgText(const ArgumentsJson, Name: string): string;
 var
@@ -118,13 +119,14 @@ begin
 end;
 
 procedure ExecuteHostTool(const ToolName, ArgumentsJson: string;
-  const Approval: IAgentApproval; out ResultText: string; out IsError: Boolean);
+  const Approval: IAgentApproval; out ResultText: string; out IsError: Boolean; out ImagePng: string);
 var
   Problem: string;
 begin
   if GetCurrentThreadId <> MainThreadID then
     raise Exception.Create('ToolsAPI is main-thread only');
   ResultText := '';
+  ImagePng := '';
   IsError := True;
   if ToolName = ToolCompile then
   begin
@@ -181,6 +183,10 @@ begin
     ExecuteDebugTool(ToolName, ArgText(ArgumentsJson, 'expression'), ResultText, IsError)
   else if IsDebugControlTool(ToolName) then
     ExecuteDebugControl(ToolName, DebugControlArgs(ArgumentsJson), Approval, ResultText, IsError)
+  else if ToolName = ToolFormScreenshot then
+    IsError := not FormScreenshot(ArgText(ArgumentsJson, 'path'), ImagePng, ResultText)
+  else if ToolName = ToolFormTextEdit then
+    IsError := not EditFormText(ArgumentsJson, Approval, ResultText)
   else if IsFormTool(ToolName) then
     ExecuteFormTool(ToolName, FormArgs(ArgumentsJson), ArgumentsJson, Approval, ResultText, IsError)
   else
