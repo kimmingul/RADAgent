@@ -14,22 +14,24 @@ RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키
 
 ## 설치
 
-IDE를 종료한 뒤 빌드한다. `-Version`이 없으면 `%BDS%`, 그다음 설치된 가장 새 릴리스를 쓴다.
+`RADAgent-Setup-<버전>.exe`(Nanum Space Co., Ltd. 서명)를 실행한다. 관리자 권한은 필요 없다.
 
-```bat
-scripts\build-win32.cmd                 rem 32-bit IDE용
-scripts\build-win64.cmd                 rem 64-bit IDE용 (RAD Studio 13)
-scripts\build-win32.cmd -Version 22.0   rem 특정 릴리스(예: 11)
-```
+1. RAD Studio를 모두 닫는다. 켜져 있으면 설치 프로그램이 닫으라고 한다.
+2. 이 PC에 설치된 RAD Studio 중 설치 파일에 들어 있는 IDE가 목록에 나온다(13은 32비트·64비트 IDE 따로). RADAgent를 넣을 IDE를 고른다.
+3. 파일은 `%LOCALAPPDATA%\Programs\RADAgent\<BDS 버전>\<Win32|Win64>\`에 들어가고, 그 IDE의 `Known Packages`(64비트 IDE는 `Known Packages x64`)에 등록된다. 같은 이름의 다른 RADAgent 등록은 지운다(두 개는 함께 로드되지 않는다).
+4. omp를 찾지 못하면 마지막 화면에서 omp 설치 페이지를 열 수 있다. WebView2 런타임이 없을 때도 마찬가지다.
+5. IDE를 켜고 Tools 또는 View → RADAgent 로 창을 연다.
+
+제거는 Windows 설정 → 앱에서 RADAgent를 고른다. 등록과 파일을 지우고, RADAgent 설정과 데이터(IDE 설정, `/btw` 메모, 받은 clangd, 채팅 브라우저 데이터)까지 지울지 묻는다.
+
+소스에서 직접 빌드해 설치하는 방법과 설치 파일을 만드는 방법은 [docs/install.md](docs/install.md)에 있다.
 
 | RAD Studio | BDS | 32-bit IDE BPL | 64-bit IDE BPL |
 | --- | --- | --- | --- |
-| 10.4 Sydney | 21.0 | `Bpl\RADAgent270.bpl` | 없음 |
-| 11 Alexandria | 22.0 | `Bpl\RADAgent280.bpl` | 없음 |
-| 12 Athens | 23.0 | `Bpl\RADAgent290.bpl` | 없음 |
-| 13 Florence | 37.0 | `Bpl\RADAgent370.bpl` | `Bpl\Win64\RADAgent370.bpl` |
-
-`Bpl`은 `$(BDSCOMMONDIR)\Bpl`이다. IDE를 켜고 Component → Install Packages → Add 에서 그 IDE와 같은 비트의 BPL만 고른다. 한 BPL을 두 IDE에 등록하지 않는다. 자세한 절차는 [docs/install.md](docs/install.md)다.
+| 10.4 Sydney | 21.0 | `RADAgent270.bpl` | 없음 |
+| 11 Alexandria | 22.0 | `RADAgent280.bpl` | 없음 |
+| 12 Athens | 23.0 | `RADAgent290.bpl` | 없음 |
+| 13 Florence | 37.0 | `RADAgent370.bpl` | `RADAgent370.bpl`(Win64) |
 
 ## 기능
 
@@ -116,7 +118,9 @@ omp 버전이 바뀌면 처음 시작할 때 모델을 부르지 않는 호환�
 ## 개발
 
 - 구조: [DESIGN.md](DESIGN.md). 규칙: [AGENTS.md](AGENTS.md).
+- 빌드: `scripts\build-win32.cmd`, `scripts\build-win64.cmd` (`-Version <ver>`로 릴리스 선택).
 - 시험: `scripts\build-tests.cmd [-Version <ver>]`. 설치된 omp로 호환성 검사와 핸드셰이크까지 한다.
+- 설치 파일: `scripts\package.ps1`(서명 포함). [docs/install.md](docs/install.md)의 "설치 파일 만들기".
 - 시험 프로젝트: `scripts\prepare-smoke.cmd`(Delphi VCL), `scripts\prepare-smoke-cpp.cmd`(C++Builder).
 
 ## 고지

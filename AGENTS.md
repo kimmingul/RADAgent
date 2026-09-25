@@ -94,6 +94,13 @@ RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp이고 검
 - 설치 경로·레지스트리 키·패키지 이름을 코드에 박지 않는다. 설정은 `GetBaseRegistryKey`, BDS는 `%BDS%`에서 읽는다.
 - 빌드 스크립트는 `-Version 22.0`처럼 릴리스를 고를 수 있다(`scripts\bds.ps1`).
 
+## 배포
+
+- 설치 파일은 `scripts\package.ps1`(Inno Setup `installer\RADAgent.iss`)로만 만든다. BPL, 설치 파일, 제거 프로그램은 모두 Nanum Space 인증서로 서명하고 타임스탬프를 붙인다.
+- 토큰 PIN, 인증서, 개인 키를 저장소·스크립트·로그에 넣지 않는다. PIN은 자격 증명 관리자(`set-signing-pin.ps1`)에만 있다.
+- 설치는 사용자 단위(HKCU, 관리자 권한 없음)다. omp, DelphiLSP, designide, clangd, WebView2 런타임은 담지 않는다.
+- 배포물에 들어가는 제3자 구성 요소는 `installer\THIRD-PARTY-NOTICES.txt`에 적는다.
+
 ## 검증
 
 - 패키지 변경 후 Win32와 Win64를 각각 빌드한다. 한 비트만 확인하고 끝내지 않는다.

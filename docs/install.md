@@ -53,3 +53,32 @@ Win32 BPL을 이 대화상자에 넣지 않는다.
 Win64 BPL을 이 대화상자에 넣지 않는다.
 
 디버그 호스트는 그 BPL과 같은 비트의 `bds.exe`이고, 파라미터는 `-pDelphi`다.
+
+## 설치 파일 만들기
+
+`scripts\package.ps1`이 설치 파일 `dist\RADAgent-Setup-<버전>.exe`를 만든다. RAD Studio를 모두 닫고 실행한다.
+
+```powershell
+scripts\package.ps1                  # 이 PC에 설치된 지원 릴리스 전부, 서명
+scripts\package.ps1 -Versions 37.0   # RAD Studio 13만
+scripts\package.ps1 -NoSign          # 서명 없는 시험용
+```
+
+하는 일:
+
+1. 릴리스마다 Win32(64-bit IDE가 있으면 Win64도)를 `build.ps1`로 빌드한다. 구버전 BPL은 그 릴리스가 설치된 PC에서만 만들 수 있다.
+2. `artifacts\package\payload\<BDS 버전>\<Win32|Win64>\`에 BPL, `RADAgent\chat\`, 그 비트의 `WebView2Loader.dll`(Microsoft 서명 확인)을 모은다.
+3. BPL에 Nanum Space 인증서로 서명하고 타임스탬프를 붙인다(SHA-256, GlobalSign RFC 3161).
+4. Inno Setup 6(`installer\RADAgent.iss`)으로 설치 파일을 만들고, 설치 파일과 제거 프로그램에도 같은 인증서로 서명한다. 서명과 타임스탬프를 확인한 뒤 SHA-256을 출력한다.
+
+버전은 `src\RADAgent.dproj`의 버전 정보(`VerInfo_*`)다. 회사 이름과 저작권도 거기 있다.
+
+### 서명 준비 (이 PC에 한 번)
+
+- Nanum Space EV 코드 서명 인증서가 든 SafeNet USB 토큰을 꽂는다. SafeNet Authentication Client가 인증서를 `CurrentUser\My`에 둔다(지문 `3CE49DE1124F325082FA90BDE4944756D1626251`).
+- `scripts\release\set-signing-pin.ps1`: 토큰 PIN을 Windows 자격 증명 관리자(`RADAgent.CodeSign.TokenPin`, 현재 사용자)에 넣고 바로 확인한다. PIN은 명령줄·파일·로그에 남지 않는다.
+- `scripts\release\enable-sac-single-logon.ps1`: SafeNet "Single Logon"을 켜 로그온 세션마다 PIN을 한 번만 쓰게 한다(관리자 권한, 로그오프 후 적용).
+- Windows SDK의 `signtool.exe`, Inno Setup 6(`winget install JRSoftware.InnoSetup`).
+
+PIN이 틀려 토큰 잠금 해제가 실패하면 한 시간 동안 다시 시도하지 않는다(토큰 PIN 재시도 횟수 보호). PIN을 확인한 뒤 `set-signing-pin.ps1`을 다시 실행한다.
+

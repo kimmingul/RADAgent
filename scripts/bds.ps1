@@ -1,6 +1,7 @@
 # Finds the RAD Studio to build with. Dot-source it after setting $Version ('' = %BDS%, else the
 # newest installed release). Sets $Version, $bds (root folder), $suffix (package suffix) and
 # $rsvars. Supported: 21.0 = 10.4 Sydney, 22.0 = 11 Alexandria, 23.0 = 12 Athens, 37.0 = 13.
+# With $BdsFunctionsOnly = $true it only defines the helpers (RootOf, InstalledBdsVersions).
 $suffixes = @{ '21.0' = '270'; '22.0' = '280'; '23.0' = '290'; '37.0' = '370' }
 $key = 'HKLM:\SOFTWARE\WOW6432Node\Embarcadero\BDS'
 
@@ -15,6 +16,15 @@ function RootOf([string]$Ver) {
   return ''
 }
 
+# Supported releases installed on this PC, oldest first.
+function InstalledBdsVersions {
+  return @(Get-ChildItem -Path $key -ErrorAction SilentlyContinue |
+    Where-Object { $suffixes.ContainsKey($_.PSChildName) -and (RootOf $_.PSChildName) } |
+    Sort-Object { [double]$_.PSChildName } | ForEach-Object { $_.PSChildName })
+}
+
+if (Get-Variable -Name BdsFunctionsOnly -ValueOnly -ErrorAction SilentlyContinue) { return }
+
 $bds = ''
 if ($Version) {
   $bds = RootOf $Version
@@ -23,11 +33,9 @@ if ($Version) {
   $bds = $env:BDS.TrimEnd('\')
   $Version = Split-Path -Leaf $bds
 } else {
-  $installed = @(Get-ChildItem -Path $key -ErrorAction SilentlyContinue |
-    Where-Object { $suffixes.ContainsKey($_.PSChildName) -and (RootOf $_.PSChildName) } |
-    Sort-Object { [double]$_.PSChildName })
+  $installed = @(InstalledBdsVersions)
   if ($installed.Count -eq 0) { Fail 'No supported RAD Studio found (10.4 Sydney or later).' }
-  $Version = $installed[-1].PSChildName
+  $Version = $installed[-1]
   $bds = RootOf $Version
 }
 if (-not $suffixes.ContainsKey($Version)) {

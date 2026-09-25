@@ -45,7 +45,7 @@
     <SanitizedProjectName>RADAgent</SanitizedProjectName>
     <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
     <VerInfo_MajorVer>1</VerInfo_MajorVer>
-    <VerInfo_Keys>CompanyName=;FileDescription=RADAgent — an agentic coding assistant for Delphi, powered by oh-my-pi;FileVersion=1.0.0.0;InternalName=RADAgent;LegalCopyright=;LegalTrademarks=;OriginalFilename=RADAgent.bpl;ProductName=RADAgent;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+    <VerInfo_Keys>CompanyName=Nanum Space Co., Ltd.;FileDescription=RADAgent — an agentic coding assistant for Delphi, powered by oh-my-pi;FileVersion=1.0.0.0;InternalName=RADAgent;LegalCopyright=Copyright (C) 2026 Nanum Space Co., Ltd.;LegalTrademarks=;OriginalFilename=RADAgent.bpl;ProductName=RADAgent;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
     <Debugger_Parameters>-pDelphi</Debugger_Parameters>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)'=='Win32'">
