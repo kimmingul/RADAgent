@@ -25,7 +25,7 @@ implementation
 
 uses
   System.SysUtils, System.StrUtils, System.JSON, RADAgent.GitRepo, RADAgent.ChatSession, RADAgent.IdeContext,
-  RADAgent.IdeFiles, RADAgent.AskDialog, RADAgent.ChatCommand, RADAgent.RpcJson, RADAgent.LegacyNames,
+  RADAgent.IdeFiles, RADAgent.AskDialog, RADAgent.ChatCommand, RADAgent.RpcJson,
   RADAgent.Lang;
 
 var
@@ -53,11 +53,7 @@ begin
     Exit;
   end;
   if GitRoot(ProjectDir) <> '' then
-  begin
-    { Checkpoints made while RADAgent was called DelphiAgent. }
-    RenameRefs(GitRoot(ProjectDir), LegacyRefs, 'refs/radagent/');
     Exit;
-  end;
   if InitRepo(ProjectDir, Problem) then
     ChatSession.Notice('info', Tr('chatcheckpoints.initRepo'))
   else

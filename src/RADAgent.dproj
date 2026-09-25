@@ -77,7 +77,6 @@
     <DCCReference Include="vcl.dcp"/>
     <DCCReference Include="designide.dcp"/>
     <DCCReference Include="RADAgent.Options.pas"/>
-    <DCCReference Include="RADAgent.LegacyNames.pas"/>
     <DCCReference Include="RADAgent.ChatStop.pas"/>
     <DCCReference Include="RADAgent.BrandIcons.pas"/>
     <DCCReference Include="RADAgent.BrandTable.pas"/>

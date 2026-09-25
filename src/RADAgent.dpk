@@ -15,7 +15,6 @@ requires
 
 contains
   RADAgent.Options in 'RADAgent.Options.pas',
-  RADAgent.LegacyNames in 'RADAgent.LegacyNames.pas',
   RADAgent.ChatStop in 'RADAgent.ChatStop.pas',
   RADAgent.BrandIcons in 'RADAgent.BrandIcons.pas',
   RADAgent.BrandTable in 'RADAgent.BrandTable.pas',

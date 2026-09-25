@@ -68,7 +68,6 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | ChatTheme | IDE 테마 색(IOTAIDEThemingServices), 고대비·글자 크기 반영, 테마 변경 통지. |
 | AgentSettings | RADAgent 자체 설정(IDE 레지스트리 키): 채팅 표시 항목, 글자 크기, 고대비, 화면 언어, omp 경로·추가 인자. |
 | Lang | 화면 문자열: English, 日本語, Deutsch, Français, 한국어. `src\lang\<코드>.json`을 `RADAgentResources.rc`로 RCDATA에 넣고 `Tr`/`TrF`로 부른다. 없는 키는 영어, 그다음 키 이름. `<키>.one`은 첫 값이 1일 때의 문구. 채팅 페이지에는 `page.*` 키를 `strings` 메시지로 보내고 페이지는 `T()`와 `data-i18n`으로 쓴다. 처음 값은 Windows 표시 언어(없으면 영어). omp가 읽는 글은 번역하지 않고 영어로 둔다. ToolsAPI 없음. |
-| LegacyNames | 옛 이름 DelphiAgent로 남은 설정을 한 번 옮긴다: IDE 레지스트리 키, `.omp\delphiagent.yml`, `/btw` 메모 폴더, `refs/delphiagent/` 체크포인트. ToolsAPI 없음. |
 | SettingsDialog / SettingsUi / SettingsAccount / SettingsProject | 설정 창. 채팅 표시, 계정·모델(RPC로 바로 적용), 역할별 모델·확장·고급(프로젝트 omp 설정). |
 | OmpSettings / OmpCatalog / OmpCli | 프로젝트 omp 설정 파일 `<프로젝트>\.omp\radagent.yml`(`--config`로 전달)과 omp가 읽는 스킬·확장·하위 에이전트·MCP 목록. `omp config list`를 읽기만 하고 전역 설정은 쓰지 않는다. |
 | EditorContext | 활성 파일, 선택 영역, 저장 안 한 파일 수, 링크로 파일 열기. |
@@ -138,7 +137,4 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 - DelphiLSP를 IDE 프로세스에 attach
 - DelphiLSP.exe 또는 designide 재배포
 - omp 에이전트 루프의 Delphi 재구현
-
-## 진행 메모
-
-채팅과 `omp --mode rpc`까지는 동작한다. 이후에도 터미널 임베드는 하지 않는다. IDE에만 있는 기능은 host-tool로 열고, omp에 이미 있는 명령은 채팅창이 기존 RPC로 보낸다. 디버거는 읽기 도구와 승인 후 실행 제어가 있다. 폼 디자이너는 읽기와 승인 후 편집(속성, 추가, 삭제, 이름, 이벤트)이 있다. 이어서 볼 위치는 `docs/continue.md`다.
+- 터미널 임베드. IDE에만 있는 기능은 host-tool로 열고, omp에 이미 있는 명령은 채팅창이 RPC로 보낸다.

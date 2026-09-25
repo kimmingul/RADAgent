@@ -45,12 +45,11 @@ function ExistingOverlay(const ProjectDir: string): string;
 implementation
 
 uses
-  System.SysUtils, System.Classes, System.IOUtils, RADAgent.OmpCli, RADAgent.LegacyNames;
+  System.SysUtils, System.Classes, System.IOUtils, RADAgent.OmpCli;
 
 function OverlayPath(const ProjectDir: string): string;
 begin
   Result := TPath.Combine(TPath.Combine(ProjectDir, '.omp'), 'radagent.yml');
-  MigrateProjectOverlay(ProjectDir, Result);
 end;
 
 function ExistingOverlay(const ProjectDir: string): string;

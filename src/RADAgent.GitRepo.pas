@@ -30,8 +30,6 @@ function ListCheckpoints(const Root: string): TArray<TCheckpoint>;
 { Makes the working tree equal to Commit: writes its files and deletes the files that exist in
   Current (a checkpoint of the tree as it is now) but not in Commit. }
 function RestoreCheckpoint(const Root, Commit, Current: string; out Problem: string): Boolean;
-{ Moves every ref under OldPrefix to NewPrefix (same suffix). }
-procedure RenameRefs(const Root, OldPrefix, NewPrefix: string);
 { New branch Name at Commit, checked out without touching the (already restored) files. }
 function BranchAtCheckpoint(const Root, Commit, Name: string; out Problem: string): Boolean;
 
@@ -225,25 +223,6 @@ begin
     Git(Root, 'checkout-index -a -f', Output, Index);
   if not Result then
     Problem := Output;
-end;
-
-procedure RenameRefs(const Root, OldPrefix, NewPrefix: string);
-var
-  Output, Line, Ref, Sha, Ignored: string;
-  Parts: TArray<string>;
-begin
-  if not Git(Root, 'for-each-ref --format="%(refname) %(objectname)" ' + OldPrefix, Output) then
-    Exit;
-  for Line in Output.Split([#10], TStringSplitOptions.ExcludeEmpty) do
-  begin
-    Parts := Line.Trim.Split([' ']);
-    if Length(Parts) <> 2 then
-      Continue;
-    Ref := Parts[0];
-    Sha := Parts[1];
-    if Git(Root, 'update-ref ' + NewPrefix + Copy(Ref, Length(OldPrefix) + 1, MaxInt) + ' ' + Sha, Ignored) then
-      Git(Root, 'update-ref -d ' + Ref, Ignored);
-  end;
 end;
 
 function BranchAtCheckpoint(const Root, Commit, Name: string; out Problem: string): Boolean;

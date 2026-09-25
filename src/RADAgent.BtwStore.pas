@@ -43,8 +43,7 @@ function TurnToJson(const Turn: TBtwTurn): TJSONObject;
 implementation
 
 uses
-  System.SysUtils, System.IOUtils, System.Generics.Collections, System.Generics.Defaults,
-  RADAgent.LegacyNames;
+  System.SysUtils, System.IOUtils, System.Generics.Collections, System.Generics.Defaults;
 
 function ProjectKey(const ProjectDir: string): string;
 var
@@ -61,7 +60,6 @@ end;
 function BtwRoot: string;
 begin
   Result := IncludeTrailingPathDelimiter(GetEnvironmentVariable('LOCALAPPDATA')) + 'RADAgent\btw';
-  MigrateBtwNotes(Result);
 end;
 
 function BtwDir(const ProjectDir: string): string;
@@ -119,9 +117,7 @@ begin
   Topic := Default(TBtwTopic);
   Topic.Id := Obj.GetValue<string>('id', '');
   Topic.Created := Obj.GetValue<string>('created', '');
-  { Notes written under the old DelphiAgent folder name point there. }
-  Topic.SessionFile := StringReplace(Obj.GetValue<string>('session', ''), '\DelphiAgent\btw\',
-    '\RADAgent\btw\', [rfIgnoreCase]);
+  Topic.SessionFile := Obj.GetValue<string>('session', '');
   Topic.MainSession := Obj.GetValue<string>('mainSession', '');
   Topic.MainTitle := Obj.GetValue<string>('mainTitle', '');
   if Obj.GetValue('turns') is TJSONArray then

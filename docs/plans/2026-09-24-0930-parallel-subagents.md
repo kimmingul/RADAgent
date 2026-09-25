@@ -115,7 +115,7 @@ omp 메인 세션이 일을 나눠 하위 에이전트 여러 개에 맡기고, 
 - `src/RADAgent.OmpLaunch.pas`: 안내문
 - `src/chat/activity.js`, `src/chat/tools.js`: 에이전트별 파일 표시
 - `tests/`: 버전 충돌, 경로 탈출, 소유권 거절 단위 시험, 하위 에이전트 `ide://` 실시험
-- `README.md`, `DESIGN.md`, `docs/continue.md`
+- `README.md`, `DESIGN.md`
 
 ## 위험
 

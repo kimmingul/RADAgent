@@ -54,22 +54,14 @@ implementation
 
 uses
   System.SysUtils, System.Variants, System.Win.Registry, System.IOUtils, System.JSON, Winapi.Windows, ToolsAPI,
-  RADAgent.Options, RADAgent.LegacyNames, RADAgent.Lang;
-
-var
-  GMigrated: Boolean;
+  RADAgent.Options, RADAgent.Lang;
 
 function OptionKey: string;
 var
   Services: IOTAServices;
 begin
   if Supports(BorlandIDEServices, IOTAServices, Services) then
-  begin
-    Result := Services.GetBaseRegistryKey + '\RADAgent';
-    if not GMigrated then
-      MigrateRegistryKey(Services.GetBaseRegistryKey, Result);
-    GMigrated := True;
-  end
+    Result := Services.GetBaseRegistryKey + '\RADAgent'
   else
     Result := 'Software\RADAgent';
 end;

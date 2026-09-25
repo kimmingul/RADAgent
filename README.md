@@ -1,204 +1,127 @@
-﻿# RADAgent
+# RADAgent
 
 **RADAgent — an agentic coding assistant for Delphi, powered by oh-my-pi**
 
-RAD Studio 13.2 IDE 안의 design-time BPL이다. 에이전트 루프는 설치된 omp(검증 버전 18.2.11)이고, Delphi로 다시 만들지 않는다. 도킹 창은 Tools 또는 View 메뉴의 RADAgent다. 이어서 할 일은 [docs/continue.md](docs/continue.md)에 적어 두었다.
-
-## 언어
-
-화면 언어는 English, 日本語, Deutsch, Français(RAD Studio가 제공하는 언어)와 한국어다. 처음 값은 Windows 표시 언어이고, 그 언어가 없으면 영어다. 설정 → 채팅 표시 → Language에서 바꾸면 채팅 창이 바로 그 언어로 다시 그려진다. 문자열은 `src\lang\<코드>.json`(RCDATA로 BPL에 들어감)에 있고, 코드에서는 `RADAgent.Lang`의 `Tr`/`TrF`, 채팅 페이지에서는 `T()`와 `data-i18n`으로 부른다. 번역이 없는 키는 영어로 보인다.
-
-## DelphiAgent에서 옮기기
-
-이전 이름은 DelphiAgent였다. 새 BPL(`RADAgent370.bpl`)을 등록하고 옛 `DelphiAgent370.bpl` 등록은 지운다(두 IDE 모두). 처음 실행할 때 다음을 새 이름으로 옮긴다: IDE 레지스트리 설정(`...\DelphiAgent` → `...\RADAgent`), 프로젝트 `.omp\delphiagent.yml` → `.omp\radagent.yml`, `/btw` 메모(`%LOCALAPPDATA%\DelphiAgent\btw`), git 체크포인트 ref(`refs/delphiagent/` → `refs/radagent/`).
+RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키지(BPL)로 설치하고, 에이전트 루프는 사용자가 설치한 [oh-my-pi](https://github.com/can1357/oh-my-pi)(omp)가 맡는다. RADAgent는 omp를 `omp --mode rpc` 자식 프로세스로 띄우고, 채팅 화면과 IDE 기능(에디터, 폼 디자이너, 컴파일, 디버거, 메시지 뷰)을 omp에 이어 준다. 창은 Tools 또는 View 메뉴의 RADAgent다.
 
 ## 요구사항
 
-- Windows. 기준은 RAD Studio 13.2 (BDS 37.0) 32-bit IDE와 64-bit IDE다.
-- 구버전: RAD Studio 10.4 Sydney(21.0), 11 Alexandria(22.0), 12 Athens(23.0)도 빌드되게 맞췄다. 이 PC에는 13.2만 있어 구버전은 아직 빌드·실행 확인을 하지 않았다(아래 "구버전").
-- `%BDS%`: 설치된 RAD Studio 폴더(예 `C:\Program Files (x86)\Embarcadero\Studio\37.0`). 빌드 스크립트는 레지스트리에서 찾는다.
-- omp가 쓸 DelphiLSP는 `%BDS%\bin64\DelphiLSP.exe`, 그 파일이 없는 릴리스(64-bit IDE 이전)에서는 `%BDS%\bin\DelphiLSP.exe`다.
-- `omp`: 검증 버전 18.2.11. PATH에 없으면 `%LOCALAPPDATA%\omp\omp.exe`. 진입점: `omp --mode rpc`. 다른 버전은 아래 "omp 업데이트"대로 확인한다.
-- Edge WebView2 런타임(Windows 10/11에 보통 설치됨). 없으면 채팅은 글자 화면으로 동작한다.
+- Windows, RAD Studio 13.2(BDS 37.0) 32-bit 또는 64-bit IDE. 10.4 Sydney, 11 Alexandria, 12 Athens도 빌드되게 맞춰 두었다(아래 "한계").
+- omp. 검증 버전 18.2.11. PATH에 없으면 `%LOCALAPPDATA%\omp\omp.exe`를 쓴다. 다른 경로는 설정에서 지정한다.
+- Edge WebView2 런타임(Windows 10/11에 보통 들어 있다). 없으면 채팅은 글자 화면으로 동작한다.
+- git(체크포인트용). 없으면 체크포인트만 꺼진다.
+- 선택: C++Builder 프로젝트의 코드 탐색에 [clangd](https://github.com/clangd/clangd/releases). 설정 창에서 받아 설치할 수 있다.
 
-DelphiLSP.exe는 IDE 설치본만 사용한다. 이 저장소에 복사하지 않는다. BPL은 `DelphiLSP.exe`를 실행하지 않는다. omp가 `templates/omp.lsp.json`을 활성 프로젝트의 `.omp/lsp.json`으로 펼쳐 별도 프로세스로 띄운다. 절차는 [docs/lsp-setup.md](docs/lsp-setup.md)다.
+## 설치
 
-## BPL 설치 위치
+IDE를 종료한 뒤 빌드한다. `-Version`이 없으면 `%BDS%`, 그다음 설치된 가장 새 릴리스를 쓴다.
 
-한 BPL을 양쪽 IDE에 등록하지 않는다. 클릭 경로는 [docs/install.md](docs/install.md)와 같다. 파일 이름의 숫자는 릴리스마다 다르다(`{$LIBSUFFIX AUTO}`).
+```bat
+scripts\build-win32.cmd                 rem 32-bit IDE용
+scripts\build-win64.cmd                 rem 64-bit IDE용 (RAD Studio 13)
+scripts\build-win32.cmd -Version 22.0   rem 특정 릴리스(예: 11)
+```
 
-| RAD Studio | BDS | Win32 BPL | Win64 BPL (64-bit IDE) |
+| RAD Studio | BDS | 32-bit IDE BPL | 64-bit IDE BPL |
 | --- | --- | --- | --- |
 | 10.4 Sydney | 21.0 | `Bpl\RADAgent270.bpl` | 없음 |
 | 11 Alexandria | 22.0 | `Bpl\RADAgent280.bpl` | 없음 |
 | 12 Athens | 23.0 | `Bpl\RADAgent290.bpl` | 없음 |
 | 13 Florence | 37.0 | `Bpl\RADAgent370.bpl` | `Bpl\Win64\RADAgent370.bpl` |
 
-`Bpl`은 `$(BDSCOMMONDIR)\Bpl`이다. Win32 BPL은 `bin\bds.exe`의 `Known Packages`, Win64 BPL은 `bin64\bds.exe`의 `Known Packages x64`에 들어간다.
+`Bpl`은 `$(BDSCOMMONDIR)\Bpl`이다. IDE를 켜고 Component → Install Packages → Add 에서 그 IDE와 같은 비트의 BPL만 고른다. 한 BPL을 두 IDE에 등록하지 않는다. 자세한 절차는 [docs/install.md](docs/install.md)다.
 
-### 빌드
+## 기능
 
-IDE가 켜져 있으면 종료한 뒤 실행한다. `-Version`이 없으면 `%BDS%`, 그다음 설치된 가장 새 릴리스를 쓴다.
+### 채팅
 
-```bat
-scripts\build-win32.cmd                 rem 32-bit IDE용
-scripts\build-win64.cmd                 rem 64-bit IDE용 (13만, 그 외 릴리스는 건너뜀)
-scripts\build-win32.cmd -Version 22.0   rem RAD Studio 11용
-scripts\build-tests.cmd -Version 22.0   rem 그 릴리스 컴파일러로 시험
-```
+- 모델 답은 마크다운(표, 코드 블록과 Pascal/C++ 강조, 목록, 링크)으로 보인다. 코드 블록은 복사할 수 있고, `MainForm.pas(37)` 같은 파일 위치를 누르면 에디터가 그 줄을 연다.
+- 도구 호출은 `도구 N개 사용 ›` 한 줄로 묶이고, 펼치면 도구별 입력과 결과가 보인다. 생각, 도구 입력, 실행 중 출력, 하위 에이전트, 작업 목록, 재시도·모델 대체도 보이며 설정에서 항목마다 끌 수 있다.
+- 작업 중 표시는 답하는 모델을 만든 회사의 로고다. 답한 모델이 바뀌면 답 위에 모델 이름이 붙는다.
+- 위 막대: 세션 제목(누르면 세션 목록), 새 세션, HTML 내보내기, `BTW` 메모, 설정.
+- 입력 상자: Enter 보내기, Shift+Enter 줄바꿈, ↑ 이전 문장, `/` 명령 목록, `@` 프로젝트 파일. 위에 활성 파일, 선택 영역(누르면 프롬프트에 붙음), 저장 안 한 파일 수가 보인다.
+- 입력 아래 줄: `＋` 메뉴, 승인 방식, 모델(검색 가능한 목록), 생각 수준, 컨텍스트 사용량 원, 연결 점.
+- omp가 작업하는 중에도 입력할 수 있다. Enter는 진행 중인 턴에 끼워 넣고(다음 단계에서 읽음), Ctrl+Enter는 턴이 끝난 뒤 보낸다. 입력이 비어 있으면 단추와 Esc는 중지다. 중지는 abort를 보내고, 5초 안에 끝나지 않거나 한 번 더 누르면 omp를 다시 시작해 같은 대화로 잇는다.
+- `!명령`은 omp 셸에서 실행하고 출력이 채팅과 컨텍스트에 들어간다.
+- 자동 재시도를 기다리는 알림에는 `재시도 취소`가 있다. 하위 에이전트 줄을 누르면 그 에이전트의 대화가 보인다.
+- 컨텍스트 원을 누르면 사용량 패널이 뜬다: 컨텍스트 윈도우 사용률과 토큰, 이 세션의 입력·출력·캐시 토큰과 비용, 지금 공급자의 플랜 한도(5시간·주간·모델별 사용률과 재설정 시각). 제목 줄을 누르면 `/usage` 전체 보고서.
+- 승인이 필요하거나 답이 끝났을 때 IDE가 뒤에 있으면 작업 표시줄 단추가 깜빡인다. 채팅 창을 닫거나 디버그 레이아웃으로 바뀌어도 대화는 그대로다.
+- 색은 IDE 테마를 따른다. 화면 언어는 English, 日本語, Deutsch, Français, 한국어(처음 값은 Windows 표시 언어).
 
-### 설치
+### 명령
 
-1. 그 IDE(`bin\bds.exe` 또는 13의 `bin64\bds.exe`)를 실행한다.
-2. Component → Install Packages → Add 에서 위 표의 같은 비트 BPL만 고른다.
-3. Tools 또는 View → RADAgent 로 도킹 Chat을 연다.
+- omp가 제공하는 명령(`/usage`, `/context`, `/compact`, `/handoff`, `/mcp`, `/memory`, `/todo`, `/skill:*` 등)은 omp가 실행하고 결과가 채팅에 보인다.
+- `/model`, `/fast`, `/thinking`은 선택 창을, `/new`는 확인 창을 띄운다.
+- omp 터미널 화면에만 있는 명령은 RADAgent가 처리한다:
+  - `/clear`: 컨텍스트를 비우고 같은 이름으로 이어 간다. 이전 부분은 세션 목록에 남는다.
+  - `/delete`: 확인 후 이 세션 파일을 지우고 새 세션.
+  - `/resume`: 세션 목록. `/tree`: 세션 트리. `/branch`(`/rewind`), `/fork`: 고른 내 메시지 직전에서 대화를 갈라 그 메시지를 입력칸에 되돌린다.
+  - `/copy`(마지막 답), `/copy code`(그 마지막 코드 블록), `/login [provider]`, `/restart`, `/settings`, `/extensions`, `/agents`, `/plan`, `/hotkeys`, `/hub`, `/queue <메시지>`.
+- `/btw <질문>`: 곁가지 질문. 지금 대화를 복제한 별도 omp가 도구 없이 답하므로 작업 중에도 되고 본 대화에는 들어가지 않는다. 주제별로 이어 묻기, 검색, 삭제가 되는 메모 창에 남는다.
 
-### 구버전
+### IDE 연동
 
-- 지원 하한은 10.4 Sydney다. 도킹 창 API(`INTAServices270`)가 10.4에서 생겼다. 10.3 이하는 지원하지 않는다.
-- 10.4는 View 메뉴 항목에 아이콘이 없다(아이콘 API `INTAServices280`이 11부터).
-- 11·12에는 64-bit IDE가 없어 Win32 BPL만 쓴다.
-- 채팅의 WebView2는 rtl `Winapi.WebView2`가 아니라 RADAgent가 선언한 인터페이스(`RADAgent.WebView2Api`)로 띄워 릴리스별 rtl 차이를 타지 않는다.
-- C++Builder: 컴파일러 `bcc64x`(Win64x 플랫폼)는 12.1부터다. 없으면 그 플랫폼의 C++ 오류 읽기만 꺼진다.
-- 13.2에서 맞춘 IDE 동작(빈 이벤트 핸들러, FMX 디자이너 캡처, 도킹 복원, 테마 색)은 구버전에서 다시 확인해야 한다.
+- 디스크가 기준이다. 보내기 직전과 IDE 변경 직후에 저장 안 한 파일을 저장한다. omp는 자기 도구로 디스크 파일을 고치고, IDE가 바뀐 파일을 다시 읽는다. 그 사이 사용자가 같은 파일을 고치고 있었으면 덮어쓰지 않고 충돌을 알린다.
+- 프로젝트를 보고 omp에 줄 도구와 안내(언어, 프레임워크, 폼 목록, 작업 규칙)를 정한다. 폼이 있을 때만 폼 도구를 준다.
+- 코드 탐색: Delphi는 IDE가 만든 `<프로젝트>.delphilsp.json`이 있으면 DelphiLSP를 omp에 연결한다([docs/lsp-setup.md](docs/lsp-setup.md)). 없으면 Generate LSP Config를 켜라고 알린다.
+- 컴파일: `rad.compile`로 활성 프로젝트를 빌드하고 오류는 메시지 뷰에 올린다. `rad.set_build_config`로 구성·플랫폼을 바꾼다.
+- 폼 디자이너: 컴포넌트 목록·속성 읽기, 폼 스크린샷(모델이 레이아웃을 눈으로 확인), 속성 변경, 컴포넌트 추가·삭제·이름 변경, 이벤트 연결, 여러 변경을 묶은 `rad.form_apply`. 여러 폼의 속성 일괄 변경은 `rad.form_text_edit`(속성 줄만, 구문·속성 이름 검사, 승인 한 번)로 하며, 설정에서 "디자이너만"으로 끌 수 있다.
+- 새 모듈: `rad.new_module`로 폼·프레임·데이터 모듈·유닛을 추가한다.
+- 디버거: 상태, 호출 스택, 부작용 없는 식 평가, 중단점 목록. 승인 후 실행·계속, 스텝, 일시 정지, 종료, 중단점 추가.
+- 에디터 오른쪽 클릭 메뉴 `RADAgent: 선택 영역 설명/고치기`, 메시지 창 오른쪽 클릭 메뉴 `RADAgent: 빌드 오류 고치기`.
 
-## 파일 저장과 git 체크포인트
+### 승인과 체크포인트
 
-일반적인 agentic coding처럼 디스크가 기준이다.
+- 승인 방식 하나로 omp 도구와 IDE 변경을 함께 정한다: 항상 묻기(변경마다), 쓰기 허용(턴마다 한 번), 권한 무시(묻지 않음, 처음 값). 승인은 채팅 안의 카드(줄 diff와 승인/거부)로 묻는다.
+- 계획: 아무것도 바꾸지 않고 `<프로젝트>\docs\plans\`에 계획서를 쓴다. `이 계획대로 진행`을 누르면 이전 방식으로 돌아가 구현을 시작한다.
+- 프로젝트 폴더가 git 저장소가 아니면 처음에 `git init`, Delphi `.gitignore`, 첫 커밋을 만든다.
+- 메시지마다 보내기 직전 상태를 체크포인트(`refs/radagent/cp/`)로 남긴다. 사용자의 브랜치·index·HEAD는 바뀌지 않는다. 내 메시지에서 `↶ 여기로 되돌리기`(파일과 대화를 그 메시지 전으로) 또는 `⑂ 여기서 브랜치`(여기에 git 브랜치까지)를 고를 수 있고, 되돌리기 전 상태도 남는다.
 
-- 메시지를 보내기 직전과 승인된 `rad.*` 변경(폼, 모듈, 캐럿 삽입) 직후에 프로젝트의 저장 안 한 파일을 저장한다.
-- omp는 자기 read/edit/write 도구로 파일을 고치고, 도구가 끝날 때마다 IDE가 바뀐 파일을 다시 읽는다. 그 사이 사용자가 같은 파일을 고치고 있었으면 덮어쓰지 않고 채팅에 충돌을 알린다.
-- 폼(`.dfm`)과 프로젝트 파일은 omp가 텍스트로 고치지 않고 `rad.form_*`/`rad.new_module`로만 바꾼다. 폼 디자이너와 디버거는 그대로 쓴다.
-- 프로젝트 폴더가 git 저장소가 아니면 처음 omp를 시작할 때 `git init`, Delphi `.gitignore`, 첫 커밋을 만든다. git이 없으면 알리고 체크포인트만 끈다.
-- 메시지마다 보내기 직전 상태를 체크포인트 커밋으로 남긴다(`refs/radagent/cp/`). 사용자의 브랜치·index·HEAD는 바뀌지 않는다.
-- 채팅의 내 메시지에 마우스를 올리면:
-  - `↶ 여기로 되돌리기`: 파일을 그 메시지 전 상태로 되돌리고(그 뒤에 생긴 파일은 지움), omp 대화도 그 메시지 앞에서 갈라진다. 메시지는 입력칸으로 돌아온다. 되돌리기 전 상태는 `refs/radagent/before-restore/`에 남는다.
-  - `⑂ 여기서 브랜치`: 같은 되돌리기에 더해 그 체크포인트에서 `radagent/<시각>` git 브랜치를 만들어 옮겨 간다.
-- omp가 일하는 중에는 되돌리지 않는다. IDE 실행 취소(Ctrl+Z)는 디스크에서 다시 읽은 뒤에는 이어지지 않으므로 되돌리기는 체크포인트로 한다.
-- 프로젝트가 git 저장소가 되면 IDE의 Git 연동도 켜진다. Tools → Options → Version Control → Git의 실행 파일이 `git-cmd.exe`이면 IDE가 에디터 오른쪽 클릭 메뉴를 만들다 멈춘다(`git-cmd`가 `cmd /K`로 끝나지 않음). `C:\Program Files\Git\cmd\git.exe`로 지정한다.
+### `＋` 메뉴와 설정
 
-## omp 업데이트
+- `＋` 메뉴: 파일·사진 첨부(작은 사진은 이미지로 보냄), 작업 폴더 추가, MCP 커넥터 켜기/끄기, 플러그인·확장 켜기/끄기, 프로젝트 컴파일.
+- 설정 창:
+  - 채팅 표시: 보일 항목, 글자 크기, 고대비, 화면 언어.
+  - 계정·모델: 모델, 생각 수준, OAuth 로그인.
+  - 역할별 모델, 확장(스킬·확장·하위 에이전트, MCP 목록).
+  - 고급(이 프로젝트): omp 도구 승인, 기본 생각 수준, 폼 편집 방식, 자동 압축, 자동 재시도, 작업 중 메시지 처리 방식. `<프로젝트>\.omp\radagent.yml`에 저장해 omp에 넘기며 전역 omp 설정은 바꾸지 않는다.
+  - 고급(이 PC): omp 실행 파일과 추가 인자, clangd 경로와 설치, omp 호환성 검사.
 
-omp가 업데이트돼도 RADAgent가 계속 동작하도록 다음을 한다.
+### C++Builder
 
-- **자동 호환성 검사**: IDE에서 omp를 처음 시작할 때 `omp --version`이 마지막으로 통과한 버전과 다르면, 뒤에서 호환성 검사를 한 번 돌린다. 모델은 부르지 않고 세션도 저장하지 않는다. 검사 항목은 다음과 같다.
-  - RADAgent가 쓰는 명령줄 옵션
-  - RPC 시작과 프로토콜
-  - `rad.*` 도구 등록과 xd:// 장치 연결
-  - `get_state`, 명령 목록, 생각 수준 응답
-  - 세션 요청(`get_tree`, `get_branch_messages`, `get_last_assistant_text`, `get_session_stats`, `get_subagents`)
-  - `config list --json`(고급 페이지가 쓰는 설정 키), `usage --json`
+`.cbproj`(VCL, FMX)도 같은 도구를 쓴다.
 
-  모두 통과하면 그 버전을 기억한다. 검증 버전(18.2.11)과 다르면 채팅에 "통과"를 한 번 알린다. 실패하면 무엇이 깨졌는지 경고한다. 설정 → 고급 → `omp 호환성 검사`로 언제든 다시 볼 수 있다.
-- **프로토콜**: omp가 RPC v2를 제공하면 v2로 협상해 1MiB가 넘는 응답도 조각(`rpc_chunk`)으로 잃지 않고 받는다. 둘 다 없으면 이유를 보여 주고 연결하지 않는다.
-- **시작 실패 이유**: omp가 모르는 옵션 등으로 바로 끝나면, 오류 대신 omp가 stderr에 남긴 마지막 줄(예: `Error: unknown flag: --x`)을 보여 준다.
-- **omp가 혼자 끝낸 명령**: `/context` 같은 omp 내장 명령은 출력(`command_output`)을 채팅에 그대로 보여 주고, `agentInvoked: false`로 턴을 끝낸다. 작업 중 표시가 멈춰 있지 않는다.
-- **승인 문구**: omp 승인 요청은 문서화된 `Allow tool:` 제목과 선택지의 뜻(Approve/Allow/Deny/Reject…)으로 알아본다. 선택지 순서나 정확한 낱말에 기대지 않는다.
-- **개발자**: omp를 올린 뒤 `scripts\build-tests.cmd`를 돌린다. 설치된 omp로 같은 호환성 검사(`omp probe:` 줄)와 핸드셰이크 실시험을 한다.
+- C++ 디자이너는 이벤트를 연결해도 코드를 쓰지 않으므로 RADAgent가 `.h`의 선언과 `.cpp`의 본문을 쓴다.
+- 빌드가 실패하면 바뀐 `.cpp`를 활성 플랫폼 컴파일러로 다시 컴파일해 파일·줄·메시지를 돌려준다.
+- clangd가 있으면 컴파일러가 실제로 쓰는 헤더·타깃·매크로와 프로젝트 옵션으로 설정을 만들어 omp에 연결한다(정의 이동, 참조, 오류).
 
-## 첫 검증 시나리오
+### omp 업데이트 대응
 
-- 빈 IDE에서 RADAgent를 열면 상태줄 둘째 줄이 `프로젝트 없음`이다.
-- VCL 앱을 연 뒤 RADAgent를 열면 둘째 줄에 `프로젝트 <이름> · pid <번호> · <폴더>`가 보인다.
-- 채팅 창이 포커스여도 그 프로젝트 이름은 유지된다.
-- `/clear` 뒤에 일반 질문을 보내고, 컴파일 버튼을 누르면 채팅에 `컴파일 성공`이 찍힌다.
+omp 버전이 바뀌면 처음 시작할 때 모델을 부르지 않는 호환성 검사를 뒤에서 한 번 한다(명령줄 옵션, RPC 프로토콜, `rad.*` 도구 등록, 응답 필드, 설정 키, 사용량 보고). 결과는 채팅에 알리고 설정에서 다시 볼 수 있다. omp가 RPC v2를 제공하면 1MiB가 넘는 응답도 잃지 않고 받는다.
 
-컴파일 오류는 메시지 뷰에서 확인한다. 빌드 대화상자만으로 성공을 단정하지 않는다.
+## 한계
 
-## 채팅에서 쓸 수 있는 것
+- **검증 범위**: RAD Studio 13.2와 omp 18.2.11에서 확인했다. 10.4·11·12는 빌드되게 맞췄을 뿐 아직 빌드·실행 확인을 하지 않았다. 10.3 이하는 도킹 창 API가 없어 지원하지 않는다.
+- **구버전 차이**: 11·12에는 64-bit IDE가 없어 32-bit IDE만 쓴다. 10.4에서는 View 메뉴 항목에 아이콘이 없다. 64-bit DelphiLSP가 없는 릴리스에서는 32-bit `bin\DelphiLSP.exe`를 쓴다. C++ `bcc64x`(Win64x)는 12.1부터다.
+- **DelphiLSP**: 정의 이동과 진단은 되지만 참조 검색과 hover는 DelphiLSP가 거절한다. 참조는 grep으로 찾는다.
+- **clangd(C++)**: 일반 clangd는 `__property`를 몰라 VCL 속성의 정보·이동이 없고, `System.hpp`와 폼 생성자에서 늘 나는 오류가 있다(omp 안내문에 무시하라고 적는다). 참조는 열린 파일 기준이다. Win64(bcc64) 설정은 확인하지 않았다. 최종 확인은 컴파일이다.
+- **omp 터미널 전용 명령**: `/goal`, `/loop`, `/vibe`, `/tan`, `/omfg`, `/cleanse`, `/plan-review`, `/collab`, `/join`, `/leave`, `/pause`, `/live`, `/record`, `/git`, `/debug`, `/setup`, `/skills`, `/logout`, `/open`은 omp가 RPC로 제공하지 않아 쓸 수 없다고 알린다. 터미널에서 omp를 실행해 쓴다.
+- **대화 갈래**: `/tree`, `/branch`, `/fork`로 갈라지면 새 세션 파일로 이어지므로 `/tree`는 지금 세션 파일 안의 갈래만 보인다. 이 명령들은 파일을 되돌리지 않는다(파일까지는 메시지의 체크포인트).
+- **사용량 패널**: 플랜 이름은 omp가 알려 주는 공급자만 보인다(Anthropic은 공급자 이름으로 대신한다). 한도는 omp가 보고하는 공급자만 나온다.
+- **강제 중지**: 응답하지 않는 omp를 강제로 다시 시작하면 그 턴의 진행 중이던 내용은 사라진다.
+- **폼 파일**: 폼과 프로젝트 파일은 omp의 일반 편집 도구로 고치지 않는다. 바이너리 폼 파일은 텍스트 일괄 수정 대상이 아니다.
+- **IDE Git 연동**: 체크포인트 때문에 프로젝트가 git 저장소가 되면 IDE의 Git 연동도 켜진다. Tools → Options → Version Control → Git의 실행 파일이 `git-cmd.exe`면 IDE가 에디터 오른쪽 클릭 메뉴에서 멈추므로 `C:\Program Files\Git\cmd\git.exe`로 지정한다.
+- **로그**: RPC 원문은 `%TEMP%\RADAgent\rpc.log`에만 남는다.
 
-채팅 기록은 WebView2 화면이다. 모델 답은 마크다운(표, 코드 블록과 Pascal 강조, 목록, 링크)으로 보이고, 코드 블록에는 복사 버튼이 있다. `MainForm.pas(37)` 같은 파일 위치를 누르면 에디터가 그 줄을 연다. omp가 부르는 도구는 접힌 줄로 보이고, 끝나면 ✓/✗와 걸린 시간이 붙는다. 펼치면 결과가 보인다.
+## 개발
 
-상태줄 첫째 줄은 `● 연결됨 · 모델 · 컨텍스트 % · 지금 하는 일 · 경과 초`, 둘째 줄은 프로젝트, omp pid, 폴더다. 중지 버튼은 omp가 일할 때만 켜진다.
-
-입력칸은 여러 줄이다. Enter는 보내기, Shift+Enter는 줄바꿈, 첫 줄에서 ↑는 이전에 보낸 문장이다. `/`를 치면 omp 명령 목록이 뜨고 Tab/Enter로 고른다. 입력칸 위 줄은 활성 파일, 선택한 줄, 저장 안 한 파일 수다. `선택 영역 포함`을 켜면 선택한 코드가 프롬프트에 붙는다.
-
-채팅 창 전체가 WebView2 페이지다(Claude Desktop과 비슷한 배치). View 메뉴의 RADAgent 항목에는 `resources\MenuIcon-16/32.png` 아이콘이 붙는다(IDE 이미지 목록에 두 크기로 넣어 고DPI에서 선명하다). IDE 오른쪽 클릭 메뉴는 자기 이미지 목록만 그리므로 글자만 있다.
-
-- 위 막대: 세션 제목(누르면 세션 목록), 프로젝트, `＋` 새 세션, `⤓` HTML 내보내기, `⚙` 설정.
-- 가운데: 가운데 정렬된 한 칸. 내 메시지는 오른쪽 말풍선, 답은 테두리 없는 본문. 답 사이의 도구·생각은 `도구 N개 사용 ›` 한 줄로 묶이고 펼치면 도구별 입력과 결과가 보인다. 승인 후 버퍼에 반영된 편집은 파일 카드(`+N -M`, 누르면 에디터에서 그 줄로)로 보인다. 작업 중에는 끝에 `✳ 생각하는 중 · N초`.
-- 입력 상자: Enter 보내기, Shift+Enter 줄바꿈, ↑ 이전 문장, `/` 명령 목록. 작업 중에는 보내기 단추가 중지(■)로 바뀐다. 작업 중 표시는 지금 모델을 만든 회사의 로고다(Claude·OpenAI는 돌고, 나머지는 맥박). 아래 줄의 모델 단추는 로고와 이름을 보이고, 누르면 provider별로 묶인 목록과 검색 칸이 뜬다. 답을 한 모델이 바뀌면 답 위에 로고와 모델 이름이 붙고, 모델 대체 알림에도 로고가 붙는다. 설정의 모델·로그인·역할별 모델 목록과 `/model` 창에도 로고가 있다. 로고 규칙은 `src\chat\brands\brands.json` 하나다(provider → 서비스 로고, 모델 이름 → 제작사 로고). 중지는 omp에 abort를 보내고, 5초 안에 턴이 끝나지 않거나 한 번 더 누르면 omp를 강제로 끝내고 같은 대화로 다시 시작한다(응답하지 않는 omp 대비). 위에 활성 파일, `+ 선택 N–M줄`(누르면 선택 영역을 붙임), 저장 안 한 파일 수.
-- 입력 아래 줄: `＋` 메뉴(아래), 승인 방식(항상 묻기·쓰기 허용·권한 무시, omp 도구와 IDE 변경에 함께 적용, 이 프로젝트에 저장하고 omp를 같은 세션으로 다시 시작), 모델, 생각 수준, 컨텍스트 사용량 원, 연결 점.
-
-IDE 기능을 omp에 맞춰 넘긴다:
-
-- 프로젝트를 보고 도구를 고른다. 폼이 있을 때만 폼 도구를 등록하고, VCL/FMX와 Delphi/C++Builder에 맞는 사용법을 준다. 도구 사용법은 시스템 프롬프트에 들어 있어 omp가 따로 읽지 않는다.
-- 프로젝트 안내(언어, 프레임워크, 폼 목록, 작업 규칙)를 omp 시스템 프롬프트에 덧붙인다.
-- Delphi 프로젝트에 `<프로젝트>.delphilsp.json`이 있으면 `.omp/lsp.json`을 만들어 DelphiLSP를 연결한다. 없으면 IDE의 Generate LSP Config를 켜라고 한 번 알린다. C++Builder 프로젝트는 omp에 쓸 LSP가 없다(아래 C++Builder 절).
-- 묶음 도구: `rad.form_apply`(컴포넌트 추가·속성·이벤트를 한 번에, 승인 한 번).
-- 프로젝트 도구: `rad.project_info`, `rad.set_build_config`(구성·플랫폼), `rad.new_module`(폼·프레임·데이터 모듈·유닛), `rad.list_components`(팔레트 클래스).
-- 승인 방식 하나로 omp 도구와 IDE 변경을 함께 정한다: 항상 묻기(IDE 변경마다 승인), 쓰기 허용(턴마다 한 번 승인), 권한 무시(묻지 않음, 처음 값). 어느 쪽이든 저장은 하지 않는다. `rad.*` 호출에 대한 omp 자체 확인은 RADAgent가 대신 통과시켜 두 번 묻지 않는다.
-- 계획: 네 번째 승인 방식. omp를 always-ask로 다시 시작하고 디스크 도구는 거부, 바꾸는 `rad.*` 도구는 빼고 `rad.submit_plan`만 준다. 계획서는 `<프로젝트>\docs\plans\yyyy-mm-dd-hhnn-<slug>.md`(목표 / 현재 상태 / 단계 / 바뀔 파일 / 위험 / 확인 방법)로 쓰이고 채팅에 계획 카드가 뜬다. `이 계획대로 진행`은 이전 승인 방식으로 돌아가 `@계획서`로 구현을 시작한다. `docs` 아래 파일은 프로젝트에 추가되어 Project Manager에 보인다(프로젝트 파일은 저장하지 않음).
-- 입력에서 `@`를 치면 프로젝트 폴더 파일 목록이 뜬다. 보내기 전에 저장하므로 `@경로`는 IDE에 보이는 내용이다.
-- `/btw <질문>`: 곁가지 질문. 지금 대화를 복제(`--fork`)한 별도 omp 자식이 도구 없이 답하므로 에이전트가 작업 중이어도 되고, 본 대화에는 들어가지 않는다. 여러 번, 여러 주제를 물을 수 있다. 답은 채팅에 접힌 `BTW` 카드로 뜨고(이어 묻기·복사·메모에서 보기·중지), 모든 주제는 위 막대의 `BTW` 메모 창에 따로 남는다(검색, `이 대화만`, 이어 묻기, 삭제). `/btw`만 치면 메모 창이 열린다. 이어 묻기는 그 주제 자신의 세션(`--resume`)으로 이어 가므로, 처음 물은 시점의 대화 맥락과 그 주제의 앞 문답을 본다. 메모는 프로젝트 밖 `%LOCALAPPDATA%\RADAgent\btw\<프로젝트>\`에 저장된다.
-- 하위 에이전트(task)는 `rad.*`를 볼 수 없다. 서로 다른 `.pas` 파일을 맡으면 디스크에서 동시에 고칠 수 있고, 폼·프로젝트 파일과 컴파일은 메인 세션이 한다(프로젝트 안내문에 적힘). 더 나아간 병렬 방안은 [docs/plans/2026-09-24-0930-parallel-subagents.md](docs/plans/2026-09-24-0930-parallel-subagents.md)에 있다.
-
-`＋` 메뉴:
-
-- 파일 또는 사진 추가: 여러 개 선택. 600KB 이하 사진(png, jpg, gif, webp)은 프롬프트 이미지로 보내고, 나머지는 경로를 붙인다. 입력 위 칩의 ✕로 뺀다.
-- 폴더 추가: omp `/add-dir`로 이 세션의 작업 폴더를 더한다.
-- 커넥터: 설정된 MCP 서버와 켜기/끄기 스위치. omp `/mcp enable|disable`로 바로 바꾼다. `커넥터 관리`는 설정 창 확장 탭.
-- 플러그인: `omp plugin list`의 플러그인과 확장 모듈, 켜기/끄기 스위치. 플러그인은 `omp plugin enable|disable`, 확장 모듈은 이 프로젝트의 `disabledExtensions`에 쓰고 omp를 같은 세션으로 다시 시작한다.
-- 프로젝트 컴파일.
-
-색은 IDE 테마를 따르고, 테마를 바꾸면 채팅도 바뀐다.
-
-채팅에는 답 말고도 omp 진행 내용이 보인다: 생각(접힘), 모델이 쓰는 도구 입력, 도구 실행 중 출력, 하위 에이전트, 위쪽 작업 목록, 재시도·모델 대체. `설정` 창에서 항목마다 켜고 끈다.
-
-`설정` 창:
-
-- 채팅 표시: 위 항목, 글자 크기, 고대비. 바로 적용.
-- 계정·모델: 지금 대화의 모델과 생각 수준, OAuth 로그인. RPC로 바로 적용. API 키가 필요한 공급자는 터미널 omp의 `/login`을 쓴다.
-- 역할별 모델, 확장(스킬·확장·하위 에이전트 켜고 끄기, MCP 목록), 고급(omp 도구 승인, 기본 생각 수준): 이 프로젝트에만 적용된다. `<프로젝트>\.omp\radagent.yml`에 저장하고 `--config`로 omp에 넘긴다. 전역 `~/.omp/agent/config.yml`은 바꾸지 않는다. 확인을 누르면 omp를 같은 세션으로 다시 시작할지 묻는다.
-- 고급(이 PC): omp 실행 파일, 추가 인자, 작업 언어(켜면 생각·계획·하위 에이전트 지시는 영어, 답은 내 언어. 기본 꺼짐: 2026-09-24 측정에서 출력 토큰 차이가 없었다), `omp 호환성 검사` 단추.
-
-에디터 오른쪽 클릭 메뉴에 `RADAgent: 선택 영역 설명/고치기`, 메시지 창 오른쪽 클릭 메뉴에 `RADAgent: 빌드 오류 고치기`가 있다. 승인이 필요하거나 답이 끝났을 때 IDE가 뒤에 있으면 작업 표시줄 단추가 깜빡인다. 채팅 창을 닫거나 디버그 레이아웃으로 바뀌어도 대화와 omp는 그대로다.
-
-승인은 채팅 안의 카드로 묻는다. 바뀌는 줄 diff(빨강 삭제, 초록 추가, 앞뒤 3줄)와 승인/거부 단추가 있고, 중지를 누르면 떠 있는 카드는 거부된다. 채팅 페이지가 없을 때(WebView2 실패)만 모달 승인 창을 쓴다.
-
-`/model`은 omp가 준 목록으로 모델을 고른다. `/fast`, `/thinking`, `/effort`는 모달에서 고른 뒤 기존 RPC만 보낸다. `/new`는 확인 후 새 세션이다. omp가 RPC 명령 목록에 올린 명령(`/usage`, `/context`, `/compact`, `/handoff`, `/mcp`, `/skill:*` 등)은 omp에 원문 그대로 넘긴다.
-
-omp가 터미널 화면에서만 처리하는 명령은 모델에 글로 넘어가지 않게 RADAgent가 받는다. omp가 나중에 그 명령을 RPC 목록에 올리면 다시 omp가 처리한다.
-
-- `/clear`: 컨텍스트를 비우고 같은 이름으로 이어 간다(`new_session` + 이전 세션을 부모로, 이름 유지). 이전 부분은 세션 목록에 남는다.
-- `/delete`: 확인 후 이 세션 파일과 부속 폴더를 지우고 새 세션.
-- `/resume`: 세션 목록. `/tree`: 세션 트리(● 현재 경로), `/branch`(`/rewind`)·`/fork`: 내 메시지 목록. 고른 메시지 직전에서 새 세션 파일로 갈라지고 그 메시지는 입력칸에 들어간다. 파일은 되돌리지 않는다(파일까지 되돌리려면 메시지의 체크포인트).
-- `/copy`: 마지막 답, `/copy code`: 그 마지막 코드 블록을 클립보드로.
-- `/login [provider]`, `/restart`, `/settings`, `/extensions`(`/status`), `/agents`(역할별 모델), `/plan`, `/hotkeys`(단축키 표), `/hub`(하위 에이전트 목록), `/queue <메시지>`(턴이 끝난 뒤 보내기).
-- `/goal`, `/loop`, `/vibe`, `/tan`, `/omfg`, `/cleanse`, `/plan-review`, `/collab`, `/join`, `/leave`, `/pause`, `/live`, `/record`, `/git`, `/debug`, `/setup`, `/skills`, `/logout`, `/open`: omp가 RPC로 제공하지 않아 "터미널 omp에서만"이라고 알린다. `/exit`·`/quit`은 채팅 창을 닫으라고 알린다.
-
-omp가 작업 중일 때도 입력할 수 있다. Enter는 진행 중인 턴에 끼워 넣고(`steer`, omp가 다음 단계에서 읽음), Ctrl+Enter는 턴이 끝난 뒤 보낸다(`follow_up`). 보낸 메시지에는 어느 쪽인지 표시가 붙는다. 입력칸이 비어 있으면 단추는 중지(■)이고 Esc도 중지다. `!명령`은 omp 셸에서 실행하고 출력은 채팅과 컨텍스트에 들어간다(중지 단추는 `abort_bash`). 자동 재시도를 기다리는 알림에는 `재시도 취소`가 붙는다(`abort_retry`). 하위 에이전트 줄을 누르면 그 대화가 창에 뜬다(`get_subagent_messages`).
-
-입력 아래 컨텍스트 원을 누르면 사용량 패널이 뜬다: 컨텍스트 윈도우 사용률과 토큰(`get_session_stats`), 이 세션의 입력·출력·캐시 토큰과 비용, 지금 모델 공급자의 플랜 한도(5시간·주간·모델별, 재설정 시각, `omp usage --json --provider`, 1분 동안 재사용). 제목 줄을 누르면 `/usage` 전체 보고서.
-
-설정 → 고급 → 대화 진행: 자동 압축(`compaction.enabled`), 자동 재시도(`retry.enabled`), 끼워 넣은 메시지·턴 뒤 메시지 처리(`steeringMode`, `followUpMode`: 하나씩/한 번에), 끼워 넣기 시점(`interruptMode`: 도구 사이/턴 뒤). 프로젝트 overlay에 쓰고 omp를 다시 시작한다. `파일` 버튼은 고른 경로를 입력칸에 붙인다. `@file`은 쓰지 않는다.
-
-IDE 도구는 `rad.compile`, `rad.open_buffer`, `rad.insert_at_caret`이다. 코드는 omp가 자기 read/edit/write 도구로 디스크에서 고치고, IDE가 다시 읽는다.
-
-디버거 읽기 도구는 `rad.debug_state`, `rad.debug_stack`, `rad.debug_evaluate`, `rad.debug_breakpoints`이다. 식 평가는 부작용 없이 한다. 실행 제어 도구는 `rad.debug_run`(실행 또는 계속), `rad.debug_step`(over, into, return), `rad.debug_pause`, `rad.debug_reset`, `rad.debug_add_breakpoint`이다. 모두 승인 창에서 승인해야 동작하고, 끝나면 디버거 상태를 돌려준다. 디버기 메모리는 쓰지 않는다.
-
-폼 디자이너 도구는 `rad.form_components`, `rad.form_properties`, `rad.form_screenshot`(읽기), `rad.form_set_property`, `rad.form_add_component`, `rad.form_delete_component`, `rad.form_rename_component`, `rad.form_set_event`이다. 바꾸는 도구는 승인한 뒤에 디자이너에만 반영하고 저장하지 않는다. 필드 선언과 이벤트 메서드는 디자이너가 유닛 버퍼에 고친다(C++ 이벤트 메서드는 RADAgent가 쓴다).
-
-- `rad.form_screenshot`: 디자이너에 보이는 폼을 PNG로 돌려준다(VCL은 폼이 직접 그리고, FMX는 디자이너 창을 화면에서 복사한다). 레이아웃을 바꾼 뒤 모델이 겹침·정렬·잘린 글자를 눈으로 확인한다.
-- `rad.form_text_edit`: 여러 폼·여러 컴포넌트의 속성을 한 번에 바꿀 때 `.dfm/.fmx` 텍스트를 고친다. 편집은 정확한 old/new 텍스트이고, object/inherited/end 줄은 바꿀 수 없어 컴포넌트 추가·삭제·이름 변경과 이벤트는 여전히 디자이너로 한다. 고친 텍스트가 폼 구문으로 읽히는지, 새 속성이 실제 컴포넌트에 있는지 검사한 뒤 전체 diff를 한 번 승인받고, 파일 인코딩을 지켜 쓰고 IDE가 폼을 다시 읽는다. 바이너리 폼 파일은 거절한다. 설정 → 고급 → 폼 편집 방식을 "디자이너만"으로 두면 이 도구를 omp에 주지 않는다(프로젝트의 `.omp\radagent-ide.json`에 저장, omp 재시작).
-
-RPC 원문은 `%TEMP%\RADAgent\rpc.log`에만 남긴다. 채팅 로그에는 사용자 문장과 모델 응답만 보인다.
-
-## C++Builder 프로젝트
-
-`.cbproj`(VCL, FMX)도 Delphi 프로젝트와 같은 도구를 쓴다. 폼 도구, `rad.form_apply`, `rad.new_module`, `rad.compile`, 디버거(중단점, 호출 스택, C++ 식 평가), 체크포인트가 C++에서 동작한다.
-
-- 이벤트 핸들러: C++ 디자이너는 이벤트를 연결해도 코드를 쓰지 않는다. 그래서 RADAgent가 C++ IDE와 같은 모양으로 `.h`의 `__published`에 `void __fastcall 이름(인자);`를, `.cpp`에 본문을 쓴 뒤 연결한다. 인자는 이벤트 형식에서 만든다(`TObject *Sender` 등). IDE는 저장할 때 본문이 빈 핸들러를 지우고 연결도 끊으므로, 새 핸들러 본문에는 주석 한 줄을 넣는다(Delphi도 같다).
-- 새 모듈: `rad.new_module`은 `UnitN.cpp/.h`(Delphi는 `UnitN.pas`)를 이름을 정해 만든다. 폼 이름을 주어도(`AboutForm`) 클래스 이름이 맞는 소스를 직접 준다. IDE 기본 소스는 이름을 바꾸면 폼을 열지 못한다.
-- 컴파일 오류: IDE는 C++ 오류를 Messages 창에만 보이고 Error Insight에도 없다. 빌드가 실패하면 활성 플랫폼의 컴파일러(Win64x `bcc64x`, Win64 `bcc64`, Win32 `bcc32c`)로 지난 성공 빌드 뒤 바뀐 `.cpp`(와 바뀐 헤더를 쓰는 `.cpp`)를 한 번 더 컴파일해 파일·줄·열·메시지를 돌려준다. 링크 오류는 Messages 창을 보라고 알린다.
-- LSP (clangd): RAD Studio에는 omp가 쓸 C++ LSP가 없다(설치본 `cquery.exe`는 LLVM 5 기반이라 VCL 헤더에서 멈춘다). 설정 → 고급 → `clangd 설치`를 누르면 최신 Windows용 [clangd](https://github.com/clangd/clangd/releases)(LLVM, Apache-2.0, 약 30MB)를 `%LOCALAPPDATA%\RADAgent\clangd\<버전>`에 받아 경로를 채운다(다시 누르면 업데이트, 확인을 누르면 omp를 다시 시작). 직접 설치해 경로를 넣거나 PATH에 두어도 된다. 그러면 omp를 시작할 때 `.omp\clangd\compile_commands.json`과 `.omp\lsp.json`을 만든다. 컴파일 옵션은 활성 플랫폼 컴파일러가 실제로 쓰는 헤더·타깃·표준·매크로(`-###`, `-dM -E`)와 프로젝트 IncludePath·Defines에 `-D__published=public`을 더한 것이다. Win32(bcc32c)는 `i686-pc-windows-msvc`, Win64x(bcc64x)는 `x86_64-w64-windows-gnu`로 읽는다. clangd가 없으면 한 번 알리고 grep/read로 찾는다.
-  - 되는 것: 정의·선언 이동(`.h`↔`.cpp`, VCL 헤더), 참조(열린 파일 기준), 필드·형식 정보, 오타·없는 멤버·인자 형식 같은 실제 오류.
-  - 안 되는 것: 일반 clangd는 `__property`를 몰라 VCL 속성(Caption 등)의 정보·이동이 없다. `System.hpp`의 `__property` 오류와 폼 생성자 `TForm` 오류(Win32는 생성자 `fastcall` 오류도)가 늘 나오며, omp 안내문에 무시하라고 적는다. 최종 확인은 `rad.compile`이다.
-  - 프로젝트에 `.cache\`가 생기지 않게 백그라운드 색인은 끈다. 그래서 참조는 열린 파일 기준이다.
-- 시험 프로젝트: `scripts\prepare-smoke-cpp.cmd`가 `tests\smoke-cpp`를 `%TEMP%\RADAgentSmokeCpp\SmokeCpp.cbproj`로 복사한다. 64-bit IDE는 처음 열 때 플랫폼을 Windows 64-bit (Modern)로 바꾼다.
+- 구조: [DESIGN.md](DESIGN.md). 규칙: [AGENTS.md](AGENTS.md).
+- 시험: `scripts\build-tests.cmd [-Version <ver>]`. 설치된 omp로 호환성 검사와 핸드셰이크까지 한다.
+- 시험 프로젝트: `scripts\prepare-smoke.cmd`(Delphi VCL), `scripts\prepare-smoke-cpp.cmd`(C++Builder).
 
 ## 고지
 
 - Powered by [oh-my-pi](https://github.com/can1357/oh-my-pi) (MIT). RADAgent는 omp를 함께 배포하지 않고, 사용자가 설치한 omp를 실행한다.
 - Provider and model logos are trademarks of their owners; the icons come from [lobe-icons](https://github.com/lobehub/lobe-icons) (MIT).
+- clangd is part of the LLVM project (Apache-2.0 with LLVM exception); RADAgent downloads it only when the user asks.
 - Delphi and RAD Studio are registered trademarks of Embarcadero Technologies, Inc. RADAgent is an independent project, not affiliated with or endorsed by Embarcadero.
