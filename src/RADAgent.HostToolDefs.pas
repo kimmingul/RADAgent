@@ -232,7 +232,8 @@ begin
       'target platform (e.g. Win32, Win64).', 'config,platform'));
     Tools.AddElement(ToolDef(ToolNewModule,
       'After approval add a new module to the project. kind: form, frame, datamodule or unit; ' +
-      'name: optional form/unit name. Returns the new file. Form tools appear after the first form.',
+      'name: optional form name, or unit name (Delphi units may be dotted, e.g. App.Csv); a named unit ' +
+      'becomes <name>.pas (.cpp) in the project folder. Returns the new file. Form tools appear after the first form.',
       'kind,name'));
     Tools.AddElement(ToolDef(ToolListComponents,
       'Installed component classes on the IDE palette with their package; filter is a ' +

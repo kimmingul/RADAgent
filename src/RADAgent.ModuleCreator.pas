@@ -150,7 +150,11 @@ end;
 
 function TModuleCreator.GetFormName: string;
 begin
-  Result := FFormName;
+  { A unit has no form; a name here makes the IDE fail inside CreateModule. }
+  if FCreatorType = sForm then
+    Result := FFormName
+  else
+    Result := '';
 end;
 
 function TModuleCreator.GetMainForm: Boolean;
@@ -208,6 +212,9 @@ var
   Fmx: Boolean;
 begin
   Result := nil;
+  if (FCreatorType = sUnit) and not FCpp then
+    Exit(TSourceFile.Create('unit ' + ModuleIdent + ';'#13#10#13#10'interface'#13#10#13#10 +
+      'implementation'#13#10#13#10'end.'#13#10));
   if FCreatorType <> sForm then
     Exit;
   if not FCpp then
@@ -255,7 +262,7 @@ var
   Creator: TModuleCreator;
   CreatorRef: IOTAModuleCreator;
   Module: IOTAModule;
-  CreatorType, Ancestor, Caption: string;
+  CreatorType, Ancestor, Caption, UnitFile: string;
   Obj: TJSONObject;
   Index: Integer;
   Cpp: Boolean;
@@ -284,10 +291,22 @@ begin
     ResultText := 'Kind must be one of form, frame, datamodule, or unit.';
     Exit;
   end;
-  if (Name <> '') and not IsValidIdent(Name) then
+  Cpp := SameText(Project.Personality, sCBuilderPersonality);
+  { Delphi unit names may be dotted (App.Csv.Reader); form names and C++ file names may not. }
+  if (Name <> '') and not IsValidIdent(Name, (CreatorType = sUnit) and not Cpp) then
   begin
     ResultText := 'Not a valid identifier: ' + Name;
     Exit;
+  end;
+  UnitFile := NextUnitFile(Project.FileName, IfThen(Cpp, '.cpp', '.pas'));
+  if (CreatorType = sUnit) and (Name <> '') then
+  begin
+    UnitFile := IncludeTrailingPathDelimiter(ExtractFileDir(Project.FileName)) + Name + IfThen(Cpp, '.cpp', '.pas');
+    if FileExists(UnitFile) or ((BorlandIDEServices as IOTAModuleServices).FindModule(UnitFile) <> nil) then
+    begin
+      ResultText := 'File already exists: ' + UnitFile;
+      Exit;
+    end;
   end;
   Caption := TrF('modulecreator.addCaption', [LowerCase(Kind), Name,
     ExtractFileName(Project.FileName)]);
@@ -296,11 +315,18 @@ begin
     ResultText := SEditCancelled;
     Exit(True);
   end;
-  Cpp := SameText(Project.Personality, sCBuilderPersonality);
   Creator := TModuleCreator.Create(Project, CreatorType, Ancestor, Name, Cpp, Project.FrameworkType,
-    NextUnitFile(Project.FileName, IfThen(Cpp, '.cpp', '.pas')));
+    UnitFile);
   CreatorRef := Creator;
-  Module := (BorlandIDEServices as IOTAModuleServices).CreateModule(CreatorRef);
+  try
+    Module := (BorlandIDEServices as IOTAModuleServices).CreateModule(CreatorRef);
+  except
+    on E: Exception do
+    begin
+      ResultText := 'The IDE could not create the module: ' + E.Message;
+      Exit;
+    end;
+  end;
   if Module = nil then
   begin
     ResultText := 'Failed to create module.';
