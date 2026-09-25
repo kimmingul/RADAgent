@@ -163,7 +163,7 @@ begin
   Result := ProcessTempFile('project-guide.md');
   Lines := TStringList.Create;
   try
-    Lines.Add('# RAD Studio IDE host (RADAgent)');
+    Lines.Add('# RAD Studio IDE host (RAD Agent)');
     Lines.Add('You run inside RAD Studio. The rad.* tools act on the live IDE: open buffers (unsaved ' +
       'text included), the form designer, the build and the debugger. The user approves every change.');
     if Profile.ProjectFile = '' then

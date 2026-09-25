@@ -73,7 +73,7 @@ end;
 
 function TRADAgentWizard.GetName: string;
 begin
-  Result := 'RADAgent';
+  Result := 'RAD Agent';
 end;
 
 function TRADAgentWizard.GetState: TWizardState;
@@ -89,7 +89,7 @@ end;
 
 function TRADAgentDockable.GetCaption: string;
 begin
-  Result := 'RADAgent';
+  Result := 'RAD Agent';
 end;
 
 function TRADAgentDockable.GetIdentifier: string;
@@ -283,14 +283,14 @@ begin
     if GViewAction = nil then
     begin
       GViewAction := TAction.Create(GMenuOwner);
-      GViewAction.Caption := 'RADAgent';
+      GViewAction.Caption := 'RAD Agent';
       GViewAction.ImageIndex := AgentImageIndex;
       GViewAction.OnExecute := GMenuOwner.OpenChat;
     end;
     if GViewItem = nil then
     begin
       GViewItem := TMenuItem.Create(GMenuOwner);
-      GViewItem.Caption := 'RADAgent';
+      GViewItem.Caption := 'RAD Agent';
       GViewItem.ImageIndex := AgentImageIndex;
       GViewItem.OnClick := GMenuOwner.OpenChat;
     end;

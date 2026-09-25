@@ -1,9 +1,9 @@
 ﻿---
 name: delphi-toolsapi
-description: RAD Studio 13.2 ToolsAPI로 RADAgent design-time BPL을 만들 때 따른다. IOTAWizard, 도킹 Chat, IOTAEditorServices, IOTAProjectBuilder, IOTACompileNotifier, IOTAMessageServices, 32/64 BPL 등록. Use when editing the BPL, ToolsAPI, dock form, compile, or message view.
+description: RAD Studio 13.2 ToolsAPI로 RAD Agent design-time BPL을 만들 때 따른다. IOTAWizard, 도킹 Chat, IOTAEditorServices, IOTAProjectBuilder, IOTACompileNotifier, IOTAMessageServices, 32/64 BPL 등록. Use when editing the BPL, ToolsAPI, dock form, compile, or message view.
 ---
 
-# RADAgent ToolsAPI
+# RAD Agent ToolsAPI
 
 대상은 BDS 37.0 design-time 패키지이고, 10.4(21.0)·11(22.0)·12(23.0)에서도 컴파일되게 유지한다(AGENTS.md "구버전"). 공개 ToolsAPI만 사용한다. 비공개 IDE 유닛, KAI 패키지, designide 재배포는 하지 않는다.
 

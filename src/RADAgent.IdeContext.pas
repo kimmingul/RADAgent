@@ -70,7 +70,7 @@ end;
 procedure ReportToMessageView(const Text: string);
 begin
   RequireMainThread;
-  MessageServices.AddToolMessage('', Text, 'RADAgent', 0, 0);
+  MessageServices.AddToolMessage('', Text, 'RAD Agent', 0, 0);
 end;
 
 procedure ReportNoProject;

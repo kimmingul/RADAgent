@@ -2,7 +2,7 @@
 
 DelphiLSP는 omp가 띄우는 별도 프로세스다. BPL은 DelphiLSP를 기동하지 않고, IDE 프로세스 안의 DelphiLSP에 attach하지 않는다.
 
-RADAgent는 omp를 시작할 때 `<프로젝트>.delphilsp.json`이 있으면 `.omp/lsp.json`을 자동으로 만든다. 아래 절차는 omp만으로 쓸 때와 무엇이 만들어지는지 설명한다.
+RAD Agent는 omp를 시작할 때 `<프로젝트>.delphilsp.json`이 있으면 `.omp/lsp.json`을 자동으로 만든다. 아래 절차는 omp만으로 쓸 때와 무엇이 만들어지는지 설명한다.
 
 omp가 쓸 바이너리는 `%BDS%\bin64\DelphiLSP.exe`다. 그 파일이 없는 릴리스(64-bit IDE 이전, 10.4~12)에서는 `%BDS%\bin\DelphiLSP.exe`를 쓴다. 설치본만 사용한다. 실행 파일을 저장소에 복사하지 않는다.
 

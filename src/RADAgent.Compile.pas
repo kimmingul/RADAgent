@@ -224,7 +224,7 @@ begin
   IsCpp := SameText(Project.Personality, sCBuilderPersonality);
   if Ok then
   begin
-    Messages.AddToolMessage('', Tr('compile.buildSuccess'), 'RADAgent', 0, 0);
+    Messages.AddToolMessage('', Tr('compile.buildSuccess'), 'RAD Agent', 0, 0);
     SetLength(Errors, 0);
     if IsCpp then
       NoteCppBuildOk;
@@ -244,7 +244,7 @@ begin
       Errors[0].Col := 0;
       Errors[0].Msg := 'Build failed; no compiler error found in the sources (see the IDE Messages view, e.g. a linker error).';
     end;
-    Messages.AddToolMessage(Project.FileName, Tr('compile.buildFailed'), 'RADAgent', 0, 0);
+    Messages.AddToolMessage(Project.FileName, Tr('compile.buildFailed'), 'RAD Agent', 0, 0);
   end;
   Result := BuildCompileResultJson(Ok, ConfigName, PlatformName, Errors);
 end;

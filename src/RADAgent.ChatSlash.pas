@@ -107,7 +107,7 @@ begin
       end;
     srDelete:
       if Idle and (Session.State.SessionFile <> '') and
-        AskYes('RADAgent', TrF('chatslash.deleteConfirm', [ExtractFileName(Session.State.SessionFile)])) then
+        AskYes('RAD Agent', TrF('chatslash.deleteConfirm', [ExtractFileName(Session.State.SessionFile)])) then
       begin
         GOldFile := Session.State.SessionFile;
         GPending := pdDelete;

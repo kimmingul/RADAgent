@@ -2,7 +2,7 @@
 
 ## 사용권 계약(EULA)
 
-- RADAgent 자체 사용권 계약 문구를 정한다(Nanum Space Co., Ltd.).
+- RAD Agent 자체 사용권 계약 문구를 정한다(Nanum Space Co., Ltd.).
 - 정해지면 `installer\LICENSE-ko.txt` 등 언어별 파일로 두고 `installer\RADAgent.iss`의 `[Languages]`에 `LicenseFile`을 걸어 설치 화면에서 동의를 받는다.
 - README "고지"와 `installer\THIRD-PARTY-NOTICES.txt` 머리말에 사용권을 적는다.
 

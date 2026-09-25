@@ -2,7 +2,7 @@
 
 {$R RADAgent.res}
 {$R 'RADAgentResources.res' 'RADAgentResources.rc'}
-{$DESCRIPTION 'RADAgent — an agentic coding assistant for Delphi, powered by oh-my-pi'}
+{$DESCRIPTION 'RAD Agent — an agentic coding assistant for Delphi, powered by oh-my-pi'}
 {$DESIGNONLY}
 {$IMPLICITBUILD OFF}
 { RADAgent270.bpl (10.4) ... RADAgent370.bpl (13): each release gets its own file name. }

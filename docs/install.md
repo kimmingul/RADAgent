@@ -24,7 +24,7 @@ scripts\build-win64.cmd [-Version 37.0]
 
 ### 채팅 화면(WebView2)
 
-채팅 기록은 Edge WebView2로 그린다. 패키지 Requires는 그대로 `rtl`, `vcl`, `designide`이고, `vcledge`(TEdgeBrowser)는 쓰지 않는다. RADAgent가 선언한 WebView2 인터페이스(`RADAgent.WebView2Api`, Microsoft WebView2.h의 vtable 순서)로 직접 띄운다. rtl `Winapi.WebView2`는 릴리스마다 내용이 달라 쓰지 않는다.
+채팅 기록은 Edge WebView2로 그린다. 패키지 Requires는 그대로 `rtl`, `vcl`, `designide`이고, `vcledge`(TEdgeBrowser)는 쓰지 않는다. RAD Agent가 선언한 WebView2 인터페이스(`RADAgent.WebView2Api`, Microsoft WebView2.h의 vtable 순서)로 직접 띄운다. rtl `Winapi.WebView2`는 릴리스마다 내용이 달라 쓰지 않는다.
 
 - 빌드 스크립트가 BPL 옆 `RADAgent\` 폴더에 `chat\`(src\chat의 HTML/CSS/JS)과 그 비트의 `WebView2Loader.dll`을 복사한다. Win32는 `Bpl\RADAgent\`, Win64는 `Bpl\Win64\RADAgent\`다.
 - `WebView2Loader.dll`은 `scripts\fetch-webview2.ps1`이 NuGet의 `Microsoft.Web.WebView2` 고정 버전에서 한 번 받아 `third_party\webview2\`에 둔다. Microsoft 서명을 확인하고, 저장소에는 넣지 않는다(`.gitignore`).
@@ -38,7 +38,7 @@ scripts\build-win64.cmd [-Version 37.0]
 2. `%BDS%\bin64\bds.exe`만 실행한다.
 3. Component → Install Packages 를 연다.
 4. Add 로 Win64 BPL만 고른다. 이 키는 `Known Packages x64`다.
-5. 확인한 뒤 Tools 또는 View → RADAgent 로 도킹 Chat을 연다. View 메뉴 컴포넌트 이름은 `ViewsMenu`다.
+5. 확인한 뒤 Tools 또는 View → RAD Agent 로 도킹 Chat을 연다. View 메뉴 컴포넌트 이름은 `ViewsMenu`다.
 
 Win32 BPL을 이 대화상자에 넣지 않는다.
 
@@ -48,7 +48,7 @@ Win32 BPL을 이 대화상자에 넣지 않는다.
 2. `%BDS%\bin\bds.exe`만 실행한다.
 3. Component → Install Packages 를 연다.
 4. Add 로 Win32 BPL만 고른다. 이 키는 `Known Packages`다.
-5. 확인한 뒤 Tools 또는 View → RADAgent 로 도킹 Chat을 연다.
+5. 확인한 뒤 Tools 또는 View → RAD Agent 로 도킹 Chat을 연다.
 
 Win64 BPL을 이 대화상자에 넣지 않는다.
 

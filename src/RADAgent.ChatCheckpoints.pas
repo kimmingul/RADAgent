@@ -148,7 +148,7 @@ begin
     ChatSession.Notice('warn', Tr('chatcheckpoints.busy'));
     Exit;
   end;
-  if not AskYes('RADAgent', IfThen(AsBranch, Tr('chatcheckpoints.confirmBranch'), Tr('chatcheckpoints.confirmRevert'))) then
+  if not AskYes('RAD Agent', IfThen(AsBranch, Tr('chatcheckpoints.confirmBranch'), Tr('chatcheckpoints.confirmRevert'))) then
     Exit;
   if not SaveProjectModules(ProjectDir, Problem) or
     not CreateCheckpoint(Root, SafetyRefs, TrF('chatcheckpoints.safetyBeforeRevert', [Seq]), Safety,

@@ -263,7 +263,7 @@ begin
         if IsChangingTool(TJSONObject(Tools.Items[Index]).GetValue<string>('name')) then
           Tools.Remove(Index).Free;
       Tools.AddElement(SchemaDef(ToolSubmitPlan,
-        'Plan mode only: submit the finished plan. RADAgent writes it to docs\plans\<date>-<slug>.md ' +
+        'Plan mode only: submit the finished plan. RAD Agent writes it to docs\plans\<date>-<slug>.md ' +
         'with fixed sections (goal, context, numbered steps, files, risks, verification), adds it to ' +
         'the project and asks the user to proceed. Call once, then stop and wait.', PlanSchema));
     end;

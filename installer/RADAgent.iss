@@ -21,7 +21,7 @@
 #endif
 
 #define Publisher "Nanum Space Co., Ltd."
-#define Description "RADAgent - an agentic coding assistant for Delphi, powered by oh-my-pi"
+#define Description "RAD Agent - an agentic coding assistant for Delphi, powered by oh-my-pi"
 
 ; Which packages this setup carries: only the releases staged by package.ps1.
 #define Has370w32 FileExists(PayloadDir + "\37.0\Win32\RADAgent370.bpl")
@@ -35,16 +35,16 @@
 
 [Setup]
 AppId={{8E4B2C1D-6A3F-4B7E-9C2D-1F5A7E3B9D40}
-AppName=RADAgent
+AppName=RAD Agent
 AppVersion={#AppVersion}
-AppVerName=RADAgent {#AppVersion}
+AppVerName=RAD Agent {#AppVersion}
 AppPublisher={#Publisher}
 AppCopyright=Copyright (C) 2026 {#Publisher}
 AppComments={#Description}
 VersionInfoVersion={#AppVersion}
 VersionInfoCompany={#Publisher}
-VersionInfoDescription=RADAgent Setup
-VersionInfoProductName=RADAgent
+VersionInfoDescription=RAD Agent Setup
+VersionInfoProductName=RAD Agent
 VersionInfoProductVersion={#AppVersion}
 DefaultDirName={autopf}\RADAgent
 PrivilegesRequired=lowest
@@ -54,7 +54,7 @@ OutputDir={#OutputDir}
 OutputBaseFilename=RADAgent-Setup-{#AppVersion}
 SetupIconFile=..\resources\RADAgent.ico
 UninstallDisplayIcon={app}\RADAgent.ico
-UninstallDisplayName=RADAgent
+UninstallDisplayName=RAD Agent
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
@@ -81,66 +81,66 @@ english.Ide64=64-bit IDE
 english.NoIde=No supported RAD Studio was found on this PC (13 Florence, 12 Athens, 11 Alexandria or 10.4 Sydney that this setup carries).
 english.CloseIde=RAD Studio is running. Close every RAD Studio window, then click Next.
 english.CloseIdeUninstall=RAD Studio is running. Close every RAD Studio window and run the uninstaller again.
-english.OpenOmp=Open the oh-my-pi (omp) install page (omp is not installed; RADAgent needs it)
-english.OmpMemo=oh-my-pi (omp) %1, which RADAgent runs, is downloaded from GitHub (about 230 MB) to:
+english.OpenOmp=Open the oh-my-pi (omp) install page (omp is not installed; RAD Agent needs it)
+english.OmpMemo=oh-my-pi (omp) %1, which RAD Agent runs, is downloaded from GitHub (about 230 MB) to:
 english.OmpDownloading=Downloading oh-my-pi (omp)
-english.OmpDownloadFailed=omp could not be downloaded: %1%n%nContinue without omp? RADAgent cannot chat until omp is installed.
+english.OmpDownloadFailed=omp could not be downloaded: %1%n%nContinue without omp? RAD Agent cannot chat until omp is installed.
 english.OpenWebView2=Open the Microsoft Edge WebView2 Runtime page (not found; without it the chat is plain text)
-english.DeleteSettings=Also delete RADAgent settings and data (IDE settings, side-question notes, downloaded clangd, chat browser data)?
+english.DeleteSettings=Also delete RAD Agent settings and data (IDE settings, side-question notes, downloaded clangd, chat browser data)?
 english.TypeCustom=Custom
-english.ComponentsLabel=RAD Studio IDEs to add RADAgent to:
+english.ComponentsLabel=RAD Studio IDEs to add RAD Agent to:
 korean.Ide32=32비트 IDE
 korean.Ide64=64비트 IDE
 korean.NoIde=이 PC에서 지원하는 RAD Studio를 찾지 못했습니다(이 설치 파일이 담은 13 Florence, 12 Athens, 11 Alexandria, 10.4 Sydney).
 korean.CloseIde=RAD Studio가 실행 중입니다. RAD Studio 창을 모두 닫은 뒤 다음을 누르세요.
 korean.CloseIdeUninstall=RAD Studio가 실행 중입니다. RAD Studio 창을 모두 닫고 제거를 다시 실행하세요.
-korean.OpenOmp=oh-my-pi(omp) 설치 페이지 열기 (omp가 설치되지 않았습니다. RADAgent에 필요합니다)
-korean.OmpMemo=RADAgent가 쓰는 oh-my-pi(omp) %1을(를) GitHub에서 받아(약 230MB) 설치합니다:
+korean.OpenOmp=oh-my-pi(omp) 설치 페이지 열기 (omp가 설치되지 않았습니다. RAD Agent에 필요합니다)
+korean.OmpMemo=RAD Agent가 쓰는 oh-my-pi(omp) %1을(를) GitHub에서 받아(약 230MB) 설치합니다:
 korean.OmpDownloading=oh-my-pi(omp) 받는 중
-korean.OmpDownloadFailed=omp를 받지 못했습니다: %1%n%nomp 없이 계속할까요? omp를 설치하기 전까지 RADAgent 채팅을 쓸 수 없습니다.
+korean.OmpDownloadFailed=omp를 받지 못했습니다: %1%n%nomp 없이 계속할까요? omp를 설치하기 전까지 RAD Agent 채팅을 쓸 수 없습니다.
 korean.OpenWebView2=Microsoft Edge WebView2 런타임 페이지 열기 (없으면 채팅이 글자 화면으로 보입니다)
-korean.DeleteSettings=RADAgent 설정과 데이터(IDE 설정, 곁가지 질문 메모, 받은 clangd, 채팅 브라우저 데이터)도 지울까요?
+korean.DeleteSettings=RAD Agent 설정과 데이터(IDE 설정, 곁가지 질문 메모, 받은 clangd, 채팅 브라우저 데이터)도 지울까요?
 korean.TypeCustom=사용자 지정
-korean.ComponentsLabel=RADAgent를 추가할 RAD Studio IDE:
+korean.ComponentsLabel=RAD Agent를 추가할 RAD Studio IDE:
 japanese.Ide32=32 ビット IDE
 japanese.Ide64=64 ビット IDE
 japanese.NoIde=この PC で対応する RAD Studio が見つかりません (このセットアップに含まれる 13 Florence、12 Athens、11 Alexandria、10.4 Sydney)。
 japanese.CloseIde=RAD Studio が実行中です。RAD Studio のウィンドウをすべて閉じてから [次へ] をクリックしてください。
 japanese.CloseIdeUninstall=RAD Studio が実行中です。RAD Studio のウィンドウをすべて閉じてから、アンインストールをもう一度実行してください。
-japanese.OpenOmp=oh-my-pi (omp) のインストール ページを開く (omp が未インストールです。RADAgent に必要です)
-japanese.OmpMemo=RADAgent が使う oh-my-pi (omp) %1 を GitHub からダウンロード (約 230 MB) してインストールします:
+japanese.OpenOmp=oh-my-pi (omp) のインストール ページを開く (omp が未インストールです。RAD Agent に必要です)
+japanese.OmpMemo=RAD Agent が使う oh-my-pi (omp) %1 を GitHub からダウンロード (約 230 MB) してインストールします:
 japanese.OmpDownloading=oh-my-pi (omp) をダウンロード中
-japanese.OmpDownloadFailed=omp をダウンロードできませんでした: %1%n%nomp なしで続行しますか? omp をインストールするまで RADAgent のチャットは使えません。
+japanese.OmpDownloadFailed=omp をダウンロードできませんでした: %1%n%nomp なしで続行しますか? omp をインストールするまで RAD Agent のチャットは使えません。
 japanese.OpenWebView2=Microsoft Edge WebView2 ランタイムのページを開く (ない場合、チャットはテキスト表示になります)
-japanese.DeleteSettings=RADAgent の設定とデータ (IDE 設定、サイド質問のメモ、ダウンロードした clangd、チャットのブラウザー データ) も削除しますか?
+japanese.DeleteSettings=RAD Agent の設定とデータ (IDE 設定、サイド質問のメモ、ダウンロードした clangd、チャットのブラウザー データ) も削除しますか?
 japanese.TypeCustom=カスタム
-japanese.ComponentsLabel=RADAgent を追加する RAD Studio IDE:
+japanese.ComponentsLabel=RAD Agent を追加する RAD Studio IDE:
 german.Ide32=32-Bit-IDE
 german.Ide64=64-Bit-IDE
 german.NoIde=Auf diesem PC wurde kein unterstütztes RAD Studio gefunden (13 Florence, 12 Athens, 11 Alexandria oder 10.4 Sydney, die dieses Setup enthält).
 german.CloseIde=RAD Studio läuft. Schließen Sie alle RAD Studio-Fenster und klicken Sie dann auf Weiter.
 german.CloseIdeUninstall=RAD Studio läuft. Schließen Sie alle RAD Studio-Fenster und starten Sie die Deinstallation erneut.
-german.OpenOmp=Installationsseite von oh-my-pi (omp) öffnen (omp ist nicht installiert; RADAgent benötigt es)
-german.OmpMemo=oh-my-pi (omp) %1, das RADAgent ausführt, wird von GitHub heruntergeladen (etwa 230 MB) nach:
+german.OpenOmp=Installationsseite von oh-my-pi (omp) öffnen (omp ist nicht installiert; RAD Agent benötigt es)
+german.OmpMemo=oh-my-pi (omp) %1, das RAD Agent ausführt, wird von GitHub heruntergeladen (etwa 230 MB) nach:
 german.OmpDownloading=oh-my-pi (omp) wird heruntergeladen
-german.OmpDownloadFailed=omp konnte nicht heruntergeladen werden: %1%n%nOhne omp fortfahren? Bis omp installiert ist, kann RADAgent nicht chatten.
+german.OmpDownloadFailed=omp konnte nicht heruntergeladen werden: %1%n%nOhne omp fortfahren? Bis omp installiert ist, kann RAD Agent nicht chatten.
 german.OpenWebView2=Seite der Microsoft Edge WebView2-Laufzeit öffnen (nicht gefunden; ohne sie zeigt der Chat nur Text)
-german.DeleteSettings=Auch die Einstellungen und Daten von RADAgent löschen (IDE-Einstellungen, Notizen zu Nebenfragen, heruntergeladenes clangd, Browserdaten des Chats)?
+german.DeleteSettings=Auch die Einstellungen und Daten von RAD Agent löschen (IDE-Einstellungen, Notizen zu Nebenfragen, heruntergeladenes clangd, Browserdaten des Chats)?
 german.TypeCustom=Benutzerdefiniert
-german.ComponentsLabel=RAD Studio-IDEs, denen RADAgent hinzugefügt wird:
+german.ComponentsLabel=RAD Studio-IDEs, denen RAD Agent hinzugefügt wird:
 french.Ide32=EDI 32 bits
 french.Ide64=EDI 64 bits
 french.NoIde=Aucun RAD Studio pris en charge n'a été trouvé sur ce PC (13 Florence, 12 Athens, 11 Alexandria ou 10.4 Sydney que contient ce programme d'installation).
 french.CloseIde=RAD Studio est en cours d'exécution. Fermez toutes les fenêtres de RAD Studio, puis cliquez sur Suivant.
 french.CloseIdeUninstall=RAD Studio est en cours d'exécution. Fermez toutes les fenêtres de RAD Studio et relancez la désinstallation.
-french.OpenOmp=Ouvrir la page d'installation d'oh-my-pi (omp) (omp n'est pas installé ; RADAgent en a besoin)
-french.OmpMemo=oh-my-pi (omp) %1, qu'exécute RADAgent, est téléchargé depuis GitHub (environ 230 Mo) vers :
+french.OpenOmp=Ouvrir la page d'installation d'oh-my-pi (omp) (omp n'est pas installé ; RAD Agent en a besoin)
+french.OmpMemo=oh-my-pi (omp) %1, qu'exécute RAD Agent, est téléchargé depuis GitHub (environ 230 Mo) vers :
 french.OmpDownloading=Téléchargement d'oh-my-pi (omp)
-french.OmpDownloadFailed=Impossible de télécharger omp : %1%n%nContinuer sans omp ? RADAgent ne peut pas discuter tant qu'omp n'est pas installé.
+french.OmpDownloadFailed=Impossible de télécharger omp : %1%n%nContinuer sans omp ? RAD Agent ne peut pas discuter tant qu'omp n'est pas installé.
 french.OpenWebView2=Ouvrir la page du runtime Microsoft Edge WebView2 (introuvable ; sans lui, le chat s'affiche en texte)
-french.DeleteSettings=Supprimer aussi les paramètres et données de RADAgent (paramètres de l'EDI, notes des questions annexes, clangd téléchargé, données du navigateur du chat) ?
+french.DeleteSettings=Supprimer aussi les paramètres et données de RAD Agent (paramètres de l'EDI, notes des questions annexes, clangd téléchargé, données du navigateur du chat) ?
 french.TypeCustom=Personnalisée
-french.ComponentsLabel=EDI RAD Studio auxquels ajouter RADAgent :
+french.ComponentsLabel=EDI RAD Studio auxquels ajouter RAD Agent :
 
 [Types]
 Name: "custom"; Description: "{cm:TypeCustom}"; Flags: iscustom

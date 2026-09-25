@@ -1,9 +1,9 @@
-﻿RADAgent - Third-party notices
+﻿RAD Agent - Third-party notices
 Copyright (C) 2026 Nanum Space Co., Ltd.
 
-RADAgent includes the components below. Their licenses follow.
+RAD Agent includes the components below. Their licenses follow.
 
-1. Provider and model icons (chat\brands, and the icon sprites inside the RADAgent BPL)
+1. Provider and model icons (chat\brands, and the icon sprites inside the RAD Agent BPL)
    From lobe-icons, https://github.com/lobehub/lobe-icons
    Provider and model logos are trademarks of their respective owners.
 
@@ -62,11 +62,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 3. Not included, used when installed by the user
    - oh-my-pi (omp), MIT License, https://github.com/can1357/oh-my-pi
-     RADAgent does not ship omp. When omp is missing, the setup downloads the official
+     RAD Agent does not ship omp. When omp is missing, the setup downloads the official
      release from GitHub (checked against its published SHA-256) to %LOCALAPPDATA%\omp.
    - clangd, part of the LLVM project, Apache License 2.0 with LLVM Exceptions,
      https://github.com/clangd/clangd - downloaded only when the user asks for it in Settings.
    - Microsoft Edge WebView2 Runtime, provided by Windows.
 
-Delphi and RAD Studio are registered trademarks of Embarcadero Technologies, Inc. RADAgent is an
+Delphi and RAD Studio are registered trademarks of Embarcadero Technologies, Inc. RAD Agent is an
 independent product, not affiliated with or endorsed by Embarcadero.

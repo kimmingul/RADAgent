@@ -1,13 +1,13 @@
-# RADAgent
+# RAD Agent
 
-**RADAgent — an agentic coding assistant for Delphi, powered by oh-my-pi**
+**RAD Agent — an agentic coding assistant for Delphi, powered by oh-my-pi**
 
-RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키지(BPL)로 설치하고, 에이전트 루프는 사용자가 설치한 [oh-my-pi](https://github.com/can1357/oh-my-pi)(omp)가 맡는다. RADAgent는 omp를 `omp --mode rpc` 자식 프로세스로 띄우고, 채팅 화면과 IDE 기능(에디터, 폼 디자이너, 컴파일, 디버거, 메시지 뷰)을 omp에 이어 준다. 창은 Tools 또는 View 메뉴의 RADAgent다.
+RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키지(BPL)로 설치하고, 에이전트 루프는 사용자가 설치한 [oh-my-pi](https://github.com/can1357/oh-my-pi)(omp)가 맡는다. RAD Agent는 omp를 `omp --mode rpc` 자식 프로세스로 띄우고, 채팅 화면과 IDE 기능(에디터, 폼 디자이너, 컴파일, 디버거, 메시지 뷰)을 omp에 이어 준다. 창은 Tools 또는 View 메뉴의 RAD Agent다.
 
 ## 요구사항
 
 - Windows, RAD Studio 13.2(BDS 37.0) 32-bit 또는 64-bit IDE. 10.4 Sydney, 11 Alexandria, 12 Athens도 빌드되게 맞춰 두었다(아래 "한계").
-- omp. 검증 버전 18.2.11. 없으면 설치 프로그램이 그 버전을 GitHub에서 받아 `%LOCALAPPDATA%\omp\omp.exe`에 설치한다. RADAgent는 PATH의 omp, 그다음 그 위치를 쓰고, 다른 경로는 설정에서 지정한다.
+- omp. 검증 버전 18.2.11. 없으면 설치 프로그램이 그 버전을 GitHub에서 받아 `%LOCALAPPDATA%\omp\omp.exe`에 설치한다. RAD Agent는 PATH의 omp, 그다음 그 위치를 쓰고, 다른 경로는 설정에서 지정한다.
 - Edge WebView2 런타임(Windows 10/11에 보통 들어 있다). 없으면 채팅은 글자 화면으로 동작한다.
 - git(체크포인트용). 없으면 체크포인트만 꺼진다.
 - 선택: C++Builder 프로젝트의 코드 탐색에 [clangd](https://github.com/clangd/clangd/releases). 설정 창에서 받아 설치할 수 있다.
@@ -17,12 +17,12 @@ RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키
 `RADAgent-Setup-<버전>.exe`(Nanum Space Co., Ltd. 서명)를 실행한다. 관리자 권한은 필요 없다.
 
 1. RAD Studio를 모두 닫는다. 켜져 있으면 설치 프로그램이 닫으라고 한다.
-2. 이 PC에 설치된 RAD Studio 중 설치 파일에 들어 있는 IDE가 목록에 나온다(13은 32비트·64비트 IDE 따로). RADAgent를 넣을 IDE를 고른다.
-3. 파일은 `%LOCALAPPDATA%\Programs\RADAgent\<BDS 버전>\<Win32|Win64>\`에 들어가고, 그 IDE의 `Known Packages`(64비트 IDE는 `Known Packages x64`)에 등록된다. 같은 이름의 다른 RADAgent 등록은 지운다(두 개는 함께 로드되지 않는다).
-4. omp가 없으면 설치 직전에 검증된 omp(18.2.11, 약 230MB)를 GitHub에서 받아 SHA-256을 확인한 뒤 `%LOCALAPPDATA%\omp`에 설치하고 사용자 PATH에 더한다. 받지 못하면 omp 없이 계속할지 묻는다. omp는 RADAgent를 제거해도 남는다. WebView2 런타임이 없으면 마지막 화면에서 설치 페이지를 열 수 있다.
-5. IDE를 켜고 Tools 또는 View → RADAgent 로 창을 연다.
+2. 이 PC에 설치된 RAD Studio 중 설치 파일에 들어 있는 IDE가 목록에 나온다(13은 32비트·64비트 IDE 따로). RAD Agent를 넣을 IDE를 고른다.
+3. 파일은 `%LOCALAPPDATA%\Programs\RADAgent\<BDS 버전>\<Win32|Win64>\`에 들어가고, 그 IDE의 `Known Packages`(64비트 IDE는 `Known Packages x64`)에 등록된다. 같은 이름의 다른 RAD Agent 등록은 지운다(두 개는 함께 로드되지 않는다).
+4. omp가 없으면 설치 직전에 검증된 omp(18.2.11, 약 230MB)를 GitHub에서 받아 SHA-256을 확인한 뒤 `%LOCALAPPDATA%\omp`에 설치하고 사용자 PATH에 더한다. 받지 못하면 omp 없이 계속할지 묻는다. omp는 RAD Agent를 제거해도 남는다. WebView2 런타임이 없으면 마지막 화면에서 설치 페이지를 열 수 있다.
+5. IDE를 켜고 Tools 또는 View → RAD Agent 로 창을 연다.
 
-제거는 Windows 설정 → 앱에서 RADAgent를 고른다. 등록과 파일을 지우고, RADAgent 설정과 데이터(IDE 설정, `/btw` 메모, 받은 clangd, 채팅 브라우저 데이터)까지 지울지 묻는다.
+제거는 Windows 설정 → 앱에서 RAD Agent를 고른다. 등록과 파일을 지우고, RAD Agent 설정과 데이터(IDE 설정, `/btw` 메모, 받은 clangd, 채팅 브라우저 데이터)까지 지울지 묻는다.
 
 소스에서 직접 빌드해 설치하는 방법과 설치 파일을 만드는 방법은 [docs/install.md](docs/install.md)에 있다.
 
@@ -54,7 +54,7 @@ RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키
 
 - omp가 제공하는 명령(`/usage`, `/context`, `/compact`, `/handoff`, `/mcp`, `/memory`, `/todo`, `/skill:*` 등)은 omp가 실행하고 결과가 채팅에 보인다.
 - `/model`, `/fast`, `/thinking`은 선택 창을, `/new`는 확인 창을 띄운다.
-- omp 터미널 화면에만 있는 명령은 RADAgent가 처리한다:
+- omp 터미널 화면에만 있는 명령은 RAD Agent가 처리한다:
   - `/clear`: 컨텍스트를 비우고 같은 이름으로 이어 간다. 이전 부분은 세션 목록에 남는다.
   - `/delete`: 확인 후 이 세션 파일을 지우고 새 세션.
   - `/resume`: 세션 목록. `/tree`: 세션 트리. `/branch`(`/rewind`), `/fork`: 고른 내 메시지 직전에서 대화를 갈라 그 메시지를 입력칸에 되돌린다.
@@ -70,7 +70,7 @@ RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키
 - 폼 디자이너: 컴포넌트 목록·속성 읽기, 폼 스크린샷(모델이 레이아웃을 눈으로 확인), 속성 변경, 컴포넌트 추가·삭제·이름 변경, 이벤트 연결, 여러 변경을 묶은 `rad.form_apply`. 여러 폼의 속성 일괄 변경은 `rad.form_text_edit`(속성 줄만, 구문·속성 이름 검사, 승인 한 번)로 하며, 설정에서 "디자이너만"으로 끌 수 있다.
 - 새 모듈: `rad.new_module`로 폼·프레임·데이터 모듈·유닛을 추가한다.
 - 디버거: 상태, 호출 스택, 부작용 없는 식 평가, 중단점 목록. 승인 후 실행·계속, 스텝, 일시 정지, 종료, 중단점 추가.
-- 에디터 오른쪽 클릭 메뉴 `RADAgent: 선택 영역 설명/고치기`, 메시지 창 오른쪽 클릭 메뉴 `RADAgent: 빌드 오류 고치기`.
+- 에디터 오른쪽 클릭 메뉴 `RAD Agent: 선택 영역 설명/고치기`, 메시지 창 오른쪽 클릭 메뉴 `RAD Agent: 빌드 오류 고치기`.
 
 ### 승인과 체크포인트
 
@@ -93,7 +93,7 @@ RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키
 
 `.cbproj`(VCL, FMX)도 같은 도구를 쓴다.
 
-- C++ 디자이너는 이벤트를 연결해도 코드를 쓰지 않으므로 RADAgent가 `.h`의 선언과 `.cpp`의 본문을 쓴다.
+- C++ 디자이너는 이벤트를 연결해도 코드를 쓰지 않으므로 RAD Agent가 `.h`의 선언과 `.cpp`의 본문을 쓴다.
 - 빌드가 실패하면 바뀐 `.cpp`를 활성 플랫폼 컴파일러로 다시 컴파일해 파일·줄·메시지를 돌려준다.
 - clangd가 있으면 컴파일러가 실제로 쓰는 헤더·타깃·매크로와 프로젝트 옵션으로 설정을 만들어 omp에 연결한다(정의 이동, 참조, 오류).
 
@@ -125,7 +125,7 @@ omp 버전이 바뀌면 처음 시작할 때 모델을 부르지 않는 호환�
 
 ## 고지
 
-- Powered by [oh-my-pi](https://github.com/can1357/oh-my-pi) (MIT). RADAgent는 omp를 설치 파일에 담지 않는다. 사용자가 설치한 omp를 실행하고, 없으면 설치할 때 공식 릴리스를 받아 설치한다.
+- Powered by [oh-my-pi](https://github.com/can1357/oh-my-pi) (MIT). RAD Agent는 omp를 설치 파일에 담지 않는다. 사용자가 설치한 omp를 실행하고, 없으면 설치할 때 공식 릴리스를 받아 설치한다.
 - Provider and model logos are trademarks of their owners; the icons come from [lobe-icons](https://github.com/lobehub/lobe-icons) (MIT).
-- clangd is part of the LLVM project (Apache-2.0 with LLVM exception); RADAgent downloads it only when the user asks.
-- Delphi and RAD Studio are registered trademarks of Embarcadero Technologies, Inc. RADAgent is an independent project, not affiliated with or endorsed by Embarcadero.
+- clangd is part of the LLVM project (Apache-2.0 with LLVM exception); RAD Agent downloads it only when the user asks.
+- Delphi and RAD Studio are registered trademarks of Embarcadero Technologies, Inc. RAD Agent is an independent project, not affiliated with or endorsed by Embarcadero.

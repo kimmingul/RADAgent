@@ -1,4 +1,4 @@
-﻿# RADAgent 설계
+﻿# RAD Agent 설계
 
 design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자식 프로세스에 JSONL RPC로 프롬프트를 넘긴다. 에이전트 루프, 도구 실행, LSP 세션은 omp가 소유한다.
 
@@ -6,7 +6,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 
 ```
 +-------------------- bds.exe (32-bit 또는 64-bit, 하나만) --------------------+
-| RADAgent BPL (그 IDE와 같은 비트)                                          |
+| RAD Agent BPL (그 IDE와 같은 비트)                                         |
 |                                                                              |
 |  Wizard                                                                      |
 |    Register 시 DockForm 등록                                                 |
@@ -66,7 +66,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | ChatFallback | WebView2를 못 띄울 때의 글자 기록. |
 | ChatInput | WebView2 대체 화면의 VCL 입력칸: 여러 줄, 보낸 문장 기록, `/` 명령 목록. |
 | ChatTheme | IDE 테마 색(IOTAIDEThemingServices), 고대비·글자 크기 반영, 테마 변경 통지. |
-| AgentSettings | RADAgent 자체 설정(IDE 레지스트리 키): 채팅 표시 항목, 글자 크기, 고대비, 화면 언어, omp 경로·추가 인자. |
+| AgentSettings | RAD Agent 자체 설정(IDE 레지스트리 키): 채팅 표시 항목, 글자 크기, 고대비, 화면 언어, omp 경로·추가 인자. |
 | Lang | 화면 문자열: English, 日本語, Deutsch, Français, 한국어. `src\lang\<코드>.json`을 `RADAgentResources.rc`로 RCDATA에 넣고 `Tr`/`TrF`로 부른다. 없는 키는 영어, 그다음 키 이름. `<키>.one`은 첫 값이 1일 때의 문구. 채팅 페이지에는 `page.*` 키를 `strings` 메시지로 보내고 페이지는 `T()`와 `data-i18n`으로 쓴다. 처음 값은 Windows 표시 언어(없으면 영어). omp가 읽는 글은 번역하지 않고 영어로 둔다. ToolsAPI 없음. |
 | SettingsDialog / SettingsUi / SettingsAccount / SettingsProject | 설정 창. 채팅 표시, 계정·모델(RPC로 바로 적용), 역할별 모델·확장·고급(프로젝트 omp 설정). |
 | OmpSettings / OmpCatalog / OmpCli | 프로젝트 omp 설정 파일 `<프로젝트>\.omp\radagent.yml`(`--config`로 전달)과 omp가 읽는 스킬·확장·하위 에이전트·MCP 목록. `omp config list`를 읽기만 하고 전역 설정은 쓰지 않는다. |
@@ -83,8 +83,8 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | RpcResponses / RpcJson | 명령 응답(명령 목록, 상태·작업 목록, 기록 페이지, 모델, 생각 수준, 로그인 공급자) 해석과 공용 JSON 읽기. ToolsAPI 없음. |
 | RpcProtocol | JSONL 프레임 생성과 판별. ToolsAPI 없음. |
 | RpcDispatch | stdout 줄을 프레임 종류별로 나눠 이벤트로 넘긴다. ToolsAPI 없음. |
-| SlashRoutes | omp 터미널 전용 명령의 처리 방식(RADAgent가 함, 터미널에서만, omp에 넘김). omp가 RPC 목록에 올린 이름이 먼저다. ToolsAPI 없음. |
-| ChatSlash | 터미널 전용 명령 실행: `/clear`, `/delete`, `/resume`, `/tree`, `/branch`, `/fork`, `/copy`, `/login`, `/hub` 등을 RPC 요청과 RADAgent 창으로, 하위 에이전트 대화 보기. |
+| SlashRoutes | omp 터미널 전용 명령의 처리 방식(RAD Agent가 함, 터미널에서만, omp에 넘김). omp가 RPC 목록에 올린 이름이 먼저다. ToolsAPI 없음. |
+| ChatSlash | 터미널 전용 명령 실행: `/clear`, `/delete`, `/resume`, `/tree`, `/branch`, `/fork`, `/copy`, `/login`, `/hub` 등을 RPC 요청과 RAD Agent 창으로, 하위 에이전트 대화 보기. |
 | ChatQueue | 턴 옆의 일: 작업 중 보낸 메시지(`steer`, `follow_up`), `!` 셸 명령(`bash`, `abort_bash`), 재시도 취소(`abort_retry`). |
 | ChatUsage / UsageReport | 컨텍스트 원의 사용량 패널: `get_session_stats`와 뒤에서 돌린 `omp usage --json --provider`(1분 보관), 공급자 한도를 창·그룹·재설정 시각으로. |
 | SessionData | 세션 응답 해석(갈라질 메시지, 트리, 마지막 답·코드 블록, 하위 에이전트 대화, 셸 결과). ToolsAPI 없음. |
