@@ -54,7 +54,7 @@
         <div class="popup-item" data-action="attachFiles"><span class="menu-icon">📎</span><span class="popup-name" data-i18n="page.plusmenu.attachFiles">Add files or photos</span></div>
         <div class="popup-item" data-action="addFolder"><span class="menu-icon">📁</span><span class="popup-name" data-i18n="page.plusmenu.addFolder">Add folder</span></div>
         <div class="popup-sep"></div>
-        <div class="popup-item has-sub" data-sub="connectors"><span class="menu-icon">⊞</span><span class="popup-name" data-i18n="page.plusmenu.connectors">Connectors</span><span class="sub-arrow">›</span></div>
+        <div class="popup-item has-sub" data-sub="mcpServers"><span class="menu-icon">⊞</span><span class="popup-name" data-i18n="page.plusmenu.mcpServers">MCP servers</span><span class="sub-arrow">›</span></div>
         <div class="popup-item has-sub" data-sub="plugins"><span class="menu-icon">⧉</span><span class="popup-name" data-i18n="page.plusmenu.plugins">Plugins</span><span class="sub-arrow">›</span></div>
         <div class="popup-sep"></div>
         <div class="popup-item" data-action="compile"><span class="menu-icon">▶</span><span class="popup-name" data-i18n="page.plusmenu.compile">Compile project</span></div>
@@ -71,11 +71,11 @@
         <button id="send-btn" title="Send (Enter)" data-i18n-title="page.composer.sendTitle" disabled>↑</button>
       </div>
       <div class="composer-footer">
-        <button id="plus-btn" class="icon-btn" title="Files, folders, connectors, plugins" data-i18n-title="page.composer.plusTitle">＋</button>
-        <select id="approval-select" title="Approval mode: omp tools and IDE changes (buffers, forms, debugger). Always ask = each change, Allow writes = once per turn, Skip permissions = never ask (does not save), Plan = write plan in docs\plans without changes" data-i18n-title="page.composer.approvalTitle">
+        <button id="plus-btn" class="icon-btn" title="Files, folders, MCP servers, plugins" data-i18n-title="page.composer.plusTitle">＋</button>
+        <select id="approval-select" title="Approval mode: omp tools and IDE changes (buffers, forms, debugger). Always ask = each change, Accept edits = once per turn, Bypass permissions = never ask (does not save), Plan = write plan in docs\plans without changes" data-i18n-title="page.composer.approvalTitle">
           <option value="always-ask" data-i18n="page.composer.approvalAlwaysAsk">Always ask</option>
-          <option value="write" data-i18n="page.composer.approvalWrite">Allow writes</option>
-          <option value="yolo" data-i18n="page.composer.approvalYolo">Skip permissions</option>
+          <option value="write" data-i18n="page.composer.approvalWrite">Accept edits</option>
+          <option value="yolo" data-i18n="page.composer.approvalYolo">Bypass permissions</option>
           <option value="plan" data-i18n="page.composer.approvalPlan">Plan</option>
         </select>
         <span class="spacer"></span>

@@ -174,8 +174,8 @@ begin
       Session.PostToView(PageFiles)
     else if Kind = 'listExtensions' then
       Session.PostToView(PageExtensions)
-    else if Kind = 'toggleConnector' then
-      ToggleConnector(Obj.GetValue<string>('id', ''), Obj.GetValue<Boolean>('enabled', True))
+    else if Kind = 'toggleMcpServer' then
+      ToggleMcpServer(Obj.GetValue<string>('id', ''), Obj.GetValue<Boolean>('enabled', True))
     else if Kind = 'togglePlugin' then
       TogglePlugin(Obj.GetValue<string>('kind', ''), Obj.GetValue<string>('id', ''),
         Obj.GetValue<Boolean>('enabled', True))

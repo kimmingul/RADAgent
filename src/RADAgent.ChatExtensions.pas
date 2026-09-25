@@ -1,19 +1,19 @@
 unit RADAgent.ChatExtensions;
 
 { The composer's + menu on the IDE side: files and pictures to attach, extra workspace folders,
-  connectors (MCP servers) and plugins (omp plugins and extension modules) with on/off switches.
+  MCP servers and plugins (omp plugins and extension modules) with on/off switches.
   Main thread only. }
 
 interface
 
-{ Page message "extensions": connectors and plugins with their state. }
+{ Page message "extensions": MCP servers and plugins with their state. }
 function PageExtensions: string;
 { File dialog; page message "attachments" with the chosen files, or '' when cancelled. }
 function PickAttachments: string;
 { Folder dialog, then omp /add-dir. }
 procedure AddWorkspaceFolder;
-{ Connector: omp /mcp enable|disable (applies at once). }
-procedure ToggleConnector(const Name: string; Enable: Boolean);
+{ MCP server: omp /mcp enable|disable (applies at once). }
+procedure ToggleMcpServer(const Name: string; Enable: Boolean);
 { Plugin (Kind 'plugin': omp plugin enable|disable) or extension module (Kind 'extension':
   this project's disabledExtensions). Both restart omp on the same session. }
 procedure TogglePlugin(const Kind, Name: string; Enable: Boolean);
@@ -51,7 +51,7 @@ end;
 function PageExtensions: string;
 var
   Obj, Item: TJSONObject;
-  Connectors, Plugins: TJSONArray;
+  McpServers, Plugins: TJSONArray;
   Server: TMcpServer;
   Plugin: TPluginInfo;
   Module: TToggleItem;
@@ -61,10 +61,10 @@ begin
   Obj := TJSONObject.Create;
   try
     Obj.AddPair('t', 'extensions');
-    Connectors := TJSONArray.Create;
+    McpServers := TJSONArray.Create;
     for Server in DiscoverMcpServers(Dir) do
-      Connectors.AddElement(Entry(Server.Name, Server.Name, Server.Source, Server.Enabled));
-    Obj.AddPair('connectors', Connectors);
+      McpServers.AddElement(Entry(Server.Name, Server.Name, Server.Source, Server.Enabled));
+    Obj.AddPair('mcpServers', McpServers);
     Plugins := TJSONArray.Create;
     for Plugin in ChatSession.Catalog.Plugins do
     begin
@@ -212,7 +212,7 @@ begin
     ChatSession.Notice('info', TrF('chatextensions.addedFolder', [Folder]));
 end;
 
-procedure ToggleConnector(const Name: string; Enable: Boolean);
+procedure ToggleMcpServer(const Name: string; Enable: Boolean);
 const
   Verb: array[Boolean] of string = ('disable', 'enable');
 begin
@@ -221,9 +221,9 @@ begin
   if ChatSession.Client.SendPrompt('/mcp ' + Verb[Enable] + ' ' + Name) then
   begin
     if Enable then
-      ChatSession.Notice('info', TrF('chatextensions.connectorEnabled', [Name]))
+      ChatSession.Notice('info', TrF('chatextensions.mcpServerEnabled', [Name]))
     else
-      ChatSession.Notice('info', TrF('chatextensions.connectorDisabled', [Name]));
+      ChatSession.Notice('info', TrF('chatextensions.mcpServerDisabled', [Name]));
   end;
 end;
 

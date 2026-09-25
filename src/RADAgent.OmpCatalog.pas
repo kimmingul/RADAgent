@@ -28,7 +28,7 @@ const
 
 { Discovered items, first of a name wins. Enabled/GloballyOff are left for the caller. }
 function DiscoverToggles(const Executable, ProjectDir: string; ClaudeProjectSkills: Boolean): TArray<TToggleItem>;
-{ Configured MCP servers (connectors), first definition of a name wins. }
+{ Configured MCP servers, first definition of a name wins. }
 function DiscoverMcpServers(const ProjectDir: string): TArray<TMcpServer>;
 { Extension modules only (fast; no agent unpack). Enabled is left for the caller. }
 function DiscoverExtensionModules(const ProjectDir: string): TArray<TToggleItem>;

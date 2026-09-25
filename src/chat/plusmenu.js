@@ -1,10 +1,10 @@
 (function (global) {
   'use strict';
 
-  // The composer's + menu: files/pictures, folders, and submenus for connectors (MCP servers)
+  // The composer's + menu: files/pictures, folders, and submenus for MCP servers
   // and plugins with on/off switches. The IDE lists them ("extensions") and applies changes.
   let menu, sub, button;
-  let data = { connectors: [], plugins: [] };
+  let data = { mcpServers: [], plugins: [] };
   let openSub = '';
   function T(key, ...args) {
     return global.T ? global.T(key, ...args) : key;
@@ -54,21 +54,21 @@
   function renderSub() {
     if (!openSub) return;
     sub.innerHTML = '';
-    const isConnectors = openSub === 'connectors';
-    const manage = el('div', 'popup-item', isConnectors ? T('page.plusmenu.manageConnectors') : T('page.plusmenu.managePlugins'));
+    const isMcp = openSub === 'mcpServers';
+    const manage = el('div', 'popup-item', isMcp ? T('page.plusmenu.manageMcpServers') : T('page.plusmenu.managePlugins'));
     manage.addEventListener('click', () => { close(); post({ t: 'manageExtensions' }); });
     sub.appendChild(manage);
     sub.appendChild(el('div', 'popup-sep'));
-    const items = isConnectors ? data.connectors : data.plugins;
+    const items = isMcp ? data.mcpServers : data.plugins;
     if (!items.length) {
-      sub.appendChild(el('div', 'popup-empty', isConnectors ? T('page.plusmenu.emptyConnectors') : T('page.plusmenu.emptyPlugins')));
+      sub.appendChild(el('div', 'popup-empty', isMcp ? T('page.plusmenu.emptyMcpServers') : T('page.plusmenu.emptyPlugins')));
     }
     for (const item of items) {
-      sub.appendChild(switchRow(item, it => post(isConnectors
-        ? { t: 'toggleConnector', id: it.id, enabled: it.enabled }
+      sub.appendChild(switchRow(item, it => post(isMcp
+        ? { t: 'toggleMcpServer', id: it.id, enabled: it.enabled }
         : { t: 'togglePlugin', id: it.id, kind: it.kind, enabled: it.enabled })));
     }
-    if (!isConnectors && items.length) {
+    if (!isMcp && items.length) {
       sub.appendChild(el('div', 'popup-empty', T('page.plusmenu.restartHint')));
     }
     const row = menu.querySelector('[data-sub="' + openSub + '"]');
@@ -87,7 +87,7 @@
   }
 
   function setData(msg) {
-    data = { connectors: msg.connectors || [], plugins: msg.plugins || [] };
+    data = { mcpServers: msg.mcpServers || [], plugins: msg.plugins || [] };
     renderSub();
   }
 

@@ -6,7 +6,7 @@ unit RADAgent.SettingsDialog;
 
 interface
 
-{ Page: tab to show first (0 Chat Display, 1 Account & Model, 2 Role Models, 3 Extensions, 4 Advanced). }
+{ Page: tab to show first (0 Chat Display, 1 Account & Model, 2 Model Roles, 3 Extensions, 4 Advanced). }
 procedure ShowSettings(Page: Integer = 0);
 
 implementation
