@@ -11,7 +11,7 @@ $root = Split-Path -Parent $PSScriptRoot
 $out = Join-Path $BplDir 'RADAgent'
 $chat = Join-Path $out 'chat'
 New-Item -ItemType Directory -Force -Path $chat | Out-Null
-Copy-Item -Force -Path (Join-Path $root 'src\chat\*') -Destination $chat
+Copy-Item -Force -Recurse -Path (Join-Path $root 'src\chat\*') -Destination $chat
 $loader = Join-Path $root "third_party\webview2\$Arch\WebView2Loader.dll"
 try {
   Copy-Item -Force -Path $loader -Destination (Join-Path $out 'WebView2Loader.dll')

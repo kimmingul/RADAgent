@@ -172,13 +172,53 @@
     closeAssistantBlock();
   }
 
-  function handleNotice(level, text) {
+  // Model names in the text (fallback "a/x → b/y") get their logo in front.
+  function handleNotice(level, text, models) {
     const wasNear = isNearBottom();
     // Output of a slash command omp ran itself: keep its layout.
     const notice = document.createElement(level === 'output' ? 'pre' : 'div');
     notice.className = 'notice notice-' + (level || 'info');
-    notice.textContent = text || '';
+    appendWithLogos(notice, text || '', Array.isArray(models) ? models.filter(Boolean) : []);
     logEl.appendChild(notice);
+    handleNewContent(wasNear);
+  }
+
+  function appendWithLogos(parent, text, models) {
+    let rest = text;
+    while (models.length) {
+      let at = -1, found = '';
+      for (const m of models) {
+        const i = rest.indexOf(m);
+        if (i >= 0 && (at < 0 || i < at)) { at = i; found = m; }
+      }
+      if (at < 0) break;
+      parent.appendChild(document.createTextNode(rest.slice(0, at)));
+      parent.appendChild(global.ChatBrands.modelIcon(found));
+      parent.appendChild(document.createTextNode(found));
+      rest = rest.slice(at + found.length);
+    }
+    parent.appendChild(document.createTextNode(rest));
+  }
+
+  // Which model answers from here on: shown when it differs from the previous answer's model.
+  let lastModel = '';
+  function modelTag(selector) {
+    lastModel = selector;
+    const tag = document.createElement('div');
+    tag.className = 'model-tag';
+    tag.title = selector;
+    tag.appendChild(global.ChatBrands.modelIcon(selector));
+    const name = document.createElement('span');
+    name.textContent = global.ChatBrands.split(selector).model;
+    tag.appendChild(name);
+    return tag;
+  }
+
+  function handleModel(selector) {
+    if (!selector || selector === lastModel) return;
+    closeAssistantBlock();
+    const wasNear = isNearBottom();
+    ensureAssistantTurn().appendChild(modelTag(selector));
     handleNewContent(wasNear);
   }
 
@@ -191,6 +231,7 @@
 
   function handleClear() {
     if (logEl) logEl.innerHTML = '';
+    lastModel = '';
     currentTurn = null;
     closeAssistantBlock();
     global.ChatTools.clear();
@@ -218,6 +259,7 @@
         turn.appendChild(bubble);
         logEl.appendChild(turn);
       } else {
+        if (item.model && item.model !== lastModel) logEl.appendChild(modelTag(item.model));
         const turn = document.createElement('div');
         turn.className = 'turn turn-assistant';
         const bubble = document.createElement('div');
@@ -236,7 +278,7 @@
   function handle(msg) {
     if (!msg || typeof msg !== 'object') return;
     switch (msg.t) {
-      case 'strings': handleStrings(msg); break;
+      case 'strings': handleStrings(msg); if (global.ChatModelPicker && logEl) global.ChatModelPicker.relabel(); break;
       case 'theme': handleTheme(msg.vars); break;
       case 'user': handleUser(msg.text); break;
       case 'assistantDelta': handleAssistantDelta(msg.text); break;
@@ -270,7 +312,8 @@
       case 'subagent': global.ChatActivity.subagent(msg); break;
       case 'todos': global.ChatActivity.todos(msg.items); break;
       case 'display': global.ChatActivity.display(msg.show); break;
-      case 'notice': handleNotice(msg.level, msg.text); break;
+      case 'notice': handleNotice(msg.level, msg.text, msg.models); break;
+      case 'model': handleModel(msg.model); break;
       case 'turnEnd': handleTurnEnd(); break;
       case 'clear': handleClear(); break;
       case 'history': handleHistory(msg.items); break;
@@ -335,6 +378,7 @@
     global.ChatCards.init(ctx);
     global.ChatActivity.init(ctx);
     global.ChatTopbar.wire();
+    global.ChatModelPicker.wire();
     global.ChatComposer.wire();
     global.ChatPlusMenu.wire();
     global.ChatBtw.wire(ctx);
@@ -350,13 +394,21 @@
         }
       });
     }
-    postHost({ t: 'ready' });
+    // Logos are resolved while messages render, so the rule table comes first.
+    global.ChatBrands.load().then(() => {
+      brandsReady = true;
+      pending.splice(0).forEach(handle);
+      postHost({ t: 'ready' });
+    });
   });
 
+  let brandsReady = false;
+  const pending = [];
+  function receive(msg) { if (brandsReady) handle(msg); else pending.push(msg); }
   if (global.chrome?.webview) {
-    global.chrome.webview.addEventListener('message', e => handle(e.data));
+    global.chrome.webview.addEventListener('message', e => receive(e.data));
   }
-  global.__agentHost = handle;
+  global.__agentHost = receive;
   global.chatPost = postHost;
   global.ChatView = { isNearBottom, newContent: handleNewContent };
 

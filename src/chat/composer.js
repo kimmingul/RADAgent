@@ -241,9 +241,8 @@
   function status(msg) {
     state = msg;
     const idle = msg.connected && !msg.busy;
-    fillSelect($('model-select'), catalog.models, msg.model, v => v.split('/').pop());
+    global.ChatModelPicker.status(msg.model, idle);
     fillSelect($('thinking-select'), catalog.levels, msg.thinking, v => T('page.composer.thinkingLevel', v));
-    $('model-select').disabled = !idle;
     $('thinking-select').disabled = !idle;
     const approval = $('approval-select');
     if (msg.approval) approval.value = msg.approval;
@@ -261,6 +260,7 @@
 
   function setCatalog(msg) {
     catalog = { models: msg.models || [], levels: msg.levels || [] };
+    global.ChatModelPicker.catalog(catalog.models, msg.providers);
     status(state);
   }
 
@@ -273,7 +273,6 @@
     input.addEventListener('keydown', onKeyDown);
     input.addEventListener('blur', () => { setTimeout(() => { slash.hidden = true; }, 150); });
     sendBtn.addEventListener('click', () => { if (state.busy) post({ t: 'abort' }); else submit(); });
-    $('model-select').addEventListener('change', e => post({ t: 'setModel', value: e.target.value }));
     $('thinking-select').addEventListener('change', e => post({ t: 'setThinking', value: e.target.value }));
     $('approval-select').addEventListener('change', e => post({ t: 'setApproval', value: e.target.value }));
     input.focus();

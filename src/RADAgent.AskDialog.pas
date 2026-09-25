@@ -7,7 +7,8 @@ interface
 uses
   System.Classes, System.SysUtils;
 
-function AskChoice(const Title: string; Items: TStrings; out Choice: string): Boolean;
+function AskChoice(const Title: string; Items: TStrings; out Choice: string;
+  Logos: Boolean = False): Boolean;
 function AskCsv(const Title, Csv: string; out Choice: string): Boolean;
 function AskYes(const Title, Message: string): Boolean;
 function AskText(const Title, Prompt: string; out Value: string): Boolean;
@@ -27,7 +28,7 @@ implementation
 uses
   Winapi.Windows, Winapi.ShellAPI, Vcl.Forms, Vcl.StdCtrls, Vcl.Controls, Vcl.Graphics, Vcl.Dialogs,
   RADAgent.ChatCommand, RADAgent.RpcProtocol, RADAgent.ChatPlan, RADAgent.ChatSession,
-  RADAgent.ChatApprovalCard, RADAgent.Lang;
+  RADAgent.ChatApprovalCard, RADAgent.Lang, RADAgent.BrandTable, RADAgent.BrandIcons;
 
 var
   { The open AskText form, so an omp "cancel" (login finished in the browser) can close it. }
@@ -54,10 +55,12 @@ begin
   Result.ModalResult := Modal;
 end;
 
-function AskChoice(const Title: string; Items: TStrings; out Choice: string): Boolean;
+function AskChoice(const Title: string; Items: TStrings; out Choice: string;
+  Logos: Boolean = False): Boolean;
 var
   Form: TForm;
   List: TListBox;
+  Index: Integer;
 begin
   Choice := '';
   Form := TForm.CreateNew(nil);
@@ -72,7 +75,14 @@ begin
     List.Color := clBlack;
     List.Font.Color := clWhite;
     List.Font.Name := 'Malgun Gothic';
-    if Items <> nil then
+    if Logos then
+    begin
+      MakeBrandList(List);
+      if Items <> nil then
+        for Index := 0 to Items.Count - 1 do
+          AddBrandItem(List.Items, Items[Index], SelectorBrand(Items[Index]));
+    end
+    else if Items <> nil then
       List.Items.Assign(Items);
     if List.Items.Count > 0 then
       List.ItemIndex := 0;
@@ -193,7 +203,7 @@ begin
   Lines := TStringList.Create;
   try
     Lines.Text := ListText;
-    if not AskChoice(Tr('askdialog.chooseModelTitle'), Lines, Choice) then
+    if not AskChoice(Tr('askdialog.chooseModelTitle'), Lines, Choice, True) then
       Exit;
     SplitAt := Pos('/', Choice);
     if SplitAt <= 1 then

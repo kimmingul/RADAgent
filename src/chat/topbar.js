@@ -36,10 +36,11 @@
     if (!working) {
       working = document.createElement('div');
       working.id = 'working';
-      working.innerHTML = '<span class="spark">✳</span><span class="working-text"></span>';
+      working.innerHTML = '<span class="working-logo"></span><span class="working-text"></span>';
     }
     working.hidden = !msg.busy;
     if (msg.busy) {
+      showLogo(working.firstChild, msg.model);
       working.lastChild.textContent = msg.activity || '';
       if (log.lastElementChild !== working) {
         const wasNear = global.ChatView.isNearBottom();
@@ -47,6 +48,22 @@
         global.ChatView.newContent(wasNear);
       }
     }
+  }
+
+  // The running model's maker logo: Claude and OpenAI turn like their own apps' marks, the
+  // others pulse. Without a known model it is the plain spark.
+  function showLogo(holder, model) {
+    if (holder.dataset.model === (model || '')) return;
+    holder.dataset.model = model || '';
+    holder.innerHTML = '';
+    const brand = model ? global.ChatBrands.forModel(model) : null;
+    if (!brand) {
+      holder.className = 'working-logo spin';
+      holder.innerHTML = '<span class="spark">✳</span>';
+      return;
+    }
+    holder.className = 'working-logo ' + (global.ChatBrands.spins(brand) ? 'spin' : 'pulse');
+    holder.appendChild(global.ChatBrands.modelIcon(model));
   }
 
   function wire() {

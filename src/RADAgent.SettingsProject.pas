@@ -32,7 +32,7 @@ type
 implementation
 
 uses
-  System.SysUtils, RADAgent.SettingsUi, RADAgent.Lang;
+  System.SysUtils, RADAgent.SettingsUi, RADAgent.Lang, RADAgent.BrandTable, RADAgent.BrandIcons;
 
 const
   Roles: array[0..8] of string = ('default', 'smol', 'slow', 'plan', 'task', 'advisor', 'commit',
@@ -89,13 +89,16 @@ begin
   SetLength(FRoles, Length(Roles));
   for Index := 0 to High(Roles) do
   begin
-    Combo := TComboBox.Create(Page);
+    Combo := TBrandCombo.Create(Page);
     Combo.Style := csDropDown;
     Combo.DropDownCount := 24;
+    { Logos in the list; the empty row keeps the global value, shown greyed. }
+    MakeBrandCombo(Combo, TrF('settingsproject.globalRoleHint',
+      [FSettings.BaseText('modelRoles.' + Roles[Index])]));
     AddRow(Page, RoleCaption(Index), Combo);
-    Combo.Items.Add('');
+    AddBrandItem(Combo.Items, '', -1);
     for Model in Models do
-      Combo.Items.Add(Model);
+      AddBrandItem(Combo.Items, Model, SelectorBrand(Model));
     Combo.Text := FSettings.OverlayText('modelRoles.' + Roles[Index]);
     Combo.TextHint := TrF('settingsproject.globalRoleHint', [FSettings.BaseText('modelRoles.' + Roles[Index])]);
     Combo.ShowHint := True;

@@ -13,7 +13,8 @@ type
     HasContext, IsStreaming: Boolean;
     Todos: TArray<TTodoItem>;
   end;
-  THistoryItem = record Role, Text: string; end;
+  { Model: "provider/model" of an assistant message, when omp recorded it. }
+  THistoryItem = record Role, Text, Model: string; end;
   TLoginProvider = record Id, Name: string; Authenticated: Boolean; end;
 
 function ParseAvailableCommands(const Line: string; out Commands: TArray<TSlashCommand>): Boolean;
@@ -188,6 +189,9 @@ begin
         Continue;
       Items[Count].Role := Role;
       Items[Count].Text := Text;
+      Items[Count].Model := '';
+      if (Role = 'assistant') and (JsonStr(Msg, 'model') <> '') then
+        Items[Count].Model := JsonStr(Msg, 'provider') + '/' + JsonStr(Msg, 'model');
       Inc(Count);
     end;
     SetLength(Items, Count);

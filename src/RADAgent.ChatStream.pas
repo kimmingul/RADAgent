@@ -16,7 +16,7 @@ type
   private
     FPost: TPagePost;
     FTranscript: TStringList;
-    FText, FThinking, FTodos: string;
+    FText, FThinking, FTodos, FModel: string;
     FInputs: TDictionary<string, string>;
     FStarts: TDictionary<string, UInt64>;
     FLastUpdate: TDictionary<string, UInt64>;
@@ -100,6 +100,7 @@ procedure TChatStream.Clear;
 begin
   FTranscript.Clear;
   FTodos := '';
+  FModel := '';
   FText := '';
   FThinking := '';
   FInputs.Clear;
@@ -198,8 +199,16 @@ begin
         Emit(PageNotice('output', Event.Text));
     aekCompactionStart:
       Emit(PageNotice('info', Tr('chatstream.compacting')));
-    aekRetryStart, aekFallback:
+    aekRetryStart:
       Emit(PageNotice('retry', Event.Text));
+    aekFallback:
+      Emit(PageModelNotice('retry', Event.Text, [Event.Detail, Event.ToolName]));
+    aekModel:
+      if (Event.Detail <> '') and (Event.ToolName + '/' + Event.Detail <> FModel) then
+      begin
+        FModel := Event.ToolName + '/' + Event.Detail;
+        Emit(PageModel(FModel));
+      end;
     aekRetryEnd:
       if Event.IsError then
         Emit(PageNotice('error', Event.Text))

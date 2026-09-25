@@ -80,6 +80,8 @@
     <DCCReference Include="RADAgent.Options.pas"/>
     <DCCReference Include="RADAgent.LegacyNames.pas"/>
     <DCCReference Include="RADAgent.ChatStop.pas"/>
+    <DCCReference Include="RADAgent.BrandIcons.pas"/>
+    <DCCReference Include="RADAgent.BrandTable.pas"/>
     <DCCReference Include="RADAgent.Lang.pas"/>
     <DCCReference Include="RADAgent.RpcProtocol.pas"/>
     <DCCReference Include="RADAgent.HostToolDefs.pas"/>

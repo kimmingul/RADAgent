@@ -15,10 +15,13 @@ type
     { A prompt that finished without an agent turn (a local slash command): no agent_end follows. }
     aekPromptLocal,
     { Text a built-in slash command printed (command_output), terminal colours removed. }
-    aekCommandOutput);
+    aekCommandOutput,
+    { An assistant message starts: ToolName = provider, Detail = model id. }
+    aekModel);
 
   { Subagent: ToolId = id, ToolName = agent, Detail = description, Text = last intent,
-    Level = status, Count = tool calls. Retry/fallback: Text is the line to show. }
+    Level = status, Count = tool calls. Retry/fallback: Text is the line to show; a fallback
+    also names the models in ToolName (to) and Detail (from, or the model it succeeded with). }
   TAgentEvent = record
     Kind: TAgentEventKind;
     Text, ToolId, ToolName, Detail, Level: string;
@@ -195,11 +198,14 @@ begin
   begin
     Event.Kind := aekFallback;
     Event.Text := TrF('rpcevents.fallbackApplied', [JsonStr(Obj, 'from'), JsonStr(Obj, 'to')]);
+    Event.Detail := JsonStr(Obj, 'from');
+    Event.ToolName := JsonStr(Obj, 'to');
   end
   else
   begin
     Event.Kind := aekFallback;
     Event.Text := TrF('rpcevents.fallbackSuccess', [JsonStr(Obj, 'model')]);
+    Event.Detail := JsonStr(Obj, 'model');
   end;
 end;
 
@@ -244,6 +250,13 @@ begin
     end
     else if EvType = 'message_update' then
       ReadMessageUpdate(Obj, Result)
+    else if (EvType = 'message_start') and (JsonChild(Obj, 'message') <> nil) and
+      (JsonStr(JsonChild(Obj, 'message'), 'role') = 'assistant') then
+    begin
+      Result.Kind := aekModel;
+      Result.ToolName := JsonStr(JsonChild(Obj, 'message'), 'provider');
+      Result.Detail := JsonStr(JsonChild(Obj, 'message'), 'model');
+    end
     else if (EvType = 'tool_execution_start') or (EvType = 'tool_execution_update') or
       (EvType = 'tool_execution_end') then
       ReadTool(Obj, EvType, Result)

@@ -25,6 +25,10 @@ function PageTodos(const Todos: TArray<TTodoItem>): string;
 { Which activity kinds the page shows. }
 function PageDisplay(Shows: TChatShows): string;
 function PageNotice(const Level, Text: string): string;
+{ A notice naming models ("provider/model"); the page puts each one's logo in front of it. }
+function PageModelNotice(const Level, Text: string; const Models: array of string): string;
+{ The model answering from here on ("provider/model"). }
+function PageModel(const Selector: string): string;
 function PageTurnEnd: string;
 function PageClear: string;
 function PageHistory(const Items: TArray<THistoryItem>): string;
@@ -184,6 +188,33 @@ begin
   Result := Build('notice', ['level', 'text'], [Level, Text]);
 end;
 
+function PageModelNotice(const Level, Text: string; const Models: array of string): string;
+var
+  Obj: TJSONObject;
+  List: TJSONArray;
+  Model: string;
+begin
+  Obj := TJSONObject.Create;
+  try
+    Obj.AddPair('t', 'notice');
+    Obj.AddPair('level', Level);
+    Obj.AddPair('text', Text);
+    List := TJSONArray.Create;
+    for Model in Models do
+      if Model <> '' then
+        List.Add(Model);
+    Obj.AddPair('models', List);
+    Result := Obj.ToJSON;
+  finally
+    Obj.Free;
+  end;
+end;
+
+function PageModel(const Selector: string): string;
+begin
+  Result := Build('model', ['model'], [Selector]);
+end;
+
 function PageTurnEnd: string;
 begin
   Result := Build('turnEnd', [], []);
@@ -209,6 +240,8 @@ begin
       Item := TJSONObject.Create;
       Item.AddPair('role', Items[Index].Role);
       Item.AddPair('text', Items[Index].Text);
+      if Items[Index].Model <> '' then
+        Item.AddPair('model', Items[Index].Model);
       List.AddElement(Item);
     end;
     Obj.AddPair('items', List);

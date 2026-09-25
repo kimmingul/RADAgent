@@ -28,7 +28,8 @@ implementation
 
 uses
   System.SysUtils, System.JSON, RADAgent.SettingsUi, RADAgent.ChatSession,
-  RADAgent.ChatCommand, RADAgent.RpcResponses, RADAgent.Lang;
+  RADAgent.ChatCommand, RADAgent.RpcResponses, RADAgent.Lang, RADAgent.BrandTable,
+  RADAgent.BrandIcons;
 
 constructor TAccountPage.Create(AOwner: TComponent; Page: TWinControl);
 var
@@ -39,6 +40,7 @@ begin
   FModel := TComboBox.Create(Page);
   FModel.Style := csDropDownList;
   FModel.DropDownCount := 24;
+  MakeBrandCombo(FModel);
   AddRow(Page, Tr('settingsaccount.model'), FModel);
   FLevel := TComboBox.Create(Page);
   FLevel.Style := csDropDownList;
@@ -48,6 +50,7 @@ begin
   AddHeading(Page, Tr('settingsaccount.headingLogin'));
   FProviders := TListBox.Create(Page);
   FProviders.Height := 170;
+  MakeBrandList(FProviders);
   AddStacked(Page, FProviders);
   Row := AddButtons(Page);
   FLogin := AddButton(Row, Tr('settingsaccount.btnLoginSelected'), LoginClick);
@@ -77,7 +80,7 @@ begin
   try
     FModel.Items.Clear;
     for Name in Session.Catalog.Models do
-      FModel.Items.Add(Name);
+      AddBrandItem(FModel.Items, Name, SelectorBrand(Name));
   finally
     FModel.Items.EndUpdate;
   end;
@@ -91,9 +94,11 @@ begin
     FProviders.Items.Clear;
     for Provider in Session.Catalog.LoginProviders do
       if Provider.Authenticated then
-        FProviders.Items.Add(TrF('settingsaccount.providerLoggedIn', [Provider.Name]))
+        AddBrandItem(FProviders.Items, TrF('settingsaccount.providerLoggedIn', [Provider.Name]),
+          ProviderBrand(Provider.Id))
       else
-        FProviders.Items.Add(TrF('settingsaccount.providerNotLoggedIn', [Provider.Name]));
+        AddBrandItem(FProviders.Items, TrF('settingsaccount.providerNotLoggedIn', [Provider.Name]),
+          ProviderBrand(Provider.Id));
   finally
     FProviders.Items.EndUpdate;
   end;

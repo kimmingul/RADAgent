@@ -55,8 +55,7 @@
 /* Working indicator at the end of the transcript */
 #working { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
 #working[hidden] { display: none; }
-.spark { color: #d97757; font-size: 18px; display: inline-block; animation: spark 1.6s linear infinite; }
-@keyframes spark { to { transform: rotate(360deg); } }
+.spark { color: #d97757; font-size: 18px; line-height: 1; }
 
 /* Tool group: all activity between two answer blocks, collapsed into one line */
 .tool-group > summary {

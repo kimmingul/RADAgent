@@ -110,12 +110,18 @@ end;
 
 function PageCatalog: string;
 var
-  Obj: TJSONObject;
+  Obj, Names: TJSONObject;
+  Provider: TLoginProvider;
 begin
   Obj := TJSONObject.Create;
   Obj.AddPair('t', 'catalog');
   Obj.AddPair('models', StringArray(ChatSession.Catalog.Models));
   Obj.AddPair('levels', StringArray(ChatSession.Catalog.ThinkingLevels));
+  { Provider names for the model menu's group headings. }
+  Names := TJSONObject.Create;
+  for Provider in ChatSession.Catalog.LoginProviders do
+    Names.AddPair(Provider.Id, Provider.Name);
+  Obj.AddPair('providers', Names);
   Result := Finish(Obj);
 end;
 

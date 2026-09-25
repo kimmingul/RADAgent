@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="activity.css">
   <link rel="stylesheet" href="chrome.css">
   <link rel="stylesheet" href="btw.css">
+  <link rel="stylesheet" href="brands.css">
 </head>
 <body>
   <div id="topbar">
@@ -50,6 +51,10 @@
         <div class="popup-item" data-action="compile"><span class="menu-icon">▶</span><span class="popup-name" data-i18n="page.plusmenu.compile">Compile project</span></div>
       </div>
       <div id="sub-menu" class="popup" hidden></div>
+      <div id="model-menu" class="popup" hidden>
+        <input id="model-search" type="search" placeholder="Search models" data-i18n-placeholder="page.modelpicker.search">
+        <div id="model-list"></div>
+      </div>
       <div id="chips"></div>
       <div class="composer-box">
         <textarea id="input" rows="1" placeholder="Type a message · / for commands" data-i18n-placeholder="page.composer.placeholder"></textarea>
@@ -64,13 +69,14 @@
           <option value="plan" data-i18n="page.composer.approvalPlan">Plan</option>
         </select>
         <span class="spacer"></span>
-        <select id="model-select" title="Model" data-i18n-title="page.composer.modelTitle"></select>
+        <button id="model-btn" class="footer-btn" type="button"></button>
         <select id="thinking-select" title="Thinking level" data-i18n-title="page.composer.thinkingTitle"></select>
         <svg id="ctx-ring" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="none" stroke="var(--border)" stroke-width="3"/><circle id="ctx-arc" cx="10" cy="10" r="8" fill="none" stroke="var(--muted)" stroke-width="3" stroke-dasharray="0 50.3" transform="rotate(-90 10 10)"/></svg>
         <span id="conn-dot" class="off" title="Connecting" data-i18n-title="page.composer.connectingTitle"></span>
       </div>
     </div>
   </div>
+  <script src="brands.js"></script>
   <script src="markdown.js"></script>
   <script src="activity.js"></script>
   <script src="tools.js"></script>
@@ -78,6 +84,7 @@
   <script src="btw.js"></script>
   <script src="checkpoints.js"></script>
   <script src="topbar.js"></script>
+  <script src="modelpicker.js"></script>
   <script src="composer.js"></script>
   <script src="plusmenu.js"></script>
   <script src="chat.js"></script>
