@@ -1,11 +1,5 @@
 # 향후 할 일
 
-## 사용권 계약(EULA)
-
-- RAD Agent 자체 사용권 계약 문구를 정한다(Nanum Space Co., Ltd.).
-- 정해지면 `installer\LICENSE-ko.txt` 등 언어별 파일로 두고 `installer\RADAgent.iss`의 `[Languages]`에 `LicenseFile`을 걸어 설치 화면에서 동의를 받는다.
-- README "고지"와 `installer\THIRD-PARTY-NOTICES.txt` 머리말에 사용권을 적는다.
-
 ## 구버전 패키지 (10.4 Sydney, 11 Alexandria, 12 Athens)
 
 BPL은 그 릴리스의 컴파일러로 만들어야 한다. 패키지는 그 릴리스의 런타임 패키지(`rtl290.bpl`, `vcl290.bpl`, `designide290.bpl` 등)를 이름으로 불러오고, 13에서 만든 `RADAgent370.bpl`은 `rtl370.bpl`을 찾으므로 12에서 로드되지 않는다. 컴파일러가 만드는 패키지 형식과 ToolsAPI 인터페이스 배치도 릴리스마다 다르다.

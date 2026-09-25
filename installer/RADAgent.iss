@@ -53,6 +53,8 @@ DisableReadyMemo=no
 OutputDir={#OutputDir}
 OutputBaseFilename=RADAgent-Setup-{#AppVersion}
 SetupIconFile=..\resources\RADAgent.ico
+; MIT License, shown for acceptance before installing and installed next to the packages.
+LicenseFile=..\LICENSE
 UninstallDisplayIcon={app}\RADAgent.ico
 UninstallDisplayName=RAD Agent
 Compression=lzma2/max
@@ -167,6 +169,7 @@ Name: "rs270w32"; Description: "RAD Studio 10.4 Sydney - {cm:Ide32}"; Types: cus
 Source: "{tmp}\omp.exe"; DestDir: "{localappdata}\omp"; Flags: external ignoreversion uninsneveruninstall; Check: OmpDownloaded
 Source: "..\resources\RADAgent.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "THIRD-PARTY-NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 #if Has370w64
 Source: "{#PayloadDir}\37.0\Win64\*"; DestDir: "{app}\37.0\Win64"; Flags: ignoreversion recursesubdirs; Components: rs370w64
 #endif

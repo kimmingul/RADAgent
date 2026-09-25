@@ -125,6 +125,10 @@ omp 버전이 바뀌면 처음 시작할 때 모델을 부르지 않는 호환�
 - 설치 파일: `scripts\package.ps1`(서명 포함). [docs/install.md](docs/install.md)의 "설치 파일 만들기".
 - 시험 프로젝트: `scripts\prepare-smoke.cmd`(Delphi VCL), `scripts\prepare-smoke-cpp.cmd`(C++Builder).
 
+## 라이선스
+
+[MIT License](LICENSE). 개인·기업 모두 무료로 쓰고, 소스를 고치고, 다시 배포할 수 있다. 설치 프로그램은 이 라이선스를 보여 주고 동의를 받는다.
+
 ## 고지
 
 - Powered by [oh-my-pi](https://github.com/can1357/oh-my-pi) (MIT). RAD Agent는 omp를 설치 파일에 담지 않는다. 사용자가 설치한 omp를 실행하고, 없으면 설치할 때 공식 릴리스를 받아 설치한다.

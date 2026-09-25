@@ -1,7 +1,8 @@
 ﻿RAD Agent - Third-party notices
 Copyright (C) 2026 Nanum Space Co., Ltd.
 
-RAD Agent includes the components below. Their licenses follow.
+RAD Agent is free and open source under the MIT License (LICENSE.txt). It includes the
+components below; their licenses follow.
 
 1. Provider and model icons (chat\brands, and the icon sprites inside the RAD Agent BPL)
    From lobe-icons, https://github.com/lobehub/lobe-icons
