@@ -130,7 +130,9 @@ begin
   if Skills.Dir = '' then
     Skills.Name := '';
   Guide := WriteProjectGuide(Profile, Lsp, Skills.Name);
-  { A new omp is checked once, in the background; the chat hears about problems. }
+  { A new omp is checked once, in the background; the chat hears about problems. A new RAD Agent
+    says so once, with its release notes. }
+  AnnounceAgentUpdate;
   if Profile.ProjectDir <> '' then
   begin
     CheckOmpAfterUpdate(Profile.ProjectDir);

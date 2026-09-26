@@ -60,6 +60,8 @@ contains
   RADAgent.EditorContext in 'RADAgent.EditorContext.pas',
   RADAgent.ChatInput in 'RADAgent.ChatInput.pas',
   RADAgent.WebView2Handlers in 'RADAgent.WebView2Handlers.pas',
+  RADAgent.AgentVersion in 'RADAgent.AgentVersion.pas',
+  RADAgent.AboutInfo in 'RADAgent.AboutInfo.pas',
   RADAgent.WebView2Runtime in 'RADAgent.WebView2Runtime.pas',
   RADAgent.WebView2Host in 'RADAgent.WebView2Host.pas',
   RADAgent.ChatPageMessages in 'RADAgent.ChatPageMessages.pas',

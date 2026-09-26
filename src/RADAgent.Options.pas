@@ -16,6 +16,8 @@ function AgentTempRoot: string;
 function ProcessTempFile(const Name: string): string;
 function OmpStderrLog: string;
 procedure AppendRpcLog(const Line: string);
+{ Written first in every new rpc.log (also after rotation), so a log alone tells the versions. }
+procedure SetRpcLogHeader(const Line: string);
 { Why an omp child ended early: the last line it wrote to StderrPath (e.g. "Error: unknown flag"). }
 function ChildExitReason(const StderrPath: string): string;
 { One command-line argument in quotes, safe for a trailing backslash (C:\dir\). }
@@ -33,6 +35,7 @@ uses
 var
   { The RPC reader thread and the main thread both log; unsynchronised appends drop lines. }
   GLogGate: TCriticalSection;
+  GLogHeader: string;
 
 function OmpExecutable: string;
 var
@@ -125,9 +128,21 @@ begin
           System.SysUtils.RenameFile(LogPath, BackupPath);
         end;
       end;
+      if (GLogHeader <> '') and not FileExists(LogPath) then
+        TFile.AppendAllText(LogPath, GLogHeader + sLineBreak, TEncoding.UTF8);
       TFile.AppendAllText(LogPath, Line + sLineBreak, TEncoding.UTF8);
     except
     end;
+  finally
+    GLogGate.Release;
+  end;
+end;
+
+procedure SetRpcLogHeader(const Line: string);
+begin
+  GLogGate.Acquire;
+  try
+    GLogHeader := Line;
   finally
     GLogGate.Release;
   end;

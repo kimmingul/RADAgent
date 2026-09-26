@@ -46,8 +46,8 @@
     <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
     <VerInfo_MajorVer>1</VerInfo_MajorVer>
     <VerInfo_MinorVer>2</VerInfo_MinorVer>
-    <VerInfo_Release>4</VerInfo_Release>
-    <VerInfo_Keys>CompanyName=Nanum Space Co., Ltd.;FileDescription=RAD Agent — an agentic coding assistant for Delphi, powered by oh-my-pi;FileVersion=1.2.4.0;InternalName=RADAgent;LegalCopyright=Copyright (C) 2026 Nanum Space Co., Ltd.;LegalTrademarks=;OriginalFilename=RADAgent.bpl;ProductName=RAD Agent;ProductVersion=1.2.4.0;Comments=</VerInfo_Keys>
+    <VerInfo_Release>5</VerInfo_Release>
+    <VerInfo_Keys>CompanyName=Nanum Space Co., Ltd.;FileDescription=RAD Agent — an agentic coding assistant for Delphi, powered by oh-my-pi;FileVersion=1.2.5.0;InternalName=RADAgent;LegalCopyright=Copyright (C) 2026 Nanum Space Co., Ltd.;LegalTrademarks=;OriginalFilename=RADAgent.bpl;ProductName=RAD Agent;ProductVersion=1.2.5.0;Comments=</VerInfo_Keys>
     <Debugger_Parameters>-pDelphi</Debugger_Parameters>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)'=='Win32'">
@@ -124,6 +124,8 @@
     <DCCReference Include="RADAgent.EditorContext.pas"/>
     <DCCReference Include="RADAgent.ChatInput.pas"/>
     <DCCReference Include="RADAgent.WebView2Handlers.pas"/>
+    <DCCReference Include="RADAgent.AgentVersion.pas"/>
+    <DCCReference Include="RADAgent.AboutInfo.pas"/>
     <DCCReference Include="RADAgent.WebView2Runtime.pas"/>
     <DCCReference Include="RADAgent.WebView2Host.pas"/>
     <DCCReference Include="RADAgent.ChatPageMessages.pas"/>

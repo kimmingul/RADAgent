@@ -1,5 +1,7 @@
 RADAGENT_ICON16 RCDATA "..\\resources\\MenuIcon-16.png"
 RADAGENT_ICON32 RCDATA "..\\resources\\MenuIcon-32.png"
+RADAGENT_PLUGIN24 RCDATA "..\\resources\\PluginIcon-24.png"
+RADAGENT_PLUGIN48 RCDATA "..\\resources\\PluginIcon-48.png"
 BRANDS_JSON RCDATA "chat\\brands\\brands.json"
 BRANDS_DARK16 RCDATA "..\\resources\\brands\\Brands-dark-16.png"
 BRANDS_DARK32 RCDATA "..\\resources\\brands\\Brands-dark-32.png"

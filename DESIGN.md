@@ -94,10 +94,12 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | SessionData | 세션 응답 해석(갈라질 메시지, 트리, 마지막 답·코드 블록, 하위 에이전트 대화, 셸 결과). ToolsAPI 없음. |
 | ChatCommand | 채팅 입력을 기존 omp RPC 프레임으로 분류한다. 새 명령 `type`을 만들지 않는다. |
 | AskDialog | `extension_ui_request`와 슬래시 명령 선택 모달. |
-| Options | omp 실행 파일, 명령줄(인자 인용), `%TEMP%\RADAgent` 로그 경로(omp에 넘기는 파일과 stderr 로그는 IDE 프로세스마다 `-p<pid>`, 끝난 IDE의 것은 처음 쓸 때 지움, `rpc.log`는 20MB가 넘으면 `rpc.1.log`로 돌림), 자식이 일찍 끝난 이유(stderr 마지막 줄), 공통 `--config` 내용. |
+| Options | omp 실행 파일, 명령줄(인자 인용), `%TEMP%\RADAgent` 로그 경로(omp에 넘기는 파일과 stderr 로그는 IDE 프로세스마다 `-p<pid>`, 끝난 IDE의 것은 처음 쓸 때 지움, `rpc.log`는 20MB가 넘으면 `rpc.1.log`로 돌림, 새 `rpc.log` 첫 줄은 버전 줄), 자식이 일찍 끝난 이유(stderr 마지막 줄), 공통 `--config` 내용. |
 | RpcChunks | RPC v2 `rpc_chunk` 조각을 원래 프레임으로 되돌린다(순서·크기·끊김 검사). |
 | OmpProbe | 설치된 omp 호환성 검사: 버전, 명령줄 옵션, RPC 시작·프로토콜, `rad.*` 등록과 xd:// 연결, 응답 필드, `config list`. 모델 호출 없음. 시험과 IDE가 같이 쓴다. |
-| OmpCheck | omp 버전이 바뀌면 첫 시작 때 OmpProbe를 뒤에서 돌려 채팅에 알리고, 설정 창에서 바로 돌린다. |
+| OmpCheck | omp 버전이 바뀌면 첫 시작 때 OmpProbe를 뒤에서 돌려 채팅에 알리고, 설정 창에서 바로 돌린다. 이번 IDE에서 본 omp 버전을 기억한다. RAD Agent 버전이 지난번과 다르면 채팅에 한 번 알리고 릴리스 노트 링크를 붙인다(`SeenAgentVersion`). |
+| AgentVersion | RAD Agent 버전(BPL 버전 정보, `RADAgent.dproj` 한 곳에서 올린다), IDE 비트, `bds.exe` 버전, 릴리스 노트 주소, 버그 보고용 버전 줄. ToolsAPI 없음. |
+| AboutInfo | IDE 시작 화면과 Help → About의 설치 제품 목록에 RAD Agent 버전과 아이콘(`resources\PluginIcon-24/48.png`)을 넣고, 패키지를 내릴 때 뺀다. `rpc.log`에 버전 줄을 남긴다. |
 | MenuIcon | `resources\MenuIcon-16/32.png`(`RADAgentResources.rc`의 RCDATA)를 IDE 이미지 목록에 넣어 View 메뉴 항목 아이콘으로 쓴다. `INTAServices280`이 없는 10.4에서는 아이콘 없이 둔다. |
 | IdeContext | 활성 `.dproj` 경로, 열린 모듈, 에디터 버퍼 위치. |
 | IdeFiles | 프로젝트 모듈 저장, 디스크에서 바뀐 모듈 다시 읽기(`Refresh`), 사용자가 고치던 모듈은 충돌로 돌려준다. 지워진 파일의 모듈은 닫는다. |

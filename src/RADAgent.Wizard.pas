@@ -9,11 +9,10 @@ procedure Register;
 implementation
 
 uses
-  System.SysUtils, System.Classes, System.IniFiles, Winapi.Windows, Vcl.Forms,
-  Vcl.Controls, Vcl.Menus, Vcl.ActnList, Vcl.ImgList, Vcl.ComCtrls, Vcl.ToolWin, Vcl.ExtCtrls,
-  ToolsAPI, DesignIntf, RADAgent.DockForm, RADAgent.Compile, RADAgent.RpcClient,
-  RADAgent.Options, RADAgent.ChatSession, RADAgent.IdeMenus, RADAgent.DockKeeper,
-  RADAgent.MenuIcon;
+  System.SysUtils, System.Classes, System.IniFiles, Winapi.Windows, Vcl.Forms, Vcl.Controls, Vcl.Menus,
+  Vcl.ActnList, Vcl.ImgList, Vcl.ComCtrls, Vcl.ToolWin, Vcl.ExtCtrls, ToolsAPI, DesignIntf, RADAgent.DockForm,
+  RADAgent.Compile, RADAgent.RpcClient, RADAgent.Options, RADAgent.ChatSession, RADAgent.IdeMenus,
+  RADAgent.DockKeeper, RADAgent.MenuIcon, RADAgent.AboutInfo;
 
 type
   TRADAgentWizard = class(TNotifierObject, IOTAWizard)
@@ -353,6 +352,7 @@ procedure Register;
 var
   Services: INTAServices270;
 begin
+  InstallAboutInfo;
   GWizard := TRADAgentWizard.Create;
   RegisterPackageWizard(GWizard);
   GDockObj := TRADAgentDockable.Create;
@@ -379,6 +379,7 @@ var
   Services: INTAServices270;
 begin
   RemoveDockKeeper;
+  RemoveAboutInfo;
   RemoveIdeMenus;
   RemoveCompileNotifier;
   GDockObj := nil;
@@ -393,7 +394,6 @@ begin
 end;
 
 initialization
-
 finalization
   UnregisterAll;
 

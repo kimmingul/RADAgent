@@ -182,12 +182,22 @@
   }
 
   // Model names in the text (fallback "a/x → b/y") get their logo in front.
-  function handleNotice(level, text, models) {
+  function handleNotice(level, text, models, msg) {
     const wasNear = isNearBottom();
     // Output of a slash command omp ran itself: keep its layout.
     const notice = document.createElement(level === 'output' ? 'pre' : 'div');
     notice.className = 'notice notice-' + (level || 'info');
     appendWithLogos(notice, text || '', Array.isArray(models) ? models.filter(Boolean) : []);
+    // A notice may end in a web link (release notes); clicks.js opens .chat-link in the browser.
+    if (msg && msg.url) {
+      const link = document.createElement('a');
+      link.className = 'chat-link';
+      link.href = '#';
+      link.setAttribute('data-url', msg.url);
+      link.textContent = msg.linkText || msg.url;
+      notice.appendChild(document.createTextNode(' '));
+      notice.appendChild(link);
+    }
     // A retry waiting for its delay can be called off; the button goes when the turn ends.
     if (level === 'retry' && !Array.isArray(models)) {
       const stop = document.createElement('button');
@@ -333,7 +343,7 @@
       case 'subagent': global.ChatActivity.subagent(msg); break;
       case 'todos': global.ChatActivity.todos(msg.items); break;
       case 'display': global.ChatActivity.display(msg.show); break;
-      case 'notice': handleNotice(msg.level, msg.text, msg.models); break;
+      case 'notice': handleNotice(msg.level, msg.text, msg.models, msg); break;
       case 'model': handleModel(msg.model); break;
       case 'turnEnd': handleTurnEnd(msg); break;
       case 'clear': handleClear(); break;

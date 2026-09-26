@@ -56,6 +56,9 @@ procedure SetLanguageCode(const Value: string);
 { omp version that last passed RADAgent's compatibility check (RADAgent.OmpProbe). }
 function CheckedOmpVersion: string;
 procedure SetCheckedOmpVersion(const Value: string);
+{ RAD Agent version the chat last announced (RADAgent.OmpCheck.AnnounceAgentUpdate). }
+function SeenAgentVersion: string;
+procedure SetSeenAgentVersion(const Value: string);
 
 implementation
 
@@ -327,6 +330,16 @@ end;
 procedure SetCheckedOmpVersion(const Value: string);
 begin
   WriteValue('OmpCheckedVersion', Value);
+end;
+
+function SeenAgentVersion: string;
+begin
+  Result := Trim(string(ReadValue('SeenAgentVersion', '')));
+end;
+
+procedure SetSeenAgentVersion(const Value: string);
+begin
+  WriteValue('SeenAgentVersion', Value);
 end;
 
 

@@ -1,4 +1,4 @@
-unit RADAgent.SettingsDialog;
+﻿unit RADAgent.SettingsDialog;
 
 { The chat's settings window. Tabs: chat display and RADAgent options (saved to the registry,
   applied at once), model/login (RPC, at once), and this project's omp overlay (roles,
@@ -13,10 +13,10 @@ implementation
 
 uses
   System.SysUtils, System.Classes, System.IOUtils, Vcl.Forms, Vcl.Controls, Vcl.StdCtrls, Vcl.ExtCtrls,
-  Vcl.ComCtrls, System.UITypes, RADAgent.AskDialog, RADAgent.SettingsUi, RADAgent.SettingsAccount,
-  RADAgent.SettingsProject, RADAgent.OmpSettings, RADAgent.AgentSettings,
+  Vcl.ComCtrls, System.UITypes, Winapi.Windows, Winapi.ShellAPI, RADAgent.AskDialog, RADAgent.SettingsUi,
+  RADAgent.SettingsAccount, RADAgent.SettingsProject, RADAgent.OmpSettings, RADAgent.AgentSettings,
   RADAgent.ChatSession, RADAgent.ChatTheme, RADAgent.IdeContext, RADAgent.Options,
-  RADAgent.OmpCheck, RADAgent.Lang, RADAgent.ClangdInstall;
+  RADAgent.OmpCheck, RADAgent.Lang, RADAgent.ClangdInstall, RADAgent.AgentVersion;
 
 type
   TSettingsForm = class(TAgentForm)
@@ -36,6 +36,7 @@ type
     procedure OkClick(Sender: TObject);
     procedure CheckOmpClick(Sender: TObject);
     procedure InstallClangdClick(Sender: TObject);
+    procedure VersionLinkClick(Sender: TObject; const Link: string; LinkType: TSysLinkType);
   public
     constructor CreateDialog;
     destructor Destroy; override;
@@ -59,6 +60,7 @@ constructor TSettingsForm.CreateDialog;
 var
   Bottom: TPanel;
   Button: TButton;
+  Version: TLinkLabel;
   Dir: string;
   RolePage, ExtensionPage, DefaultsPage: TWinControl;
 begin
@@ -94,6 +96,15 @@ begin
   Button.Margins.SetBounds(0, 0, 8, 0);
   Button.Left := 0;
   Button.Parent := Bottom;
+  { The rest of the bar, left of the buttons: what is installed, and what changed in it. }
+  Version := TLinkLabel.Create(Self);
+  Version.Parent := Bottom;
+  Version.Align := alLeft;
+  Version.AlignWithMargins := True;
+  Version.Margins.SetBounds(12, 4, 0, 0);
+  Version.Caption := ShortVersionLine(KnownOmpVersion) + ' · <a href="' + ReleaseNotesUrl + '">' +
+    Tr('ompcheck.releaseNotes') + '</a>';
+  Version.OnLinkClick := VersionLinkClick;
   FPages := TPageControl.Create(Self);
   FPages.Parent := Self;
   FPages.Align := alClient;
@@ -251,6 +262,11 @@ begin
     Screen.Cursor := crDefault;
   end;
   ShowReport(Tr('settingsdialog.checkOmpTitle'), Report);
+end;
+
+procedure TSettingsForm.VersionLinkClick(Sender: TObject; const Link: string; LinkType: TSysLinkType);
+begin
+  ShellExecute(0, 'open', PChar(Link), nil, nil, SW_SHOWNORMAL);
 end;
 
 procedure TSettingsForm.OkClick(Sender: TObject);

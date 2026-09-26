@@ -62,6 +62,7 @@ RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키
   - `/delete`: 확인 후 이 세션 파일을 지우고 새 세션.
   - `/resume`: 세션 목록. `/tree`: 세션 트리. `/branch`(`/rewind`), `/fork`: 고른 내 메시지 직전에서 대화를 갈라 그 메시지를 입력칸에 되돌린다.
   - `/copy`(마지막 답), `/copy code`(그 마지막 코드 블록), `/login [provider]`, `/restart`, `/settings`, `/extensions`, `/agents`, `/plan`, `/hotkeys`, `/hub`, `/queue <메시지>`.
+  - `/version`: RAD Agent·omp·IDE 버전 한 줄(복사 버튼)과 릴리스 노트 링크. 문제를 알릴 때 붙인다.
 - `/btw <질문>`: 곁가지 질문. 지금 대화를 복제한 별도 omp가 도구 없이 답하므로 작업 중에도 되고 본 대화에는 들어가지 않는다. 주제별로 이어 묻기, 검색, 삭제가 되는 메모 창에 남는다.
 
 ### IDE 연동
@@ -93,6 +94,13 @@ RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키
   - 역할별 모델, 확장(스킬·확장·하위 에이전트, MCP 목록).
   - 고급(이 프로젝트): omp 도구 승인, 기본 생각 수준, UI 작성 방식, 폼 텍스트 편집, 자동 압축, 자동 재시도, 작업 중 메시지 처리 방식. omp 설정은 `<프로젝트>\.omp\radagent.yml`에 저장해 omp에 넘기며 전역 omp 설정은 바꾸지 않는다. UI 작성 방식과 폼 텍스트 편집은 `<프로젝트>\.omp\radagent-ide.json`에 저장한다.
   - 고급(이 PC): omp 실행 파일과 추가 인자, clangd 경로와 설치, omp 호환성 검사.
+  - 창 아래쪽: RAD Agent 버전(IDE 비트), omp 버전, 릴리스 노트 링크.
+
+### 버전 확인
+
+- Help → About의 설치 제품 목록과 IDE 시작 화면에 `RAD Agent <버전>`이 나온다.
+- 설정 창 아래쪽, `/version` 명령, `%TEMP%\RADAgent\rpc.log`의 `version` 줄에 RAD Agent·omp·IDE(`bds.exe`) 버전이 있다.
+- 새 버전을 설치한 뒤 처음 채팅을 열면 한 번 "업데이트됨" 알림과 릴리스 노트 링크가 나온다.
 
 ### C++Builder
 

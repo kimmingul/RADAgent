@@ -17,7 +17,8 @@ uses
   System.SysUtils, System.Classes, System.JSON, System.IOUtils, Vcl.Clipbrd,
   RADAgent.ChatSession, RADAgent.SlashRoutes, RADAgent.SessionData, RADAgent.RpcResponses,
   RADAgent.ChatCommand, RADAgent.ChatPageMessages, RADAgent.AskDialog, RADAgent.ChatActions,
-  RADAgent.SettingsDialog, RADAgent.RpcJson, RADAgent.ChatQueue, RADAgent.Lang;
+  RADAgent.SettingsDialog, RADAgent.RpcJson, RADAgent.ChatQueue, RADAgent.OmpCheck,
+  RADAgent.AgentVersion, RADAgent.Lang;
 
 type
   TPending = (pdNone, pdBranch, pdTree, pdCopy, pdCopyCode, pdHub, pdSubagent, pdClear, pdDelete);
@@ -76,6 +77,14 @@ begin
     Id := Providers[Index].Id;
   end;
   ChatSession.SendCommand('login', Frame('login', 'providerId', Id));
+end;
+
+{ The version line in a code block (its Copy button) for bug reports, and the release notes. }
+function VersionSheet: string;
+begin
+  Result := Tr('chatslash.versionHint') + sLineBreak + sLineBreak + '```text' + sLineBreak +
+    VersionLine(KnownOmpVersion) + sLineBreak + '```' + sLineBreak + sLineBreak +
+    '[' + Tr('ompcheck.releaseNotes') + '](' + ReleaseNotesUrl + ')';
 end;
 
 function RunLocalSlash(const Text: string): Boolean;
@@ -155,6 +164,8 @@ begin
         SubmitChat(Args, '', '');
     srExit:
       Session.Notice('info', Tr('chatslash.exit'));
+    srVersion:
+      Session.PostToView(PageSheet(Tr('chatslash.versionTitle'), VersionSheet));
     srTerminalOnly:
       Session.Notice('warn', TrF('chatslash.terminalOnly', [Name]));
   end;
