@@ -112,7 +112,8 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | Approval | 상태를 바꾸는 host-tool이 쓰는 사용자 승인 계약(`IAgentApproval`). ChatSession이 구현한다. |
 | BufferEdits | 승인 후 캐럿 위치에 삽입(`rad.insert_at_caret`). 코드 편집은 omp의 디스크 편집이다. |
 | DebugTools | 디버거 상태, 호출 스택, 부작용 없는 식 평가, 중단점 목록. 읽기 전용. |
-| DebugControl | 승인 후 실행·계속, 스텝(over, into, return), 일시 정지, 종료, 소스 중단점 추가. 디버기 메모리는 쓰지 않는다. |
+| DebugControl | 승인 후 실행·계속, 스텝(over, into, return), 일시 정지, 종료, 소스 중단점 추가. 디버기 메모리는 쓰지 않는다. 실행·스텝을 기다리는 동안 디버기가 예외를 내면 DebugExceptionWatch가 받은 메시지를 결과의 `exception`에 넣는다. |
+| DebugExceptionWatch | 실행·스텝 도구가 기다리는 동안만 IDE의 "Debugger Exception Notification" 창(ToolsAPI가 없어 폼 클래스로 찾는다)을 기본 단추(Break)로 닫고 메시지를 보관한다. 이 창이 떠 있으면 도구와 턴이 누가 누를 때까지 멈췄다. |
 | FormDesigner | 유닛의 폼 디자이너 찾기, 이름→컴포넌트, 속성 값 문자열화, 디자이너 수정 통지. |
 | FormTools | `rad.form_*` 분배와 읽기(컴포넌트 목록, published 속성). |
 | FormEdits | 승인 후 속성 변경, 컴포넌트 추가(FMX 항목 컨테이너 아래는 `IDesigner.CreateChild`, 그 밖에는 부모를 먼저 선택해 FMX 디자이너가 선택된 항목 안에 넣지 않게 한다)·삭제(먼저 폼을 선택해 Object Inspector가 지우는 컴포넌트를 붙들지 않게 한다)·이름 변경(폼 자체 포함). 끝나면 ChatDiskSync가 저장한다. |

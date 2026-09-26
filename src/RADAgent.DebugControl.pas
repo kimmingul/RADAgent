@@ -1,7 +1,9 @@
 unit RADAgent.DebugControl;
 
 { Debugger execution control that runs only after the user approves: run or continue, step,
-  pause, reset, add a source breakpoint. Main thread only. Never writes debuggee memory. }
+  pause, reset, add a source breakpoint. An exception the debuggee raises while run or step waits
+  is reported in the result (RADAgent.DebugExceptionWatch). Main thread only. Never writes
+  debuggee memory. }
 
 interface
 
@@ -22,8 +24,8 @@ procedure ExecuteDebugControl(const ToolName: string; const Args: TDebugControlA
 implementation
 
 uses
-  System.SysUtils, System.Classes, System.Actions, Vcl.Forms, Vcl.ActnList, Winapi.Windows, ToolsAPI,
-  RADAgent.HostToolDefs, RADAgent.DebugTools, RADAgent.Lang;
+  System.SysUtils, System.Classes, System.Actions, System.JSON, Vcl.Forms, Vcl.ActnList, Winapi.Windows,
+  ToolsAPI, RADAgent.HostToolDefs, RADAgent.DebugTools, RADAgent.DebugExceptionWatch, RADAgent.Lang;
 
 const
   { The IDE's Run > Run action: builds the active project and starts it under the debugger. }
@@ -250,6 +252,8 @@ procedure ExecuteDebugControl(const ToolName: string; const Args: TDebugControlA
 var
   Ok: Boolean;
   Problem: string;
+  Watch: TDebugExceptionWatch;
+  State: TJSONValue;
 begin
   if GetCurrentThreadId <> MainThreadID then
     raise Exception.Create('ToolsAPI is main-thread only');
@@ -260,26 +264,46 @@ begin
     Exit;
   end;
   Problem := '';
-  if ToolName = ToolDebugRun then
-    Ok := RunOrContinue(Approval, Problem)
-  else if ToolName = ToolDebugStep then
-    Ok := StepProcess(Args.Mode, Approval, Problem)
-  else if ToolName = ToolDebugPause then
-    Ok := PauseProcess(Approval, Problem)
-  else if ToolName = ToolDebugReset then
-    Ok := ResetProgram(Approval, Problem)
-  else
-    Ok := AddBreakpoint(Args, Approval, Problem);
-  if Ok then
-  begin
-    { After a run/step the model sees where the debuggee is now. }
-    ResultText := DebugStateJson;
-    IsError := False;
-  end
-  else
-  begin
-    ResultText := Problem;
-    IsError := Problem <> SEditCancelled;
+  Watch := TDebugExceptionWatch.Create;
+  try
+    if ToolName = ToolDebugRun then
+      Ok := RunOrContinue(Approval, Problem)
+    else if ToolName = ToolDebugStep then
+      Ok := StepProcess(Args.Mode, Approval, Problem)
+    else if ToolName = ToolDebugPause then
+      Ok := PauseProcess(Approval, Problem)
+    else if ToolName = ToolDebugReset then
+      Ok := ResetProgram(Approval, Problem)
+    else
+      Ok := AddBreakpoint(Args, Approval, Problem);
+    if Ok then
+    begin
+      { After a run/step the model sees where the debuggee is now, and why it stopped. }
+      ResultText := DebugStateJson;
+      if Watch.Message <> '' then
+      begin
+        State := TJSONObject.ParseJSONValue(ResultText);
+        try
+          if State is TJSONObject then
+          begin
+            TJSONObject(State).AddPair('exception', Watch.Message);
+            TJSONObject(State).AddPair('note', 'Stopped at the exception. Read the call stack (' +
+              ToolDebugStack + ') before changing code; ' + ToolDebugReset + ' ends the process.');
+            ResultText := State.ToJSON;
+          end;
+        finally
+          State.Free;
+        end;
+      end;
+      IsError := False;
+    end
+    else
+    begin
+      ResultText := Problem;
+      IsError := Problem <> SEditCancelled;
+    end;
+  finally
+    Watch.Free;
   end;
 end;
 

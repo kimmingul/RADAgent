@@ -114,6 +114,10 @@ Colors are `TAlphaColor` (`TAlphaColors.Red`), units are logical pixels.
   their number or kind depends on data at run time, and puts them under a designed parent.
 - FMX items (`TMenuItem` under `TMainMenu`/`TMenuBar`, `TListBoxItem`, `TTabItem`) are designed
   children of their container, like any other component.
+- A custom control class (a `TControl`/`TComponent` descendant that paints itself or creates its
+  own scroll bars and sub-controls in its constructor) is a component, not form UI. Its parts stay
+  in code; do not rebase it on a frame. A frame's streamed children do not exist yet while the
+  frame is loading, and a resize during loading then reaches nil fields.
 
 - Every component in the .dfm has a matching `published` field in the form class, and every event in
   the .dfm names a published method with the event's exact signature. Keep them in sync by using the

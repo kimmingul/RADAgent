@@ -219,8 +219,11 @@ begin
         'panels, layouts, tab sheets. New forms, frames and dialogs come from rad.new_module (kind form ' +
         'or frame); components, properties and events from rad.form_apply. A dialog is a designed form, ' +
         'not TForm.CreateNew. Create controls in code only when their number or kind comes from data at ' +
-        'run time (grid columns, list rows, recent-file menu entries), under a designed parent. If a ' +
-        'fixed part seems impossible in the designer, ask the user before building it in code.')
+        'run time (grid columns, list rows, recent-file menu entries), under a designed parent. A custom ' +
+        'control class (derived from TControl or TComponent, drawing itself or making its own scroll ' +
+        'bars and sub-controls in its constructor) is not form UI: keep its parts in code and do not ' +
+        'turn it into a frame. If a fixed part seems impossible in the designer, ask the user before ' +
+        'building it in code.')
     else if Profile.Tools.Framework <> '' then
       Lines.Add('- Prefer the form designer for fixed UI (rad.new_module, rad.form_apply); this project ' +
         'allows building UI in code where that is clearly simpler.');
