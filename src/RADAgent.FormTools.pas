@@ -17,7 +17,7 @@ implementation
 
 uses
   System.SysUtils, System.Classes, System.JSON, System.TypInfo, System.Rtti, Vcl.Controls, ToolsAPI,
-  RADAgent.HostToolDefs, RADAgent.FormDesigner, RADAgent.FormBatch, RADAgent.IdeContext;
+  RADAgent.HostToolDefs, RADAgent.FormDesigner, RADAgent.FormBatch, RADAgent.FormEvents, RADAgent.IdeContext;
 
 function IsFormTool(const ToolName: string): Boolean;
 begin
@@ -28,7 +28,8 @@ begin
     (ToolName = ToolFormSetEvent);
 end;
 
-{ VCL TControl.Parent, or FMX TFmxObject.Parent through RTTI (no FMX package needed). }
+{ VCL TControl.Parent, or FMX TFmxObject.Parent through RTTI (no FMX package needed). FMX items
+  sit in their container's unnamed content object; the named container is the parent. }
 function ParentName(Component: TComponent): string;
 var
   Context: TRttiContext;
@@ -42,10 +43,13 @@ begin
       Result := TControl(Component).Parent.Name;
     Exit;
   end;
-  Prop := Context.GetType(Component.ClassType).GetProperty('Parent');
-  if (Prop = nil) or not Prop.IsReadable or (Prop.PropertyType.TypeKind <> tkClass) then
-    Exit;
-  Value := Prop.GetValue(Component).AsObject;
+  Value := Component;
+  repeat
+    Prop := Context.GetType(Value.ClassType).GetProperty('Parent');
+    if (Prop = nil) or not Prop.IsReadable or (Prop.PropertyType.TypeKind <> tkClass) then
+      Exit;
+    Value := Prop.GetValue(Value).AsObject;
+  until not (Value is TComponent) or (TComponent(Value).Name <> '');
   if Value is TComponent then
     Result := TComponent(Value).Name;
 end;

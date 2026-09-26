@@ -38,7 +38,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | ChatStatus | 위 막대와 입력 상자용 상태 메시지(연결, 모델, 생각 수준, 승인 방식, 컨텍스트, 하는 일, 세션 제목, 활성 파일·선택, 명령 목록). |
 | ChatPageCommands | 페이지 요청(보내기, 중지, 승인 카드 답, 계획 진행, `@` 파일 목록, 세션, 내보내기, 설정, 컴파일, 파일 경로, 모델·생각 수준·승인 방식 변경, 링크) 처리. |
 | ProjectProfile | 활성 프로젝트의 언어(Delphi, C++Builder), 프레임워크(VCL, FMX, 없음), 폼 목록. `rad.project_info`, `rad.set_build_config`, `rad.list_components`. |
-| OmpLaunch | omp를 띄우기 전에 쓰는 파일(C++은 clangd 연결 포함): rad.* 문서를 시스템 프롬프트에 넣는 `omp-host-p<pid>.yml`(`tools.xdevInlineDevices`), 프로젝트 안내 `project-guide-p<pid>.md`(`--append-system-prompt`), Delphi 프로젝트의 `.omp/lsp.json`. |
+| OmpLaunch | omp를 띄우기 전에 쓰는 파일(C++은 clangd 연결 포함): rad.* 문서를 시스템 프롬프트에 넣는 `omp-host-p<pid>.yml`(`tools.xdevInlineDevices`), 프로젝트 안내 `project-guide-p<pid>.md`(`--append-system-prompt`, 프로젝트의 UI 작성 방식 규칙 포함), Delphi 프로젝트의 `.omp/lsp.json`. |
 | Skills | BPL 리소스의 RAD Studio 스킬(`src\skills\radstudio-delphi`, `radstudio-cpp`) 중 프로젝트 언어에 맞는 것을 `%TEMP%\RADAgent\skills\<언어>`에 쓰고, 사용자의 `skills.customDirectories` 뒤에 붙여 `--config`로 넘긴다. |
 | HostToolDefs | 프로필에 맞춘 rad.* 목록: 폼이 있을 때만 폼 도구, VCL/FMX와 Delphi/C++ 문구. |
 | FormBatch / ModuleCreator | `rad.form_apply`(폼 변경 묶음, 승인 한 번), `rad.new_module`(폼·프레임·데이터 모듈·유닛 추가, 파일 이름 `UnitN`을 정하고 폼 소스는 Delphi·C++ 모두 직접 준다). |
@@ -63,11 +63,12 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | ChatActivity | RPC 이벤트로 지금 하는 일(생각, 답 작성, 도구 실행, 압축)과 경과 시간을 정한다. |
 | ChatPageMessages | 채팅 페이지(`src\chat`)로 보내는 JSON 메시지. 페이지는 `chat.js`(기록), `tools.js`(도구 묶음·파일 카드), `activity.js`(생각·입력·하위 에이전트·작업 목록), `topbar.js`, `composer.js`(입력 상자와 아래 줄), `panels.js`(시트와 사용량 패널), `clicks.js`(파일·코드·링크 클릭)로 나뉜다. |
 | WebView2Api | WebView2 COM 인터페이스 선언(WebView2.h vtable 순서, 쓰지 않는 메서드는 자리만). 릴리스마다 다른 rtl `Winapi.WebView2`를 쓰지 않으려고 둔다. |
-| WebView2Host / WebView2Handlers | `RADAgent.WebView2Api`와 BPL 옆 `WebView2Loader.dll`로 WebView2를 띄운다. 가상 호스트로 페이지를 싣고, 페이지 밖 이동과 새 창을 막는다. 도킹·핀·레이아웃으로 창이 다시 만들어지면 브라우저를 숨은 최상위 창에 잠시 옮겼다가 다시 붙인다(WebView2는 `HWND_MESSAGE`를 부모로 받지 않는다). 그래도 브라우저가 없어졌으면 새로 띄우고 채팅을 다시 보여 준다(`PageLoads`). |
+| WebView2Host / WebView2Handlers | `RADAgent.WebView2Api`로 WebView2를 띄운다. 가상 호스트로 페이지를 싣고, 페이지 밖 이동과 새 창을 막는다. 도킹·핀·레이아웃으로 창이 다시 만들어지면 브라우저를 숨은 최상위 창에 잠시 옮겼다가 다시 붙인다(WebView2는 `HWND_MESSAGE`를 부모로 받지 않는다). 그래도 브라우저가 없어졌으면 같은 환경에서 새로 띄우고 채팅을 다시 보여 준다(`PageLoads`). |
+| WebView2Runtime | BPL 옆 `WebView2Loader.dll` 로드와 환경 만들기, 채팅 페이지·사용자 데이터 폴더, 브라우저가 기다리는 숨은 창. |
 | ChatFallback | WebView2를 못 띄울 때의 글자 기록. |
 | ChatInput | WebView2 대체 화면의 VCL 입력칸: 여러 줄, 보낸 문장 기록, `/` 명령 목록. |
 | ChatTheme | IDE 테마 색(IOTAIDEThemingServices), 고대비·글자 크기 반영, 테마 변경 통지. |
-| AgentSettings | RAD Agent 자체 설정(IDE 레지스트리 키): 채팅 표시 항목, 글자 크기, 고대비, 화면 언어, omp 경로·추가 인자. |
+| AgentSettings | RAD Agent 자체 설정(IDE 레지스트리 키): 채팅 표시 항목, 글자 크기, 고대비, 화면 언어, omp 경로·추가 인자. 프로젝트별 IDE 설정 `<프로젝트>\.omp\radagent-ide.json`: UI 작성 방식(`uiBuilding`), 폼 텍스트 편집(`formEditing`). |
 | Lang | 화면 문자열: English, 日本語, Deutsch, Français, 한국어. `src\lang\<코드>.json`을 `RADAgentResources.rc`로 RCDATA에 넣고 `Tr`/`TrF`로 부른다. 없는 키는 영어, 그다음 키 이름. `<키>.one`은 첫 값이 1일 때의 문구. 채팅 페이지에는 `page.*` 키를 `strings` 메시지로 보내고 페이지는 `T()`와 `data-i18n`으로 쓴다. 처음 값은 Windows 표시 언어(없으면 영어). omp가 읽는 글은 번역하지 않고 영어로 둔다. ToolsAPI 없음. |
 | SettingsDialog / SettingsUi / SettingsAccount / SettingsProject | 설정 창. 채팅 표시, 계정·모델(RPC로 바로 적용), 역할별 모델·확장·고급(프로젝트 omp 설정). |
 | OmpSettings / OmpCatalog / OmpCli | 프로젝트 omp 설정 파일 `<프로젝트>\.omp\radagent.yml`(`--config`로 전달)과 omp가 읽는 스킬·확장·하위 에이전트·MCP 목록. `omp config list`를 읽기만 하고 전역 설정은 쓰지 않는다. |
@@ -105,14 +106,15 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | ChatCheckpoints | 프로젝트 저장소 보장, 메시지마다 체크포인트(작업 중 보낸 steer·follow-up 포함), 채팅의 되돌리기·브랜치(파일은 git, 대화는 omp `get_entries`/`branch`). 기록의 메시지와 체크포인트는 문장이 아니라 omp가 메시지를 기록한 시각으로 짝짓는다. |
 | Compile | 활성 프로젝트 빌드와 완료 통지. 결과는 메시지 뷰로 보낸다. |
 | HostToolDefs | host-tool 이름과 `set_host_tools` 스키마. ToolsAPI 없음. |
-| HostTools | host-tool 호출을 도구별 구현으로 나눠 보낸다. 버퍼 읽기, 컴파일. 메인 스레드에서만 ToolsAPI를 호출한다. |
+| HostTools | host-tool 호출을 도구별 구현으로 나눠 보낸다. 버퍼 읽기, 컴파일. 메인 스레드에서만 ToolsAPI를 호출한다. IDE 예외는 도구 오류 결과로 바꾼다(오류 대화상자가 뜨면 턴이 멈춘다). |
 | Approval | 상태를 바꾸는 host-tool이 쓰는 사용자 승인 계약(`IAgentApproval`). ChatSession이 구현한다. |
 | BufferEdits | 승인 후 캐럿 위치에 삽입(`rad.insert_at_caret`). 코드 편집은 omp의 디스크 편집이다. |
 | DebugTools | 디버거 상태, 호출 스택, 부작용 없는 식 평가, 중단점 목록. 읽기 전용. |
 | DebugControl | 승인 후 실행·계속, 스텝(over, into, return), 일시 정지, 종료, 소스 중단점 추가. 디버기 메모리는 쓰지 않는다. |
 | FormDesigner | 유닛의 폼 디자이너 찾기, 이름→컴포넌트, 속성 값 문자열화, 디자이너 수정 통지. |
 | FormTools | `rad.form_*` 분배와 읽기(컴포넌트 목록, published 속성). |
-| FormEdits | 승인 후 속성 변경, 컴포넌트 추가·삭제·이름 변경, 이벤트 연결. 끝나면 ChatDiskSync가 저장한다. |
+| FormEdits | 승인 후 속성 변경, 컴포넌트 추가(FMX 항목 컨테이너 아래는 `IDesigner.CreateChild`)·삭제·이름 변경(폼 자체 포함). 끝나면 ChatDiskSync가 저장한다. |
+| FormEvents | 승인 후 이벤트 연결·해제. 디자이너에 없는 이벤트면 연결 가능한 목록을 돌려준다. |
 
 ## 데이터 흐름
 

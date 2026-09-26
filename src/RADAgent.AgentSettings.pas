@@ -37,6 +37,10 @@ function OmpCommand: string;
   form files as text through rad.form_text_edit ("auto") or only use the designer ("designer"). }
 function FormTextAllowed(const ProjectDir: string): Boolean;
 procedure SetFormTextAllowed(const ProjectDir: string; Value: Boolean);
+{ Same file: fixed UI must be built in the form designer ("designer", the default) or may also be
+  created in code ("free"). }
+function DesignerUiRequired(const ProjectDir: string): Boolean;
+procedure SetDesignerUiRequired(const ProjectDir: string; Value: Boolean);
 { clangd.exe (or its folder) for C++Builder projects; '' means search PATH. }
 function ClangdPath: string;
 procedure SetClangdPath(const Value: string);
@@ -201,33 +205,77 @@ begin
   Result := TPath.Combine(TPath.Combine(ProjectDir, '.omp'), 'radagent-ide.json');
 end;
 
-function FormTextAllowed(const ProjectDir: string): Boolean;
+function ReadIdeSetting(const ProjectDir, Key, Default: string): string;
 var
   Root: TJSONValue;
 begin
-  Result := True;
+  Result := Default;
   if (ProjectDir = '') or not FileExists(IdeSettingsFile(ProjectDir)) then
     Exit;
   Root := TJSONObject.ParseJSONValue(TFile.ReadAllText(IdeSettingsFile(ProjectDir), TEncoding.UTF8));
   try
     if Root is TJSONObject then
-      Result := TJSONObject(Root).GetValue<string>('formEditing', 'auto') <> 'designer';
+      Result := TJSONObject(Root).GetValue<string>(Key, Default);
   finally
     Root.Free;
   end;
 end;
 
-procedure SetFormTextAllowed(const ProjectDir: string; Value: Boolean);
+{ Keeps the other keys; the default value is not stored, and an empty file goes away. }
+procedure WriteIdeSetting(const ProjectDir, Key, Value, Default: string);
+var
+  Root: TJSONValue;
+  Obj: TJSONObject;
 begin
   if ProjectDir = '' then
     Exit;
-  if Value then
-    System.SysUtils.DeleteFile(IdeSettingsFile(ProjectDir))
-  else
+  Root := nil;
+  if FileExists(IdeSettingsFile(ProjectDir)) then
+    Root := TJSONObject.ParseJSONValue(TFile.ReadAllText(IdeSettingsFile(ProjectDir), TEncoding.UTF8));
+  if not (Root is TJSONObject) then
   begin
-    ForceDirectories(ExtractFileDir(IdeSettingsFile(ProjectDir)));
-    TFile.WriteAllText(IdeSettingsFile(ProjectDir), '{"formEditing":"designer"}', TEncoding.UTF8);
+    Root.Free;
+    Root := TJSONObject.Create;
   end;
+  Obj := TJSONObject(Root);
+  try
+    Obj.RemovePair(Key).Free;
+    if Value <> Default then
+      Obj.AddPair(Key, Value);
+    if Obj.Count = 0 then
+      System.SysUtils.DeleteFile(IdeSettingsFile(ProjectDir))
+    else
+    begin
+      ForceDirectories(ExtractFileDir(IdeSettingsFile(ProjectDir)));
+      TFile.WriteAllText(IdeSettingsFile(ProjectDir), Obj.ToJSON, TEncoding.UTF8);
+    end;
+  finally
+    Obj.Free;
+  end;
+end;
+
+function FormTextAllowed(const ProjectDir: string): Boolean;
+begin
+  Result := ReadIdeSetting(ProjectDir, 'formEditing', 'auto') <> 'designer';
+end;
+
+procedure SetFormTextAllowed(const ProjectDir: string; Value: Boolean);
+const
+  Values: array[Boolean] of string = ('designer', 'auto');
+begin
+  WriteIdeSetting(ProjectDir, 'formEditing', Values[Value], 'auto');
+end;
+
+function DesignerUiRequired(const ProjectDir: string): Boolean;
+begin
+  Result := ReadIdeSetting(ProjectDir, 'uiBuilding', 'designer') <> 'free';
+end;
+
+procedure SetDesignerUiRequired(const ProjectDir: string; Value: Boolean);
+const
+  Values: array[Boolean] of string = ('free', 'designer');
+begin
+  WriteIdeSetting(ProjectDir, 'uiBuilding', Values[Value], 'designer');
 end;
 
 function ClangdPath: string;

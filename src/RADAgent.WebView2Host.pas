@@ -1,12 +1,12 @@
 unit RADAgent.WebView2Host;
 
 { WebView2 control hosted directly through RADAgent.WebView2Api and WebView2Loader.dll next to
-  the BPL, so the package needs no vcledge and no release-specific Winapi.WebView2. Serves
-  <bpl>\RADAgent\chat through a virtual host and exchanges JSON messages with the page.
-  Docking, pinning and layout changes re-create the control's window: the browser is parked in a
-  hidden window meanwhile and put back, so the page stays as it is. Should that fail (the browser
-  window died with its old parent), a new browser loads the page again and PageLoads counts up so
-  the owner can show the chat again. Main thread only. }
+  the BPL (RADAgent.WebView2Runtime), so the package needs no vcledge and no release-specific
+  Winapi.WebView2. Serves <bpl>\RADAgent\chat through a virtual host and exchanges JSON messages
+  with the page. Docking, pinning and layout changes re-create the control's window: the browser
+  is parked in a hidden window meanwhile and put back, so the page stays as it is. Should that
+  fail (the browser window died with its old parent), a new browser loads the page again and
+  PageLoads counts up so the owner can show the chat again. Main thread only. }
 
 interface
 
@@ -27,6 +27,8 @@ type
     FPageReady: Boolean;
     FStarted: Boolean;
     FLoads: Integer;
+    { The window a controller is being created for; 0 when none is pending. }
+    FCreatingFor: HWND;
     FProblem: string;
     FBackColor: TColor;
     FOnMessage: TWebJsonEvent;
@@ -62,45 +64,14 @@ type
     property OnFailed: TNotifyEvent read FOnFailed write FOnFailed;
   end;
 
-function ChatAssetDir: string;
-
 implementation
 
 uses
-  System.IOUtils, Winapi.ActiveX, RADAgent.Lang;
+  RADAgent.Lang, RADAgent.WebView2Runtime;
 
 const
   HostName = 'radagent.local';
   PageUrl = 'https://' + HostName + '/chat.html';
-
-type
-  TCreateEnvironment = function(BrowserExecutableFolder, UserDataFolder: PWideChar;
-    const Options: ICoreWebView2EnvironmentOptions;
-    const Handler: ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler): HResult; stdcall;
-
-var
-  GLoader: HMODULE;
-  { Hidden top-level window the browser waits in while the control has no window. WebView2
-    refuses HWND_MESSAGE as a parent (ERROR_INVALID_WINDOW_HANDLE). }
-  GParking: HWND;
-
-function ParkingWindow: HWND;
-begin
-  if (GParking = 0) or not IsWindow(GParking) then
-    GParking := CreateWindowEx(WS_EX_TOOLWINDOW, 'STATIC', 'RADAgentWebViewParking', WS_POPUP,
-      0, 0, 0, 0, 0, 0, HInstance, nil);
-  Result := GParking;
-end;
-
-function ChatAssetDir: string;
-begin
-  Result := ExtractFilePath(GetModuleName(HInstance)) + 'RADAgent\chat';
-end;
-
-function UserDataDir: string;
-begin
-  Result := IncludeTrailingPathDelimiter(GetEnvironmentVariable('LOCALAPPDATA')) + 'RADAgent\WebView2';
-end;
 
 constructor TWebView2Host.Create(AOwner: TComponent);
 begin
@@ -157,9 +128,15 @@ begin
       FController.Set_IsVisible(1);
       Exit;
     end;
-    { The browser window is gone: start a new one in the same environment. }
+    { The browser window is gone. }
     DropController;
-    CreateController;
+  end;
+  { No browser (never parked, or lost): a new one in the same environment. One still being
+    created for an older window is moved here when it arrives, or retried if it fails. }
+  if FEnvironment <> nil then
+  begin
+    if FCreatingFor = 0 then
+      CreateController;
   end
   else if not FStarted then
     StartBrowser;
@@ -183,37 +160,11 @@ end;
 
 procedure TWebView2Host.StartBrowser;
 var
-  LoaderPath: string;
-  CreateEnvironment: TCreateEnvironment;
-  Hr: HResult;
+  Problem: string;
 begin
   FStarted := True;
-  if not FileExists(ChatAssetDir + '\chat.html') then
-  begin
-    Fail(TrF('webview2host.assetMissing', [ChatAssetDir]));
-    Exit;
-  end;
-  if GLoader = 0 then
-  begin
-    LoaderPath := ExtractFilePath(GetModuleName(HInstance)) + 'RADAgent\WebView2Loader.dll';
-    GLoader := SafeLoadLibrary(LoaderPath);
-    if GLoader = 0 then
-    begin
-      Fail(TrF('webview2host.loaderMissing', [LoaderPath]));
-      Exit;
-    end;
-  end;
-  @CreateEnvironment := GetProcAddress(GLoader, 'CreateCoreWebView2EnvironmentWithOptions');
-  if not Assigned(CreateEnvironment) then
-  begin
-    Fail(Tr('webview2host.createEnvMissing'));
-    Exit;
-  end;
-  ForceDirectories(UserDataDir);
-  Hr := CreateEnvironment(nil, PWideChar(UserDataDir), nil,
-    TEnvironmentCompleted.Create(FLifetimeGate, EnvironmentReady));
-  if Failed(Hr) then
-    Fail(TrF('webview2host.runtimeStartFailed', [Hr]));
+  if not StartEnvironment(TEnvironmentCompleted.Create(FLifetimeGate, EnvironmentReady), Problem) then
+    Fail(Problem);
 end;
 
 procedure TWebView2Host.EnvironmentReady(ErrorCode: HResult; const Env: ICoreWebView2Environment);
@@ -235,9 +186,13 @@ var
 begin
   if (FEnvironment = nil) or not HandleAllocated then
     Exit;
+  FCreatingFor := Handle;
   Hr := FEnvironment.CreateCoreWebView2Controller(Handle, TControllerCompleted.Create(FLifetimeGate, ControllerReady));
   if Failed(Hr) then
+  begin
+    FCreatingFor := 0;
     Fail(TrF('webview2host.controllerCreateFailed', [Hr]));
+  end;
 end;
 
 procedure TWebView2Host.ControllerReady(ErrorCode: HResult; const Controller: ICoreWebView2Controller);
@@ -246,7 +201,17 @@ var
   Settings3: ICoreWebView2Settings3;
   View3: ICoreWebView2_3;
   Token: EventRegistrationToken;
+  CreatedFor: HWND;
 begin
+  CreatedFor := FCreatingFor;
+  FCreatingFor := 0;
+  { Created for a window that has been replaced since: try again for the current one. }
+  if Alive and (Failed(ErrorCode) or (Controller = nil)) and HandleAllocated and (CreatedFor <> Handle) and
+    (FController = nil) then
+  begin
+    CreateController;
+    Exit;
+  end;
   if not Alive or Failed(ErrorCode) or (Controller = nil) or (FController <> nil) then
   begin
     if Controller <> nil then
@@ -379,14 +344,5 @@ begin
   if FController <> nil then
     FController.MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
 end;
-
-initialization
-
-finalization
-  if GParking <> 0 then
-    DestroyWindow(GParking);
-  { The runtime keeps browser processes; the loader stays until package unload. }
-  if GLoader <> 0 then
-    FreeLibrary(GLoader);
 
 end.

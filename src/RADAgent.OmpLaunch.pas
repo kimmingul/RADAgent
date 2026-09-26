@@ -211,6 +211,17 @@ begin
     else if Profile.Tools.HasForms then
       Lines.Add('- Build UI in the designer with rad.form_apply (one call, one approval), then write the ' +
         'handlers in the .pas file. Check classes with rad.list_components when unsure.');
+    if (Profile.Tools.Framework <> '') and Profile.Tools.DesignerUi then
+      Lines.Add('- UI rule (project setting "designer required"): build every fixed part of the UI in the ' +
+        'form designer - forms, frames, dialogs, the main menu and its items, toolbars, status bars, ' +
+        'panels, layouts, tab sheets. New forms, frames and dialogs come from rad.new_module (kind form ' +
+        'or frame); components, properties and events from rad.form_apply. A dialog is a designed form, ' +
+        'not TForm.CreateNew. Create controls in code only when their number or kind comes from data at ' +
+        'run time (grid columns, list rows, recent-file menu entries), under a designed parent. If a ' +
+        'fixed part seems impossible in the designer, ask the user before building it in code.')
+    else if Profile.Tools.Framework <> '' then
+      Lines.Add('- Prefer the form designer for fixed UI (rad.new_module, rad.form_apply); this project ' +
+        'allows building UI in code where that is clearly simpler.');
     Lines.Add('- While a debug session is running (rad.debug_state), do not edit sources unless asked.');
     Lines.Add('- Every user message is a git checkpoint; do not run git commands that commit, reset or ' +
       'switch branches unless the user asks.');

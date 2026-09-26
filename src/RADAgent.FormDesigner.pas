@@ -27,7 +27,7 @@ function PropText(const Editor: IOTAFormEditor; Instance: TComponent; Prop: PPro
 implementation
 
 uses
-  System.SysUtils, System.Variants;
+  System.SysUtils, System.Variants, System.IOUtils, RADAgent.IdeContext;
 
 { Opens the module when needed; the designer must exist for the unit's form. }
 function FindFormEditor(const Path: string; out Problem: string): IOTAFormEditor;
@@ -35,6 +35,7 @@ var
   Modules: IOTAModuleServices;
   Module: IOTAModule;
   Index: Integer;
+  FullPath: string;
 begin
   Result := nil;
   Problem := '';
@@ -43,10 +44,19 @@ begin
     Problem := 'Path cannot be empty.';
     Exit;
   end;
+  { A relative path is the project's; OpenModule would otherwise create a file elsewhere. }
+  FullPath := Path;
+  if TPath.IsRelativePath(FullPath) then
+    FullPath := TPath.Combine(ExcludeTrailingPathDelimiter(ActiveProjectDir), FullPath);
   Modules := BorlandIDEServices as IOTAModuleServices;
-  Module := Modules.FindModule(Path);
+  Module := Modules.FindModule(FullPath);
+  if (Module = nil) and not FileExists(FullPath) then
+  begin
+    Problem := 'File not found: ' + FullPath;
+    Exit;
+  end;
   if Module = nil then
-    Module := Modules.OpenModule(Path);
+    Module := Modules.OpenModule(FullPath);
   if Module = nil then
   begin
     Problem := 'Failed to open module.';

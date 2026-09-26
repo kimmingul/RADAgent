@@ -109,6 +109,12 @@ Colors are `TAlphaColor` (`TAlphaColors.Red`), units are logical pixels.
 
 ## Form designer rules
 
+- Fixed UI is designed, not written: forms, frames, dialogs, menus, toolbars and panels live in the
+  .dfm/.fmx so the user can open and change them in the designer. Code creates controls only when
+  their number or kind depends on data at run time, and puts them under a designed parent.
+- FMX items (`TMenuItem` under `TMainMenu`/`TMenuBar`, `TListBoxItem`, `TTabItem`) are designed
+  children of their container, like any other component.
+
 - Every component in the .dfm has a matching `published` field in the form class, and every event in
   the .dfm names a published method with the event's exact signature. Keep them in sync by using the
   `rad.form_*` tools, which let the IDE do it.

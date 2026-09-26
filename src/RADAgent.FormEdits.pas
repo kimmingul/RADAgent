@@ -1,7 +1,7 @@
 unit RADAgent.FormEdits;
 
 { Form designer changes that run only after the user approves: set a property, add, delete or
-  rename a component, and connect an event handler. The designer updates the unit buffer
+  rename a component (events: RADAgent.FormEvents). The designer updates the unit buffer
   (fields, handler stubs). Never saves. Main thread only. }
 
 interface
@@ -33,16 +33,21 @@ function DeleteComponent(const Editor: IOTAFormEditor; const Args: TFormToolArgs
   const Approval: IAgentApproval; out Problem: string): Boolean;
 function RenameComponent(const Editor: IOTAFormEditor; const Args: TFormToolArgs;
   const Approval: IAgentApproval; out Problem: string): Boolean;
-function SetEvent(const Editor: IOTAFormEditor; const Args: TFormToolArgs;
-  const Approval: IAgentApproval; out Problem: string): Boolean;
+{ Asks the user about one change; False (with Problem) when refused. }
+function ApprovedEdit(const Approval: IAgentApproval; const Path, Preview: string;
+  out Problem: string): Boolean;
 
 implementation
 
 uses
   System.SysUtils, System.StrUtils, System.Classes, System.TypInfo, Vcl.Controls, Vcl.Menus, DesignIntf,
-  RADAgent.FormDesigner, RADAgent.Lang, RADAgent.HandlerCode;
+  RADAgent.FormDesigner, RADAgent.Lang;
 
-function Approved(const Approval: IAgentApproval; const Path, Preview: string;
+const
+  { FMX.Types.IItemsContainer; the package does not require fmx. }
+  IItemsContainerGuid: TGUID = '{100B2F87-5DCB-4699-B751-B4439588E82A}';
+
+function ApprovedEdit(const Approval: IAgentApproval; const Path, Preview: string;
   out Problem: string): Boolean;
 begin
   Result := (Approval <> nil) and Approval.ApproveChange(Path, '', Preview);
@@ -139,7 +144,7 @@ begin
       Args.PropName;
     Exit;
   end;
-  if not Approved(Approval, Args.Path, Instance.Name + '.' + Args.PropName + ' -> ' + Args.Value,
+  if not ApprovedEdit(Approval, Args.Path, Instance.Name + '.' + Args.PropName + ' -> ' + Args.Value,
     Problem) then
     Exit;
   { The dialog pumps messages; the component may be gone. }
@@ -191,7 +196,7 @@ begin
     Problem := 'Parent component not found: ' + Args.Parent;
     Exit;
   end;
-  if not Approved(Approval, Args.Path, TrF('formedits.addPreview',
+  if not ApprovedEdit(Approval, Args.Path, TrF('formedits.addPreview',
     [IfThen(Args.Name <> '', Args.Name, Tr('formedits.autoName')), Args.ClassName, ParentNative.Name,
     Args.Left, Args.Top]), Problem) then
     Exit;
@@ -200,9 +205,36 @@ begin
     Problem := 'Parent component changed while waiting for approval.';
     Exit;
   end;
-  Created := Editor.CreateComponent(FindOta(Editor, ParentNative), Args.ClassName,
-    Args.Left, Args.Top, -1, -1);
-  Native := NativeOf(Created);
+  { FMX items (menu items, list box items, tab items) belong to an items container. The FMX
+    designer's CreateComponent resolves the container as the form and shows its own error dialog
+    ("does not support interface IItemsContainer"); its items editors use CreateChild instead. }
+  Native := nil;
+  Created := nil;
+{$IF CompilerVersion >= 37}
+  if (ParentNative <> RootOf(Editor)) and Supports(ParentNative, IItemsContainerGuid) and
+    (DesignerOf(Editor) <> nil) then
+  try
+    Native := DesignerOf(Editor).CreateChild(TComponentClass(GetClass(Args.ClassName)), ParentNative);
+  except
+    on E: Exception do
+    begin
+      Problem := 'Failed to create component: ' + E.Message;
+      Exit;
+    end;
+  end
+  else
+{$ENDIF}
+  try
+    Created := Editor.CreateComponent(FindOta(Editor, ParentNative), Args.ClassName,
+      Args.Left, Args.Top, -1, -1);
+    Native := NativeOf(Created);
+  except
+    on E: Exception do
+    begin
+      Problem := 'Failed to create component: ' + E.Message;
+      Exit;
+    end;
+  end;
   if Native = nil then
   begin
     Problem := 'Failed to create component: ' + Args.ClassName;
@@ -244,7 +276,7 @@ begin
   Native := FindChild(Editor, Args.Component, Problem);
   if Native = nil then
     Exit;
-  if not Approved(Approval, Args.Path, TrF('formedits.deletePreview', [Native.Name, Native.ClassName]),
+  if not ApprovedEdit(Approval, Args.Path, TrF('formedits.deletePreview', [Native.Name, Native.ClassName]),
     Problem) then
     Exit;
   if FindNative(Editor, Args.Component) <> Native then
@@ -269,9 +301,13 @@ var
 begin
   Result := False;
   Problem := '';
-  Native := FindChild(Editor, Args.Component, Problem);
-  if Native = nil then
+  { The form itself may be renamed too (its class and the project's references follow). }
+  Native := FindNative(Editor, Args.Component);
+  if (Args.Component = '') or (Native = nil) then
+  begin
+    Problem := IfThen(Args.Component = '', 'Component name required.', 'Component not found: ' + Args.Component);
     Exit;
+  end;
   if not IsValidIdent(Args.NewName) then
   begin
     Problem := 'Not a valid identifier: ' + Args.NewName;
@@ -282,7 +318,7 @@ begin
     Problem := 'A component with the same name already exists: ' + Args.NewName;
     Exit;
   end;
-  if not Approved(Approval, Args.Path, TrF('formedits.renamePreview', [Native.Name, Args.NewName]),
+  if not ApprovedEdit(Approval, Args.Path, TrF('formedits.renamePreview', [Native.Name, Args.NewName]),
     Problem) then
     Exit;
   if FindNative(Editor, Args.Component) <> Native then
@@ -297,77 +333,6 @@ begin
     on E: Exception do
     begin
       Problem := 'Failed to rename component: ' + E.Message;
-      Exit;
-    end;
-  end;
-  MarkDesignerModified(Editor);
-  Result := True;
-end;
-
-function SetEvent(const Editor: IOTAFormEditor; const Args: TFormToolArgs;
-  const Approval: IAgentApproval; out Problem: string): Boolean;
-var
-  Instance: TComponent;
-  Prop: PPropInfo;
-  Designer: IDesigner;
-  Method: TMethod;
-begin
-  Result := False;
-  Problem := '';
-  Instance := FindNative(Editor, Args.Component);
-  if Instance = nil then
-  begin
-    Problem := 'Component not found: ' + Args.Component;
-    Exit;
-  end;
-  Prop := GetPropInfo(Instance, Args.Event);
-  if (Prop = nil) or (Prop.PropType^.Kind <> tkMethod) then
-  begin
-    Problem := 'Not an event property: ' + Args.Event;
-    Exit;
-  end;
-  if (Args.Handler <> '') and not IsValidIdent(Args.Handler) then
-  begin
-    Problem := 'Not a valid method name: ' + Args.Handler;
-    Exit;
-  end;
-  Designer := DesignerOf(Editor);
-  if Designer = nil then
-  begin
-    Problem := 'Form designer not found.';
-    Exit;
-  end;
-  if not Approved(Approval, Args.Path, TrF('formedits.eventPreview', [Instance.Name,
-    string(Prop.Name), PropText(Editor, Instance, Prop), IfThen(Args.Handler <> '',
-    Args.Handler, Tr('formedits.disconnectEvent'))]), Problem) then
-    Exit;
-  if FindNative(Editor, Args.Component) <> Instance then
-  begin
-    Problem := 'Component changed while waiting for approval.';
-    Exit;
-  end;
-  try
-    { CreateMethod returns the existing method when the name exists, or adds a stub (Delphi).
-      The C++ designer writes no code, so the handler is written first (RADAgent.HandlerCode). }
-    if Args.Handler = '' then
-    begin
-      Method.Code := nil;
-      Method.Data := nil;
-    end
-    else
-    begin
-      if IsCppForm(Editor) and not EnsureCppHandler(Editor, RootOf(Editor).ClassName, Args.Handler,
-        Prop.PropType^, Problem) then
-        Exit;
-      Method := Designer.CreateMethod(Args.Handler, GetTypeData(Prop.PropType^));
-      if not IsCppForm(Editor) then
-        KeepDelphiHandler(Editor, RootOf(Editor).ClassName, Args.Handler);
-    end;
-    SetMethodProp(Instance, Prop, Method);
-  except
-    on E: Exception do
-    begin
-      Problem := 'Failed to connect event: ' + E.Message;
       Exit;
     end;
   end;

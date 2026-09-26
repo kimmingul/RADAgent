@@ -16,7 +16,7 @@ implementation
 
 uses
   System.SysUtils, System.Classes, System.JSON, ToolsAPI, RADAgent.FormDesigner,
-  RADAgent.FormEdits, RADAgent.Lang;
+  RADAgent.FormEdits, RADAgent.FormEvents, RADAgent.Lang;
 
 function Pairs(Item: TJSONObject; const Name: string): TJSONObject;
 begin
@@ -183,7 +183,12 @@ begin
     if Components <> nil then
       for Value in Components do
         if Value is TJSONObject then
+        try
           ApplyComponent(Editor, Path, TJSONObject(Value), Batch, Errors, Created);
+        except
+          on E: Exception do
+            Errors.Add(TJSONObject(Value).GetValue<string>('name', '?') + ': ' + E.Message);
+        end;
     Reply.AddPair('ok', TJSONBool.Create(Errors.Count = 0));
     ResultText := Reply.ToJSON;
     IsError := False;

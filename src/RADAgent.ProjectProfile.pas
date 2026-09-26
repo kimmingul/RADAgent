@@ -44,12 +44,14 @@ begin
   Result := Default(TProjectProfile);
   Result.Tools.Language := 'delphi';
   Result.Tools.FormText := True;
+  Result.Tools.DesignerUi := True;
   Project := CurrentProject;
   if Project = nil then
     Exit;
   Result.ProjectFile := Project.FileName;
   Result.ProjectDir := ExtractFileDir(Project.FileName);
   Result.Tools.FormText := FormTextAllowed(Result.ProjectDir);
+  Result.Tools.DesignerUi := DesignerUiRequired(Result.ProjectDir);
   if SameText(Project.Personality, sCBuilderPersonality) then
     Result.Tools.Language := 'cpp';
   if SameText(Project.FrameworkType, sFrameworkTypeVCL) or SameText(Project.FrameworkType, sFrameworkTypeFMX) then

@@ -46,6 +46,8 @@ type
     PlanMode: Boolean;
     { rad.form_text_edit is offered (project setting "auto"); False: designer only. }
     FormText: Boolean;
+    { Fixed UI must be built in the designer (project setting, the default); False: code allowed. }
+    DesignerUi: Boolean;
   end;
 
 { Delphi VCL with forms: every tool. }
@@ -67,6 +69,7 @@ begin
   Result.HasForms := True;
   Result.PlanMode := False;
   Result.FormText := True;
+  Result.DesignerUi := True;
 end;
 
 function IsChangingTool(const Name: string): Boolean;
@@ -178,7 +181,8 @@ begin
   Tools.AddElement(ToolDef(ToolFormDeleteComponent,
     'After approval delete a component; the designer removes its field.', 'path,component'));
   Tools.AddElement(ToolDef(ToolFormRenameComponent,
-    'After approval rename a component; fields and default handler names follow.',
+    'After approval rename a component, or the form itself (its class follows); fields and ' +
+    'default handler names follow.',
     'path,component,newName'));
   Tools.AddElement(ToolDef(ToolFormSetEvent,
     'After approval connect event (OnClick) to handler; empty handler disconnects.',

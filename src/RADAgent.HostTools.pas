@@ -9,7 +9,8 @@ interface
 uses
   RADAgent.Approval;
 
-{ ImagePng: base64 PNG sent with the result (rad.form_screenshot), else ''. }
+{ ImagePng: base64 PNG sent with the result (rad.form_screenshot), else ''. An exception from
+  the IDE becomes an error result: an error dialog would leave the call (and the turn) waiting. }
 procedure ExecuteHostTool(const ToolName, ArgumentsJson: string;
   const Approval: IAgentApproval; out ResultText: string; out IsError: Boolean; out ImagePng: string);
 
@@ -119,7 +120,7 @@ begin
   Result.Line := ArgInt(ArgumentsJson, 'line');
 end;
 
-procedure ExecuteHostTool(const ToolName, ArgumentsJson: string;
+procedure DispatchHostTool(const ToolName, ArgumentsJson: string;
   const Approval: IAgentApproval; out ResultText: string; out IsError: Boolean; out ImagePng: string);
 var
   Problem: string;
@@ -197,6 +198,22 @@ begin
     ExecuteFormTool(ToolName, FormArgs(ArgumentsJson), ArgumentsJson, Approval, ResultText, IsError)
   else
     ResultText := 'unknown host tool';
+end;
+
+procedure ExecuteHostTool(const ToolName, ArgumentsJson: string;
+  const Approval: IAgentApproval; out ResultText: string; out IsError: Boolean; out ImagePng: string);
+begin
+  try
+    DispatchHostTool(ToolName, ArgumentsJson, Approval, ResultText, IsError, ImagePng);
+  except
+    on E: Exception do
+    begin
+      ResultText := Format('The IDE raised %s: %s. Changes made before the error (if any) stay; check ' +
+        'with the read tools before retrying.', [E.ClassName, E.Message]);
+      IsError := True;
+      ImagePng := '';
+    end;
+  end;
 end;
 
 end.

@@ -24,8 +24,8 @@ type
     FRoles: array of TComboBox;
     FToggles: TArray<TToggleItem>;
     FToggleList: TListView;
-    FApproval, FThinking, FFormEditing: TComboBox;
-    FFormEditingChanged: Boolean;
+    FApproval, FThinking, FUiBuilding, FFormEditing: TComboBox;
+    FIdeSettingsChanged: Boolean;
     FChoices: TArray<TLabeledChoice>;
     procedure AddLabeled(Page: TWinControl; const Caption, Key: string; const Values: array of string;
       IsBool: Boolean);
@@ -37,10 +37,11 @@ type
   public
     constructor Create(AOwner: TComponent; Settings: TOmpProjectSettings;
       RolePage, ExtensionPage, DefaultsPage: TWinControl; const Models: TArray<string>); reintroduce;
-    { Copies the controls into the overlay (not yet saved); the form editing choice is saved now. }
+    { Copies the controls into the overlay (not yet saved); the UI building and form editing
+      choices are saved now. }
     procedure Store;
-    { Store changed the form editing choice: omp must restart to get the other tool list. }
-    property FormEditingChanged: Boolean read FFormEditingChanged;
+    { Store changed UI building or form editing: omp must restart for the new guide and tools. }
+    property IdeSettingsChanged: Boolean read FIdeSettingsChanged;
   end;
 
 implementation
@@ -194,6 +195,12 @@ begin
   FillChoices(FThinking, ThinkingLevels, FSettings.OverlayText('defaultThinkingLevel'),
     FSettings.BaseText('defaultThinkingLevel'));
   AddNote(Page, Tr('settingsproject.noteApproval'));
+  FUiBuilding := TComboBox.Create(Page);
+  FUiBuilding.Style := csDropDownList;
+  AddRow(Page, Tr('settingsproject.uiBuilding'), FUiBuilding);
+  FUiBuilding.Items.Add(Tr('settingsproject.uiBuildingDesigner'));
+  FUiBuilding.Items.Add(Tr('settingsproject.uiBuildingFree'));
+  FUiBuilding.ItemIndex := Ord(not DesignerUiRequired(FSettings.ProjectDir));
   FFormEditing := TComboBox.Create(Page);
   FFormEditing.Style := csDropDownList;
   AddRow(Page, Tr('settingsproject.formEditing'), FFormEditing);
@@ -275,9 +282,10 @@ begin
   FSettings.ApplyToggles(FToggles);
   FSettings.SetOverlayText('tools.approvalMode', ChoiceValue(FApproval));
   FSettings.SetOverlayText('defaultThinkingLevel', ChoiceValue(FThinking));
-  FFormEditingChanged := (FFormEditing.ItemIndex = 0) <> FormTextAllowed(FSettings.ProjectDir);
-  if FFormEditingChanged then
-    SetFormTextAllowed(FSettings.ProjectDir, FFormEditing.ItemIndex = 0);
+  FIdeSettingsChanged := ((FFormEditing.ItemIndex = 0) <> FormTextAllowed(FSettings.ProjectDir)) or
+    ((FUiBuilding.ItemIndex = 0) <> DesignerUiRequired(FSettings.ProjectDir));
+  SetFormTextAllowed(FSettings.ProjectDir, FFormEditing.ItemIndex = 0);
+  SetDesignerUiRequired(FSettings.ProjectDir, FUiBuilding.ItemIndex = 0);
 end;
 
 end.
