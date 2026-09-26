@@ -63,7 +63,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | ChatActivity | RPC 이벤트로 지금 하는 일(생각, 답 작성, 도구 실행, 압축)과 경과 시간을 정한다. |
 | ChatPageMessages | 채팅 페이지(`src\chat`)로 보내는 JSON 메시지. 페이지는 `chat.js`(기록), `tools.js`(도구 묶음·파일 카드), `activity.js`(생각·입력·하위 에이전트·작업 목록), `topbar.js`, `composer.js`(입력 상자와 아래 줄), `panels.js`(시트와 사용량 패널), `clicks.js`(파일·코드·링크 클릭)로 나뉜다. |
 | WebView2Api | WebView2 COM 인터페이스 선언(WebView2.h vtable 순서, 쓰지 않는 메서드는 자리만). 릴리스마다 다른 rtl `Winapi.WebView2`를 쓰지 않으려고 둔다. |
-| WebView2Host / WebView2Handlers | `RADAgent.WebView2Api`와 BPL 옆 `WebView2Loader.dll`로 WebView2를 띄운다. 가상 호스트로 페이지를 싣고, 페이지 밖 이동과 새 창을 막는다. |
+| WebView2Host / WebView2Handlers | `RADAgent.WebView2Api`와 BPL 옆 `WebView2Loader.dll`로 WebView2를 띄운다. 가상 호스트로 페이지를 싣고, 페이지 밖 이동과 새 창을 막는다. 도킹·핀·레이아웃으로 창이 다시 만들어지면 브라우저를 숨은 최상위 창에 잠시 옮겼다가 다시 붙인다(WebView2는 `HWND_MESSAGE`를 부모로 받지 않는다). 그래도 브라우저가 없어졌으면 새로 띄우고 채팅을 다시 보여 준다(`PageLoads`). |
 | ChatFallback | WebView2를 못 띄울 때의 글자 기록. |
 | ChatInput | WebView2 대체 화면의 VCL 입력칸: 여러 줄, 보낸 문장 기록, `/` 명령 목록. |
 | ChatTheme | IDE 테마 색(IOTAIDEThemingServices), 고대비·글자 크기 반영, 테마 변경 통지. |
@@ -76,7 +76,8 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | ChatStop | 중지 단추: abort를 보내고, 그 턴이 5초 안에 끝나지 않거나 다시 누르면 omp 자식을 끝내고 같은 세션으로 다시 시작한다. 자식이 멈추면(중지·재시작·프로젝트 전환) 기다리던 승인 카드와 `!` 셸 명령을 함께 끝낸다. 연결된 뒤 omp가 스스로 끝나면 같은 세션으로 다시 시작한다(1분에 한 번까지). |
 | BrandTable / BrandIcons | provider·모델 → 로고. 규칙은 `src\chat\brands\brands.json`(RCDATA, 채팅 페이지 `brands.js`와 같은 파일). VCL 목록은 `resources\brands\Brands-*.png` 스프라이트로 owner-draw. |
 | ChatAttention | IDE가 뒤에 있을 때 사용자를 부른다: 작업 표시줄 깜빡임, 끝난 턴의 Windows 알림(알림 영역 풍선, 누르면 IDE를 앞으로). |
-| ChatTurnTime | 턴 끝 보고: 채팅의 끝난 시각·걸린 시간 줄(`turnEnd`의 started/ended/stopped, 다시 불러온 기록은 omp의 timestamp·completedAt), 메시지 창 한 줄, 뒤에 있을 때 알림. |
+| ChatTurnTime | 턴 끝 보고: 채팅의 끝난 시각·걸린 시간 줄(`turnEnd`의 started/ended/stopped, 다시 불러온 기록은 omp의 timestamp·completedAt), 메시지 창 한 줄, 뒤에 있을 때 알림. 턴마다 TurnLog에 남긴다. |
+| TurnLog | RAD Agent가 본 턴의 시작·끝·중지를 프로젝트별로 `%LOCALAPPDATA%\RADAgent\turns\<해시>.jsonl`에 남긴다. omp가 답을 기록하지 않은 턴(출력 전에 중지)은 다시 불러올 때 여기서 끝 시각을 가져온다. ToolsAPI 없음. |
 | IdeMenus | 에디터와 메시지 창 오른쪽 클릭 메뉴 항목. |
 | DockKeeper | 디버그 시작·종료로 데스크톱이 바뀐 뒤 채팅을 다시 보여 준다. |
 | ApprovalDialog / LineDiff | 승인 창과 줄 diff. |

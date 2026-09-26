@@ -207,7 +207,10 @@ begin
       Items[Count].Text := Text;
       Items[Count].Model := '';
       Items[Count].Timestamp := JsonInt(Msg, 'timestamp');
-      Items[Count].CompletedAt := JsonInt(Msg, 'completedAt', Items[Count].Timestamp);
+      { A user message has no end of its own (TurnLog may give its turn's end). }
+      Items[Count].CompletedAt := 0;
+      if Role = 'assistant' then
+        Items[Count].CompletedAt := JsonInt(Msg, 'completedAt', Items[Count].Timestamp);
       Items[Count].Stopped := JsonStr(Msg, 'stopReason') = 'aborted';
       Items[Count].Checkpoint := 0;
       if (Role = 'assistant') and (JsonStr(Msg, 'model') <> '') then

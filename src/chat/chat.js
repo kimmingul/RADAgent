@@ -57,29 +57,27 @@
   let currentTurn = null;
   let currentAssistantBlock = null;
   let currentAssistantText = '';
-  let rafPending = false;
+  let rafPending = false, renderCost = 0;
 
-  function isNearBottom() {
-    if (!logEl) return true;
-    return (logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight) <= 60;
-  }
+  // Whether the view follows new content. Updated only by scroll events, so adding content never
+  // forces a layout read per message; scrolling happens once per frame.
+  let stick = true, scrollQueued = false;
+  function isNearBottom() { return stick; }
+  function measureStick() { if (logEl) stick = (logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight) <= 60; }
 
   function scrollToBottom(smooth) {
     if (!logEl) return;
-    if (smooth) {
-      logEl.scrollTo({ top: logEl.scrollHeight, behavior: 'smooth' });
-    } else {
-      logEl.scrollTop = logEl.scrollHeight;
-    }
+    stick = true;
+    if (smooth) logEl.scrollTo({ top: logEl.scrollHeight, behavior: 'smooth' });
+    else logEl.scrollTop = logEl.scrollHeight;
     if (scrollBtn) scrollBtn.classList.remove('visible');
   }
 
   function handleNewContent(wasNearBottom) {
-    if (wasNearBottom) {
-      scrollToBottom(false);
-    } else {
-      if (scrollBtn) scrollBtn.classList.add('visible');
-    }
+    if (!wasNearBottom) { if (scrollBtn) scrollBtn.classList.add('visible'); return; }
+    if (scrollQueued) return;
+    scrollQueued = true;
+    requestAnimationFrame(() => { scrollQueued = false; if (stick) scrollToBottom(false); });
   }
 
   function flushAssistantBlock() {
@@ -147,7 +145,6 @@
   }
 
   function handleAssistantDelta(text) {
-    const wasNear = isNearBottom();
     const turn = ensureAssistantTurn();
 
     if (!currentAssistantBlock) {
@@ -165,16 +162,18 @@
 
     currentAssistantText += text;
 
+    // Long answers cost more to re-render: then render less often than every frame.
     if (!rafPending) {
       rafPending = true;
-      requestAnimationFrame(() => {
+      setTimeout(() => requestAnimationFrame(() => {
         if (!rafPending) return;
         rafPending = false;
-        if (currentAssistantBlock) {
-          currentAssistantBlock.innerHTML = global.Markdown.render(currentAssistantText);
-          handleNewContent(wasNear);
-        }
-      });
+        if (!currentAssistantBlock) return;
+        const started = performance.now();
+        currentAssistantBlock.innerHTML = global.Markdown.render(currentAssistantText);
+        renderCost = performance.now() - started;
+        handleNewContent(isNearBottom());
+      }), renderCost > 8 ? Math.min(250, renderCost * 4) : 0);
     }
   }
 
@@ -251,6 +250,7 @@
 
   function handleClear() {
     if (logEl) logEl.innerHTML = '';
+    stick = true;
     lastModel = '';
     currentTurn = null;
     closeAssistantBlock();
@@ -279,6 +279,7 @@
         turn.appendChild(bubble); global.ChatTurnTime.stamp(turn, item.ts);
         logEl.appendChild(turn);
         if (item.seq) global.ChatCheckpoints.attach(turn, item.seq);
+        global.ChatTurnTime.append(logEl, item);
       } else if (!item.text) { global.ChatTurnTime.append(logEl, item); } else {
         if (item.model && item.model !== lastModel) logEl.appendChild(modelTag(item.model));
         const turn = document.createElement('div');
@@ -372,10 +373,9 @@
     }
     if (logEl) {
       logEl.addEventListener('scroll', () => {
-        if (isNearBottom() && scrollBtn) {
-          scrollBtn.classList.remove('visible');
-        }
-      });
+        measureStick();
+        if (stick && scrollBtn) scrollBtn.classList.remove('visible');
+      }, { passive: true });
     }
     // Logos are resolved while messages render, so the rule table comes first.
     global.ChatBrands.load().then(() => {

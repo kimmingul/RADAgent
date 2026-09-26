@@ -6,8 +6,13 @@ unit RADAgent.ChatTurnTime;
 
 interface
 
+uses
+  RADAgent.RpcResponses;
+
 { Stopped: the turn was cut short (stop pressed, omp restarted or gone). }
 procedure ReportTurnEnd(Stopped: Boolean);
+{ A reloaded history: unanswered user messages get the end of their turn as RAD Agent saw it. }
+procedure AttachTurnTimes(var Items: TArray<THistoryItem>);
 { A duration in the UI language, e.g. "3m 12s". }
 function FormatDuration(Ms: Int64): string;
 
@@ -15,7 +20,19 @@ implementation
 
 uses
   System.SysUtils, System.DateUtils, RADAgent.ChatSession, RADAgent.ChatPageMessages,
-  RADAgent.ChatAttention, RADAgent.IdeContext, RADAgent.AgentSettings, RADAgent.RpcJson, RADAgent.Lang;
+  RADAgent.ChatAttention, RADAgent.IdeContext, RADAgent.AgentSettings, RADAgent.RpcJson, RADAgent.Lang,
+  RADAgent.TurnLog;
+
+function ProjectDir: string;
+begin
+  Result := ExcludeTrailingPathDelimiter(ActiveProjectDir);
+end;
+
+procedure AttachTurnTimes(var Items: TArray<THistoryItem>);
+begin
+  if ProjectDir <> '' then
+    MergeTurns(TurnLogFile(ProjectDir), Items);
+end;
 
 function FormatDuration(Ms: Int64): string;
 var
@@ -54,6 +71,9 @@ begin
   end;
   EndedAt := UnixMs;
   Session.Emit(PageTurnEnd(StartedAt, EndedAt, Stopped));
+  { omp keeps no answer for a turn stopped before any output; the log has its end. }
+  if ProjectDir <> '' then
+    AppendTurn(TurnLogFile(ProjectDir), StartedAt, EndedAt, Stopped);
   if Stopped then
     Line := TrF('turntime.stopped', [ClockText(EndedAt), FormatDuration(EndedAt - StartedAt)])
   else

@@ -23,6 +23,7 @@ uses
   RADAgent.OmpProbe in '..\src\RADAgent.OmpProbe.pas',
   RADAgent.ProcessRun in '..\src\RADAgent.ProcessRun.pas',
   RADAgent.GitRepo in '..\src\RADAgent.GitRepo.pas',
+  RADAgent.TurnLog in '..\src\RADAgent.TurnLog.pas',
   RADAgent.Lang in '..\src\RADAgent.Lang.pas',
   RADAgent.SlashRoutes in '..\src\RADAgent.SlashRoutes.pas',
   RADAgent.SessionData in '..\src\RADAgent.SessionData.pas',

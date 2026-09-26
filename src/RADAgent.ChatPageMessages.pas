@@ -287,6 +287,8 @@ begin
         SentAt := Items[Index].Timestamp;
         if SentAt > 0 then
           Item.AddPair('ts', TJSONNumber.Create(SentAt));
+        { A turn without an answer (stopped before any output): its logged end, if any. }
+        AddTurnTimes(Item, SentAt, Items[Index].CompletedAt, Items[Index].Stopped);
       end
       { The turn's last answer: the next message is the user's, or there is none. }
       else if (Index = High(Items)) or (Items[Index + 1].Role = 'user') then

@@ -10,7 +10,36 @@ procedure RunRpcEventsTests(const Check: TCheckProc);
 implementation
 
 uses
-  System.SysUtils, System.Math, RADAgent.RpcEvents, RADAgent.RpcResponses;
+  System.SysUtils, System.Math, System.IOUtils, RADAgent.RpcEvents, RADAgent.RpcResponses, RADAgent.TurnLog,
+  RADAgent.Options;
+
+function UserItem(Sent: Int64): THistoryItem;
+begin
+  Result := Default(THistoryItem);
+  Result.Role := 'user';
+  Result.Text := 'q';
+  Result.Timestamp := Sent;
+end;
+
+{ A turn stopped before any output has no answer in omp; the logged end fills in, but only for
+  that turn: not for a message sent while a turn ran, nor for a turn omp answered. }
+procedure TestTurnLog(const Check: TCheckProc);
+var
+  FileName: string;
+  Items: TArray<THistoryItem>;
+begin
+  FileName := AgentTempRoot + 'turnlog-test.jsonl';
+  System.SysUtils.DeleteFile(FileName);
+  AppendTurn(FileName, 900, 3000, True);
+  AppendTurn(FileName, 4900, 9000, False);
+  Items := [UserItem(1000), UserItem(5000), UserItem(6000), Default(THistoryItem)];
+  Items[3].Role := 'assistant';
+  MergeTurns(FileName, Items);
+  Check((Items[0].CompletedAt = 3000) and Items[0].Stopped, 'an unanswered stopped turn gets its logged end');
+  Check(Items[1].CompletedAt = 0, 'a turn still running when the next message came is not unanswered');
+  Check(Items[2].CompletedAt = 0, 'a message omp answered keeps omp''s own end');
+  System.SysUtils.DeleteFile(FileName);
+end;
 
 procedure TestTextDelta(const Check: TCheckProc);
 var Ev: TAgentEvent;
@@ -310,6 +339,7 @@ begin
   TestAvailableCommands(Check);
   TestStateInfo(Check);
   TestMessagesPage(Check);
+  TestTurnLog(Check);
   TestMalformedJson(Check);
   TestToolResultPreview(Check);
   TestDetailCollapse(Check);

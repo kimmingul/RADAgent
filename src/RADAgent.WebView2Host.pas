@@ -1,8 +1,12 @@
 unit RADAgent.WebView2Host;
 
 { WebView2 control hosted directly through RADAgent.WebView2Api and WebView2Loader.dll next to
-  the BPL, so the package needs no vcledge and no release-specific Winapi.WebView2. Serves <bpl>\RADAgent\chat through a virtual host
-  and exchanges JSON messages with the page. Main thread only. }
+  the BPL, so the package needs no vcledge and no release-specific Winapi.WebView2. Serves
+  <bpl>\RADAgent\chat through a virtual host and exchanges JSON messages with the page.
+  Docking, pinning and layout changes re-create the control's window: the browser is parked in a
+  hidden window meanwhile and put back, so the page stays as it is. Should that fail (the browser
+  window died with its old parent), a new browser loads the page again and PageLoads counts up so
+  the owner can show the chat again. Main thread only. }
 
 interface
 
@@ -16,18 +20,23 @@ type
   TWebView2Host = class(TWinControl)
   private
     FLifetimeGate: IWebView2LifetimeGate;
+    FEnvironment: ICoreWebView2Environment;
     FController: ICoreWebView2Controller;
     FWebView: ICoreWebView2;
     FPending: TStringList;
     FPageReady: Boolean;
     FStarted: Boolean;
+    FLoads: Integer;
     FProblem: string;
     FBackColor: TColor;
     FOnMessage: TWebJsonEvent;
     FOnPageReady: TNotifyEvent;
     FOnFailed: TNotifyEvent;
+    function Alive: Boolean;
     procedure Fail(const Problem: string);
     procedure StartBrowser;
+    procedure CreateController;
+    procedure DropController;
     procedure EnvironmentReady(ErrorCode: HResult; const Env: ICoreWebView2Environment);
     procedure ControllerReady(ErrorCode: HResult; const Controller: ICoreWebView2Controller);
     procedure WebMessage(const Args: ICoreWebView2WebMessageReceivedEventArgs);
@@ -45,6 +54,8 @@ type
     procedure PostJson(const Json: string);
     procedure SetBackColor(Value: TColor);
     property PageReady: Boolean read FPageReady;
+    { Times the page was loaded: above 1 it is a fresh page that has to be shown the chat again. }
+    property PageLoads: Integer read FLoads;
     property Problem: string read FProblem;
     property OnMessage: TWebJsonEvent read FOnMessage write FOnMessage;
     property OnPageReady: TNotifyEvent read FOnPageReady write FOnPageReady;
@@ -69,6 +80,17 @@ type
 
 var
   GLoader: HMODULE;
+  { Hidden top-level window the browser waits in while the control has no window. WebView2
+    refuses HWND_MESSAGE as a parent (ERROR_INVALID_WINDOW_HANDLE). }
+  GParking: HWND;
+
+function ParkingWindow: HWND;
+begin
+  if (GParking = 0) or not IsWindow(GParking) then
+    GParking := CreateWindowEx(WS_EX_TOOLWINDOW, 'STATIC', 'RADAgentWebViewParking', WS_POPUP,
+      0, 0, 0, 0, 0, 0, HInstance, nil);
+  Result := GParking;
+end;
 
 function ChatAssetDir: string;
 begin
@@ -77,8 +99,7 @@ end;
 
 function UserDataDir: string;
 begin
-  Result := IncludeTrailingPathDelimiter(GetEnvironmentVariable('LOCALAPPDATA')) +
-    'RADAgent\WebView2';
+  Result := IncludeTrailingPathDelimiter(GetEnvironmentVariable('LOCALAPPDATA')) + 'RADAgent\WebView2';
 end;
 
 constructor TWebView2Host.Create(AOwner: TComponent);
@@ -92,16 +113,16 @@ end;
 
 destructor TWebView2Host.Destroy;
 begin
-  if FLifetimeGate <> nil then
-    FLifetimeGate.Invalidate;
-  if FController <> nil then
-  begin
-    FController.Close;
-    FWebView := nil;
-    FController := nil;
-  end;
+  FLifetimeGate.Invalidate;
+  DropController;
+  FEnvironment := nil;
   FPending.Free;
   inherited Destroy;
+end;
+
+function TWebView2Host.Alive: Boolean;
+begin
+  Result := FLifetimeGate.IsAlive and not (csDestroying in ComponentState);
 end;
 
 procedure TWebView2Host.Fail(const Problem: string);
@@ -114,16 +135,31 @@ begin
     Handler(Self);
 end;
 
+procedure TWebView2Host.DropController;
+begin
+  FWebView := nil;
+  if FController <> nil then
+    FController.Close;
+  FController := nil;
+  FPageReady := False;
+end;
+
 procedure TWebView2Host.CreateWnd;
 begin
   inherited CreateWnd;
-  if (csDestroying in ComponentState) or ((FLifetimeGate <> nil) and not FLifetimeGate.IsAlive) then
+  if not Alive then
     Exit;
   if FController <> nil then
   begin
-    FController.Set_ParentWindow(wireHWND(Handle));
-    UpdateBounds;
-    FController.Set_IsVisible(1);
+    if Succeeded(FController.Set_ParentWindow(wireHWND(Handle))) then
+    begin
+      UpdateBounds;
+      FController.Set_IsVisible(1);
+      Exit;
+    end;
+    { The browser window is gone: start a new one in the same environment. }
+    DropController;
+    CreateController;
   end
   else if not FStarted then
     StartBrowser;
@@ -131,20 +167,17 @@ end;
 
 procedure TWebView2Host.DestroyWnd;
 begin
-  { Docking re-creates the handle; park the browser instead of losing it. }
   if csDestroying in ComponentState then
   begin
-    if FLifetimeGate <> nil then
-      FLifetimeGate.Invalidate;
-    if FController <> nil then
-    begin
-      FController.Close;
-      FWebView := nil;
-      FController := nil;
-    end;
+    FLifetimeGate.Invalidate;
+    DropController;
   end
   else if FController <> nil then
-    FController.Set_ParentWindow(wireHWND(HWND_MESSAGE));
+  begin
+    FController.Set_IsVisible(0);
+    if Failed(FController.Set_ParentWindow(wireHWND(ParkingWindow))) then
+      DropController;
+  end;
   inherited DestroyWnd;
 end;
 
@@ -184,26 +217,25 @@ begin
 end;
 
 procedure TWebView2Host.EnvironmentReady(ErrorCode: HResult; const Env: ICoreWebView2Environment);
-var
-  Hr: HResult;
 begin
-  if (csDestroying in ComponentState) or ((FLifetimeGate <> nil) and not FLifetimeGate.IsAlive) then
+  if not Alive then
     Exit;
   if Failed(ErrorCode) or (Env = nil) then
   begin
     Fail(TrF('webview2host.envCreateFailed', [ErrorCode]));
     Exit;
   end;
-  if (FLifetimeGate <> nil) and not FLifetimeGate.IsAlive then
+  FEnvironment := Env;
+  CreateController;
+end;
+
+procedure TWebView2Host.CreateController;
+var
+  Hr: HResult;
+begin
+  if (FEnvironment = nil) or not HandleAllocated then
     Exit;
-  if not HandleAllocated then
-  begin
-    if (Parent = nil) and (ParentWindow = 0) then
-      Exit;
-    HandleNeeded;
-  end;
-  Hr := Env.CreateCoreWebView2Controller(Handle,
-    TControllerCompleted.Create(FLifetimeGate, ControllerReady));
+  Hr := FEnvironment.CreateCoreWebView2Controller(Handle, TControllerCompleted.Create(FLifetimeGate, ControllerReady));
   if Failed(Hr) then
     Fail(TrF('webview2host.controllerCreateFailed', [Hr]));
 end;
@@ -215,38 +247,24 @@ var
   View3: ICoreWebView2_3;
   Token: EventRegistrationToken;
 begin
-  if (csDestroying in ComponentState) or ((FLifetimeGate <> nil) and not FLifetimeGate.IsAlive) then
+  if not Alive or Failed(ErrorCode) or (Controller = nil) or (FController <> nil) then
   begin
     if Controller <> nil then
       Controller.Close;
-    Exit;
-  end;
-  if Failed(ErrorCode) or (Controller = nil) then
-  begin
-    if Controller <> nil then
-      Controller.Close;
-    Fail(TrF('webview2host.controllerCreateFailed', [ErrorCode]));
-    Exit;
-  end;
-  if (FLifetimeGate <> nil) and not FLifetimeGate.IsAlive then
-  begin
-    Controller.Close;
+    if Alive and (FController = nil) then
+      Fail(TrF('webview2host.controllerCreateFailed', [ErrorCode]));
     Exit;
   end;
   FController := Controller;
   if HandleAllocated then
-  begin
-    FController.Set_ParentWindow(wireHWND(Handle));
-    UpdateBounds;
-    FController.Set_IsVisible(1);
-  end
+    FController.Set_ParentWindow(wireHWND(Handle))
   else
-    FController.Set_ParentWindow(wireHWND(HWND_MESSAGE));
-  if Failed(FController.Get_CoreWebView2(FWebView)) or (FWebView = nil) then
+    FController.Set_ParentWindow(wireHWND(ParkingWindow));
+  if Failed(FController.Get_CoreWebView2(FWebView)) or (FWebView = nil) or
+    not Supports(FWebView, ICoreWebView2_3, View3) then
   begin
-    FController.Close;
-    FController := nil;
-    Fail(TrF('webview2host.controllerCreateFailed', [E_FAIL]));
+    DropController;
+    Fail(Tr('webview2host.runtimeOutdated'));
     Exit;
   end;
   ApplyBackColor;
@@ -258,21 +276,14 @@ begin
     if Supports(Settings, ICoreWebView2Settings3, Settings3) then
       Settings3.Set_AreBrowserAcceleratorKeysEnabled(0);
   end;
-  if not Supports(FWebView, ICoreWebView2_3, View3) then
-  begin
-    FWebView := nil;
-    FController.Close;
-    FController := nil;
-    Fail(Tr('webview2host.runtimeOutdated'));
-    Exit;
-  end;
   View3.SetVirtualHostNameToFolderMapping(HostName, PWideChar(ChatAssetDir),
     COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND_DENY_CORS);
   FWebView.add_WebMessageReceived(TWebMessageHandler.Create(FLifetimeGate, WebMessage), Token);
   FWebView.add_NavigationStarting(TNavigationGuard.Create('https://' + HostName + '/'), Token);
   FWebView.add_NewWindowRequested(TNewWindowBlocker.Create, Token);
   UpdateBounds;
-  FController.Set_IsVisible(1);
+  FController.Set_IsVisible(Ord(HandleAllocated));
+  Inc(FLoads);
   FWebView.Navigate(PageUrl);
 end;
 
@@ -280,43 +291,33 @@ procedure TWebView2Host.WebMessage(const Args: ICoreWebView2WebMessageReceivedEv
 var
   Raw: PWideChar;
   Json: string;
+  Pending: TStringList;
   Index: Integer;
   ReadyHandler: TNotifyEvent;
   MessageHandler: TWebJsonEvent;
-  Gate: IWebView2LifetimeGate;
-  PendingCopy: TStringList;
 begin
-  Gate := FLifetimeGate;
-  if (Gate <> nil) and not Gate.IsAlive then
-    Exit;
-  if Failed(Args.Get_webMessageAsJson(Raw)) then
+  if not Alive or Failed(Args.Get_webMessageAsJson(Raw)) then
     Exit;
   Json := TakeString(Raw);
   if not FPageReady and Json.Contains('"t":"ready"') then
   begin
     FPageReady := True;
-    PendingCopy := FPending;
+    Pending := FPending;
     FPending := TStringList.Create;
     try
-      for Index := 0 to PendingCopy.Count - 1 do
-      begin
-        if (Gate <> nil) and not Gate.IsAlive then
-          Break;
-        if FWebView <> nil then
-          FWebView.PostWebMessageAsJson(PWideChar(PendingCopy[Index]));
-      end;
+      { A reloaded page gets the whole chat again from the owner; the queue only held part of it. }
+      if FLoads = 1 then
+        for Index := 0 to Pending.Count - 1 do
+          if Alive and (FWebView <> nil) then
+            FWebView.PostWebMessageAsJson(PWideChar(Pending[Index]));
     finally
-      PendingCopy.Free;
+      Pending.Free;
     end;
-    if (Gate <> nil) and not Gate.IsAlive then
-      Exit;
     ReadyHandler := FOnPageReady;
-    if Assigned(ReadyHandler) then
+    if Alive and Assigned(ReadyHandler) then
       ReadyHandler(Self);
     Exit;
   end;
-  if (Gate <> nil) and not Gate.IsAlive then
-    Exit;
   MessageHandler := FOnMessage;
   if Assigned(MessageHandler) then
     MessageHandler(Json);
@@ -324,11 +325,11 @@ end;
 
 procedure TWebView2Host.PostJson(const Json: string);
 begin
-  if (FLifetimeGate <> nil) and not FLifetimeGate.IsAlive then
+  if not FLifetimeGate.IsAlive then
     Exit;
   if FPageReady and (FWebView <> nil) then
     FWebView.PostWebMessageAsJson(PWideChar(Json))
-  else if FPending <> nil then
+  else
     FPending.Add(Json);
 end;
 
@@ -382,6 +383,8 @@ end;
 initialization
 
 finalization
+  if GParking <> 0 then
+    DestroyWindow(GParking);
   { The runtime keeps browser processes; the loader stays until package unload. }
   if GLoader <> 0 then
     FreeLibrary(GLoader);

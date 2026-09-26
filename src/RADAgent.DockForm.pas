@@ -154,6 +154,9 @@ var
   Kind: TStateKind;
 begin
   FWeb.PostJson(PageStrings);
+  { A new browser (the old one died with a docking window) shows the whole chat again. }
+  if FWeb.PageLoads > 1 then
+    ChatSession.Attach(Self);
   SetInChatApprovals(True);
   { A reloaded page starts empty: send every state again. }
   for Kind := Low(TStateKind) to High(TStateKind) do

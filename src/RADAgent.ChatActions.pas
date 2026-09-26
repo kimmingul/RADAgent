@@ -31,7 +31,8 @@ uses
   RADAgent.IdeContext, RADAgent.Compile, RADAgent.AgentSettings,
   RADAgent.ChatPageMessages, RADAgent.Sessions, RADAgent.Options, RADAgent.HostTools,
   RADAgent.OmpSettings, RADAgent.HostToolDefs, RADAgent.ChatPlan, RADAgent.ChatBtw,
-  RADAgent.ChatDiskSync, RADAgent.ChatCheckpoints, RADAgent.RpcJson, RADAgent.ChatSlash, RADAgent.ChatQueue, RADAgent.ChatUsage, RADAgent.Lang;
+  RADAgent.ChatDiskSync, RADAgent.ChatCheckpoints, RADAgent.RpcJson, RADAgent.ChatSlash, RADAgent.ChatQueue, RADAgent.ChatUsage,
+  RADAgent.ChatTurnTime, RADAgent.Lang;
 
 var
   GPickModel: Boolean;
@@ -301,6 +302,7 @@ begin
     else
     begin
       AttachCheckpoints(GHistory);
+      AttachTurnTimes(GHistory);
       ChatSession.Emit(PageHistory(GHistory));
       FollowUp := TakeRestoreNotice;
       if FollowUp <> '' then
