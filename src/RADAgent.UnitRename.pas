@@ -204,6 +204,8 @@ function RenameProject(const NewName: string; const Approval: IAgentApproval;
 const
   { Files the IDE writes anew under the new name; the old ones would stay behind. }
   Moved: array[0..4] of string = ('.dpr', '.cpp', '.res', '.dproj', '.cbproj');
+  Stale: array[0..5] of string = ('.dproj.local', '.cbproj.local', '.identcache', '.stat', '.dsk',
+    '.delphilsp.json');
 var
   Project: IOTAProject;
   OldFile, NewFile, OldName, Problem, Ext: string;
@@ -253,15 +255,18 @@ begin
   for Ext in Moved do
     if FileExists(ChangeFileExt(NewFile, Ext)) and FileExists(ChangeFileExt(OldFile, Ext)) then
       System.SysUtils.DeleteFile(ChangeFileExt(OldFile, Ext));
+  { Per-user IDE state and the DelphiLSP settings named after the old project; the IDE writes new
+    ones for the new name. }
+  for Ext in Stale do
+    System.SysUtils.DeleteFile(ChangeFileExt(OldFile, Ext));
   Obj := TJSONObject.Create;
   try
     Obj.AddPair('ok', TJSONTrue.Create);
     Obj.AddPair('old', OldName);
     Obj.AddPair('new', NewName);
     Obj.AddPair('file', NewFile);
-    Obj.AddPair('note', 'The executable is now ' + NewName + '.exe. Compile to check. Settings named after ' +
-      'the old project (' + OldName + '.delphilsp.json, per-user .local/.identcache files) are ' +
-      'written anew by the IDE.');
+    Obj.AddPair('note', 'The executable is now ' + NewName + '.exe. Compile to check; the build also ' +
+      'writes ' + NewName + '.delphilsp.json for DelphiLSP, which omp picks up when it restarts.');
     ResultText := Obj.ToJSON;
   finally
     Obj.Free;

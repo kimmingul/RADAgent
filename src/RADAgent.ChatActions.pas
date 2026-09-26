@@ -352,6 +352,9 @@ begin
   { A first form makes the form tools available. }
   if (ToolName = ToolNewModule) and not IsError then
     Session.RefreshHostTools;
+  { The DelphiLSP settings are named after the project: omp gets them anew after the turn. }
+  if (ToolName = ToolRenameProject) and not IsError then
+    Session.RestartWhenIdle;
   { omp works on disk: what the IDE just changed must be there before omp reads it. }
   if IsChangingTool(ToolName) and not IsError and not SaveProject then
     Text := Text + sLineBreak + 'Warning: the change is in the IDE but could not be saved to disk, so ' +
