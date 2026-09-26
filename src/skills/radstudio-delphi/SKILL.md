@@ -22,8 +22,9 @@ A project `AGENTS.md` or `.omp` rules override this skill.
 | Enumeration | `T` type, lower-case prefix on members | `TPayState = (psOpen, psPaid)` |
 | Constant | PascalCase (or the project's style) | `MaxLines` |
 | Unit | Dotted PascalCase namespace, one responsibility | `App.Invoice.Store.pas` |
-| Form unit / class / global | unit `MainForm.pas`, class `TMainForm`, variable `MainForm` | |
-| Data module | `TInvoiceData` in `InvoiceData.pas` | |
+| Form unit / class / global | unit in the project namespace ending in `Form` or `Dialog`, class `T` + last part, variable = last part | `App.UI.ExportDialog.pas`, `TExportDialog`, `ExportDialog` |
+| Frame | unit ending in `Frame` | `App.UI.GridFrame.pas`, `TGridFrame` |
+| Data module | unit ending in `DataModule` | `App.Data.InvoiceDataModule.pas` |
 | Event handler | component name + event without `On` | `SaveButtonClick`, `FormCreate` |
 
 Components on forms get meaningful names before any code refers to them. Two styles are common; use
@@ -53,8 +54,10 @@ statement per line, `end;` aligned with its `begin`, `else` on its own line when
 | `__history\`, `__recovery\` | IDE backups | No; not in git |
 | `Win32\Debug\`, `Win64\Release\` ... | Output: `.exe`, `.dcu`, `.bpl` | No; not in git |
 
-New units, forms, frames and data modules come from `rad.new_module`, which adds them to the project.
-A plain `.pas` created with the write tool is not part of the project until it is added.
+New units, forms, frames and data modules come from `rad.new_module`, which adds them to the project
+under the unit name you give (never `UnitN`). `rad.rename_unit` gives an existing unit a new name and
+fixes the form file, the project and other units' `uses`. A plain `.pas` created with the write tool is
+not part of the project until it is added.
 
 Unit structure: `interface` (public types and routines, minimal `uses`) then `implementation` (its own
 `uses` for everything only the implementation needs). Put a `uses` entry in `implementation` whenever

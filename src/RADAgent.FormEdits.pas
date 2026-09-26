@@ -41,7 +41,7 @@ implementation
 
 uses
   System.SysUtils, System.StrUtils, System.Classes, System.TypInfo, Vcl.Controls, Vcl.Menus, DesignIntf,
-  RADAgent.FormDesigner, RADAgent.Lang;
+  RADAgent.FormDesigner, RADAgent.FormNonVisual, RADAgent.Lang;
 
 const
   { FMX.Types.IItemsContainer; the package does not require fmx. }
@@ -118,6 +118,36 @@ begin
     SetPropValue(Target, Prop, Value);
 end;
 
+function SetIconPosition(const Editor: IOTAFormEditor; Instance: TComponent; const Args: TFormToolArgs;
+  const Approval: IAgentApproval; out Problem: string): Boolean;
+var
+  Value, Left, Top: Integer;
+begin
+  Result := False;
+  if not TryStrToInt(Trim(Args.Value), Value) then
+  begin
+    Problem := 'Left and Top of a non-visual component take a whole number: ' + Args.Value;
+    Exit;
+  end;
+  if not ApprovedEdit(Approval, Args.Path, Instance.Name + '.' + Args.PropName + ' -> ' + Args.Value,
+    Problem) then
+    Exit;
+  if FindNative(Editor, Args.Component) <> Instance then
+  begin
+    Problem := 'Component changed while waiting for approval.';
+    Exit;
+  end;
+  Left := SmallInt(LongRec(Instance.DesignInfo).Lo);
+  Top := SmallInt(LongRec(Instance.DesignInfo).Hi);
+  if SameText(Args.PropName, 'Left') then
+    Left := Value
+  else
+    Top := Value;
+  SetDesignPos(Instance, Left, Top);
+  MarkDesignerModified(Editor);
+  Result := True;
+end;
+
 function SetProperty(const Editor: IOTAFormEditor; const Args: TFormToolArgs;
   const Approval: IAgentApproval; out Problem: string): Boolean;
 var
@@ -133,6 +163,10 @@ begin
     Problem := 'Component not found: ' + Args.Component;
     Exit;
   end;
+  { A non-visual component's icon position is DesignInfo, streamed as Left/Top: no property. }
+  if (SameText(Args.PropName, 'Left') or SameText(Args.PropName, 'Top')) and
+    IsNonVisual(RootOf(Editor), Instance) then
+    Exit(SetIconPosition(Editor, Instance, Args, Approval, Problem));
   if not ResolveProperty(Instance, Args.PropName, Target, Prop) then
   begin
     Problem := 'Property not writable: ' + Args.PropName;
@@ -252,7 +286,10 @@ begin
   begin
     SetFloatProp(GetObjectProp(Native, 'Position'), 'X', Args.Left);
     SetFloatProp(GetObjectProp(Native, 'Position'), 'Y', Args.Top);
-  end;
+  end
+  { A non-visual component joins the row at the bottom of the form instead of the middle. }
+  else if IsNonVisual(RootOf(Editor), Native) then
+    ArrangeNonVisual(Editor);
   if Args.Name <> '' then
   try
     Native.Name := Args.Name;

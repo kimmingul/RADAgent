@@ -20,6 +20,9 @@ type
 
 function ActiveProjectFile: string;
 function ActiveProjectDir: string;
+{ A tool's path as the IDE wants it: backslashes, relative to the project folder, expanded.
+  OpenModule turns C:/dir/Unit1.pas into C:\Unit1.pas. }
+function ProjectPath(const Path: string): string;
 function OpenEditorTexts: TArray<TEditorText>;
 function CurrentEditorText: TEditorText;
 function BufferText(const FileName: string): string;
@@ -188,6 +191,14 @@ begin
     Result := ''
   else
     Result := IncludeTrailingPathDelimiter(ExtractFilePath(FileName));
+end;
+
+function ProjectPath(const Path: string): string;
+begin
+  Result := Path.Replace('/', '\');
+  if TPath.IsRelativePath(Result) then
+    Result := TPath.Combine(ExcludeTrailingPathDelimiter(ActiveProjectDir), Result);
+  Result := ExpandFileName(Result);
 end;
 
 function ReadSource(const Source: IOTASourceEditor): string;

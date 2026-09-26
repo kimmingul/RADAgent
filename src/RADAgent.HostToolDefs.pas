@@ -28,6 +28,8 @@ const
   ToolFormSetEvent = 'rad.form_set_event';
   ToolFormScreenshot = 'rad.form_screenshot';
   ToolFormTextEdit = 'rad.form_text_edit';
+  ToolFormArrangeNonVisual = 'rad.form_arrange_nonvisual';
+  ToolRenameUnit = 'rad.rename_unit';
   ToolDebugRun = 'rad.debug_run';
   ToolDebugStep = 'rad.debug_step';
   ToolDebugPause = 'rad.debug_pause';
@@ -77,7 +79,8 @@ begin
   Result := (Name = ToolInsertAtCaret) or
     (Name = ToolSetBuildConfig) or (Name = ToolNewModule) or (Name = ToolFormApply) or
     (Name = ToolFormSetProperty) or (Name = ToolFormAddComponent) or (Name = ToolFormDeleteComponent) or
-    (Name = ToolFormRenameComponent) or (Name = ToolFormSetEvent) or (Name = ToolFormTextEdit) or (Name = ToolDebugRun) or
+    (Name = ToolFormRenameComponent) or (Name = ToolFormSetEvent) or (Name = ToolFormTextEdit) or
+    (Name = ToolFormArrangeNonVisual) or (Name = ToolRenameUnit) or (Name = ToolDebugRun) or
     (Name = ToolDebugStep) or (Name = ToolDebugPause) or (Name = ToolDebugReset) or
     (Name = ToolDebugAddBreakpoint);
 end;
@@ -173,7 +176,8 @@ begin
     'events map event to handler method (stub added if missing). ' + Layout + ' Example item: ' +
     Example + '. Does not save.', FormApplySchema));
   Tools.AddElement(ToolDef(ToolFormSetProperty,
-    'After approval set one property (dotted path allowed) of a component (empty = the form).',
+    'After approval set one property (dotted path allowed) of a component (empty = the form). For a ' +
+    'non-visual component (menu, dialog, timer, list) Left and Top move its designer icon.',
     'path,component,property,value'));
   Tools.AddElement(ToolDef(ToolFormAddComponent,
     'After approval drop one component class under parent at left,top, optionally named.',
@@ -187,6 +191,10 @@ begin
   Tools.AddElement(ToolDef(ToolFormSetEvent,
     'After approval connect event (OnClick) to handler; empty handler disconnects.',
     'path,component,event,handler'));
+  Tools.AddElement(ToolDef(ToolFormArrangeNonVisual,
+    'After approval line up every non-visual component (menus, dialogs, timers, action/image ' +
+    'lists, data access) along the bottom of the form, grouped by kind. New non-visual components ' +
+    'are placed there automatically; do not give them Left/Top.', 'path'));
   Tools.AddElement(ToolDef(ToolFormScreenshot,
     'PNG image of the form as the designer shows it (absolute unit path). Use it after layout ' +
     'changes to check overlaps, alignment and clipped text. Read-only.', 'path'));
@@ -235,10 +243,17 @@ begin
       'After approval switch the active build configuration (e.g. Debug, Release) and/or ' +
       'target platform (e.g. Win32, Win64).', 'config,platform'));
     Tools.AddElement(ToolDef(ToolNewModule,
-      'After approval add a new module to the project. kind: form, frame, datamodule or unit; ' +
-      'name: optional form name, or unit name (Delphi units may be dotted, e.g. App.Csv); a named unit ' +
-      'becomes <name>.pas (.cpp) in the project folder. Returns the new file. Form tools appear after the first form.',
-      'kind,name'));
+      'After approval add a new module to the project. kind: form, frame, datamodule or unit. unit: ' +
+      'the unit name, required and descriptive, in the project''s namespace (Delphi units may be ' +
+      'dotted): a form ends in Form or Dialog, a frame in Frame, a data module in DataModule, e.g. ' +
+      'App.UI.ExportDialog, App.UI.GridFrame; the file is <unit>.pas (.cpp) in the project folder. ' +
+      'name: optional component name of the form, frame or data module (default: the last part of ' +
+      'unit). Returns the new file. Form tools appear after the first form.',
+      'kind,unit,name'));
+    Tools.AddElement(ToolDef(ToolRenameUnit,
+      'After approval give an existing unit (absolute path of its .pas/.cpp) a new unit name under ' +
+      'the same naming rules as rad.new_module; its form file, the project and the uses clauses of ' +
+      'the project''s other units follow. Compile afterwards.', 'path,unit'));
     Tools.AddElement(ToolDef(ToolListComponents,
       'Installed component classes on the IDE palette with their package; filter is a ' +
       'case-insensitive substring. Use it to pick valid classes for forms. Read-only.', 'filter'));

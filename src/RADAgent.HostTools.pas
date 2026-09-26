@@ -22,7 +22,7 @@ uses
   RADAgent.HostToolDefs, RADAgent.DebugTools, RADAgent.DebugControl,
   RADAgent.FormEdits, RADAgent.FormTools, RADAgent.ProjectProfile,
   RADAgent.ModuleCreator, RADAgent.ChatPlan, RADAgent.FormShot, RADAgent.FormText,
-  RADAgent.AgentSettings;
+  RADAgent.AgentSettings, RADAgent.UnitRename;
 
 function ArgText(const ArgumentsJson, Name: string): string;
 var
@@ -154,8 +154,11 @@ begin
     IsError := not SetBuildConfig(ArgText(ArgumentsJson, 'config'), ArgText(ArgumentsJson, 'platform'),
       Approval, ResultText)
   else if ToolName = ToolNewModule then
-    IsError := not NewModule(ArgText(ArgumentsJson, 'kind'), ArgText(ArgumentsJson, 'name'),
-      Approval, ResultText)
+    IsError := not NewModule(ArgText(ArgumentsJson, 'kind'), ArgText(ArgumentsJson, 'unit'),
+      ArgText(ArgumentsJson, 'name'), Approval, ResultText)
+  else if ToolName = ToolRenameUnit then
+    IsError := not RenameUnit(ArgText(ArgumentsJson, 'path'), ArgText(ArgumentsJson, 'unit'), Approval,
+      ResultText)
   else if ToolName = ToolListComponents then
   begin
     ResultText := ComponentsJson(ArgText(ArgumentsJson, 'filter'));

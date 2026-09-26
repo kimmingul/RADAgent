@@ -60,7 +60,9 @@ void __fastcall TMainForm::SaveButtonClick(TObject *Sender)
 - In this IDE host the C++ designer does not write handler code. `rad.form_apply` and
   `rad.form_set_event` add the declaration and a body; fill the body, do not declare handlers by hand.
 - Rename components with `rad.form_rename_component`, never by editing the header.
-- New forms, frames, data modules and units come from `rad.new_module`, which adds them to the project.
+- New forms, frames, data modules and units come from `rad.new_module`, which adds them to the project
+  under the unit (file) name you give: descriptive, no dots, a form ending in `Form` or `Dialog`, a
+  frame in `Frame` (`ExportDialog.cpp`), never `UnitN`. `rad.rename_unit` renames an existing one.
 
 ## Naming
 

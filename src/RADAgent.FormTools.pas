@@ -17,7 +17,8 @@ implementation
 
 uses
   System.SysUtils, System.Classes, System.JSON, System.TypInfo, System.Rtti, Vcl.Controls, ToolsAPI,
-  RADAgent.HostToolDefs, RADAgent.FormDesigner, RADAgent.FormBatch, RADAgent.FormEvents, RADAgent.IdeContext;
+  RADAgent.HostToolDefs, RADAgent.FormDesigner, RADAgent.FormBatch, RADAgent.FormEvents, RADAgent.IdeContext,
+  RADAgent.FormNonVisual;
 
 function IsFormTool(const ToolName: string): Boolean;
 begin
@@ -25,7 +26,7 @@ begin
     (ToolName = ToolFormApply) or
     (ToolName = ToolFormSetProperty) or (ToolName = ToolFormAddComponent) or
     (ToolName = ToolFormDeleteComponent) or (ToolName = ToolFormRenameComponent) or
-    (ToolName = ToolFormSetEvent);
+    (ToolName = ToolFormSetEvent) or (ToolName = ToolFormArrangeNonVisual);
 end;
 
 { VCL TControl.Parent, or FMX TFmxObject.Parent through RTTI (no FMX package needed). FMX items
@@ -171,6 +172,8 @@ begin
     Ok := AddComponent(Editor, Args, Approval, CreatedName, Problem);
     Finish(Ok, NameJson(CreatedName), Problem, ResultText, IsError);
   end
+  else if ToolName = ToolFormArrangeNonVisual then
+    IsError := not ArrangeIcons(Editor, Args.Path, Approval, ResultText)
   else
   begin
     if ToolName = ToolFormSetProperty then

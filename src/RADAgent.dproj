@@ -46,8 +46,8 @@
     <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
     <VerInfo_MajorVer>1</VerInfo_MajorVer>
     <VerInfo_MinorVer>2</VerInfo_MinorVer>
-    <VerInfo_Release>7</VerInfo_Release>
-    <VerInfo_Keys>CompanyName=Nanum Space Co., Ltd.;FileDescription=RAD Agent — an agentic coding assistant for Delphi, powered by oh-my-pi;FileVersion=1.2.7.0;InternalName=RADAgent;LegalCopyright=Copyright (C) 2026 Nanum Space Co., Ltd.;LegalTrademarks=;OriginalFilename=RADAgent.bpl;ProductName=RAD Agent;ProductVersion=1.2.7.0;Comments=</VerInfo_Keys>
+    <VerInfo_Release>8</VerInfo_Release>
+    <VerInfo_Keys>CompanyName=Nanum Space Co., Ltd.;FileDescription=RAD Agent — an agentic coding assistant for Delphi, powered by oh-my-pi;FileVersion=1.2.8.0;InternalName=RADAgent;LegalCopyright=Copyright (C) 2026 Nanum Space Co., Ltd.;LegalTrademarks=;OriginalFilename=RADAgent.bpl;ProductName=RAD Agent;ProductVersion=1.2.8.0;Comments=</VerInfo_Keys>
     <Debugger_Parameters>-pDelphi</Debugger_Parameters>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)'=='Win32'">
@@ -117,6 +117,9 @@
     <DCCReference Include="RADAgent.FormDesigner.pas"/>
     <DCCReference Include="RADAgent.FormEdits.pas"/>
     <DCCReference Include="RADAgent.FormEvents.pas"/>
+    <DCCReference Include="RADAgent.FormNonVisual.pas"/>
+    <DCCReference Include="RADAgent.UnitNaming.pas"/>
+    <DCCReference Include="RADAgent.UnitRename.pas"/>
     <DCCReference Include="RADAgent.FormTools.pas"/>
     <DCCReference Include="RADAgent.HostTools.pas"/>
     <DCCReference Include="RADAgent.ChatActivity.pas"/>

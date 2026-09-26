@@ -190,7 +190,8 @@ begin
           Inc(Forms);
         end;
       if Forms = 0 then
-        Lines.Add('- No forms yet. rad.new_module kind=form adds one; the form tools appear after it.');
+        Lines.Add('- No forms yet. rad.new_module kind=form (with a descriptive unit name) adds one; the ' +
+          'form tools appear after it.');
     end;
     Lines.Add('');
     Lines.Add('## How to work');
@@ -198,13 +199,18 @@ begin
       'reloads the files you change. Read and edit code with your own read/edit/write tools.');
     Lines.Add('- Never edit form files (.dfm/.fmx) or the project files (.dproj/.dpr/.cbproj/.groupproj) ' +
       'with your own write/edit tools; forms change only through the rad.form_* tools, modules through ' +
-      'rad.new_module.');
+      'rad.new_module and rad.rename_unit.');
+    Lines.Add('- Unit names say what the unit is for, in the project''s namespace; a form ends in Form or ' +
+      'Dialog, a frame in Frame (App.UI.ExportDialog), never UnitN. Give a UnitN a real name with ' +
+      'rad.rename_unit when you work on it.');
     if Profile.Tools.HasForms and Profile.Tools.FormText then
       Lines.Add('- For bulk property changes across many forms or components, rad.form_text_edit edits ' +
         'the form text (properties only) with one approval.');
     if Profile.Tools.HasForms then
       Lines.Add('- After building or changing a layout, look at it with rad.form_screenshot and fix ' +
-        'overlaps, alignment and clipped text before answering.');
+        'overlaps, alignment and clipped text before answering. Non-visual components (menus, dialogs, ' +
+        'timers) go to a row at the bottom of the form by themselves; rad.form_arrange_nonvisual tidies ' +
+        'a form whose icons are scattered.');
     if Profile.Tools.HasForms and (Profile.Tools.Language = 'cpp') then
       Lines.Add('- Build UI in the designer with rad.form_apply (one call, one approval). Its events (and ' +
         'rad.form_set_event) add each handler: the __fastcall declaration in the form class''s ' +

@@ -29,12 +29,14 @@ uses
   RADAgent.SessionData in '..\src\RADAgent.SessionData.pas',
   RADAgent.UsageReport in '..\src\RADAgent.UsageReport.pas',
   RADAgent.Skills in '..\src\RADAgent.Skills.pas',
+  RADAgent.UnitNaming in '..\src\RADAgent.UnitNaming.pas',
   TestCheck in 'TestCheck.pas',
   RpcEventsTests in 'RpcEventsTests.pas',
   LineDiffTests in 'LineDiffTests.pas',
   OmpCompatTests in 'OmpCompatTests.pas',
   GitRepoTests in 'GitRepoTests.pas',
-  LangTests in 'LangTests.pas';
+  LangTests in 'LangTests.pas',
+  UnitNamingTests in 'UnitNamingTests.pas';
 
 {$R '..\src\RADAgentResources.res' '..\src\RADAgentResources.rc'}
 
@@ -305,6 +307,7 @@ begin
     RunOmpCompatTests(Check);
     RunGitRepoTests(Check);
     RunLangTests(Check);
+    RunUnitNamingTests(Check);
     TestLiveReady;
     RunLiveOmpProbe(Check);
   except

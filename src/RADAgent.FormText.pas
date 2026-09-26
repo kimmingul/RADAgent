@@ -21,7 +21,7 @@ implementation
 uses
   System.SysUtils, System.Classes, System.IOUtils, System.JSON, System.TypInfo,
   System.RegularExpressions, System.Generics.Collections, ToolsAPI, RADAgent.FormDesigner,
-  RADAgent.IdeFiles, RADAgent.IdeContext;
+  RADAgent.IdeFiles, RADAgent.IdeContext, RADAgent.FormNonVisual;
 
 type
   TFormFile = class
@@ -142,6 +142,10 @@ begin
       Owner := FindNative(Item.Editor, OwnerName(Lines, Index));
       if Owner = nil then
         Continue;
+      { Left/Top of a non-visual component are its icon position (DesignInfo), not a property. }
+      if (SameText(Match.Groups[1].Value, 'Left') or SameText(Match.Groups[1].Value, 'Top')) and
+        IsNonVisual(RootOf(Item.Editor), Owner) then
+        Continue;
       if GetPropInfo(Owner, Match.Groups[1].Value) = nil then
       begin
         Problem := Format('%s: %s has no property %s', [ExtractFileName(Item.FormPath), Owner.Name,
@@ -185,7 +189,7 @@ begin
   Result := False;
   for Edit in Edits do
   begin
-    Path := FormFileOf(Edit.GetValue<string>('path', ''));
+    Path := FormFileOf(ProjectPath(Edit.GetValue<string>('path', '')));
     OldText := Edit.GetValue<string>('old', '');
     NewText := Edit.GetValue<string>('new', '');
     if not FileExists(Path) then

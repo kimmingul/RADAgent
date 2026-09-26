@@ -1,22 +1,27 @@
 unit RADAgent.ModuleCreator;
 
 { rad.new_module: adds a form, frame, data module or plain unit to the active project through
-  IOTAModuleServices.CreateModule. The IDE writes the source and form file for the project's
-  language and framework. Never saves. Main thread only. }
+  IOTAModuleServices.CreateModule, under a descriptive unit name (RADAgent.UnitNaming). The IDE
+  writes the source and form file for the project's language and framework. Saves only a form in a
+  dotted unit (created under its last part, then saved as the dotted name). Main thread only. }
 
 interface
 
 uses
-  RADAgent.Approval;
+  ToolsAPI, RADAgent.Approval;
 
-{ Kind: form, frame, datamodule or unit. Name: optional form (or unit) name. }
-function NewModule(const Kind, Name: string; const Approval: IAgentApproval;
+{ Kind: form, frame, datamodule or unit. UnitName: required (RADAgent.UnitNaming); Name: optional
+  component name of a form, frame or data module, by default the last part of UnitName. }
+function NewModule(const Kind, UnitName, Name: string; const Approval: IAgentApproval;
   out ResultText: string): Boolean;
+{ The unit names of the project's modules (file names without extension). }
+function ProjectUnitNames(const Project: IOTAProject): TArray<string>;
 
 implementation
 
 uses
-  System.SysUtils, System.StrUtils, System.JSON, ToolsAPI, RADAgent.IdeContext, RADAgent.Lang;
+  System.SysUtils, System.StrUtils, System.JSON, RADAgent.IdeContext, RADAgent.UnitNaming,
+  RADAgent.UnitRename, RADAgent.Lang;
 
 type
   TModuleCreator = class(TInterfacedObject, IOTACreator, IOTAModuleCreator)
@@ -132,20 +137,18 @@ begin
     Result := '';
 end;
 
-{ UnitN.<Ext> in the project folder, with the first N whose .pas/.cpp/.h does not exist yet. }
-function NextUnitFile(const ProjectFile, Ext: string): string;
+function ProjectUnitNames(const Project: IOTAProject): TArray<string>;
 var
-  Dir, Base: string;
-  N: Integer;
+  Index: Integer;
+  FileName: string;
 begin
-  Dir := IncludeTrailingPathDelimiter(ExtractFileDir(ProjectFile));
-  N := 2;
-  repeat
-    Base := Dir + 'Unit' + IntToStr(N);
-    Inc(N);
-  until not FileExists(Base + '.pas') and not FileExists(Base + '.cpp') and not FileExists(Base + '.h') and
-    ((BorlandIDEServices as IOTAModuleServices).FindModule(Base + Ext) = nil);
-  Result := Base + Ext;
+  Result := nil;
+  for Index := 0 to Project.GetModuleCount - 1 do
+  begin
+    FileName := Project.GetModule(Index).FileName;
+    if SameText(ExtractFileExt(FileName), '.pas') or SameText(ExtractFileExt(FileName), '.cpp') then
+      Result := Result + [ChangeFileExt(ExtractFileName(FileName), '')];
+  end;
 end;
 
 function TModuleCreator.GetFormName: string;
@@ -255,14 +258,14 @@ procedure TModuleCreator.FormCreated(const FormEditor: IOTAFormEditor);
 begin
 end;
 
-function NewModule(const Kind, Name: string; const Approval: IAgentApproval;
+function NewModule(const Kind, UnitName, Name: string; const Approval: IAgentApproval;
   out ResultText: string): Boolean;
 var
   Project: IOTAProject;
   Creator: TModuleCreator;
   CreatorRef: IOTAModuleCreator;
   Module: IOTAModule;
-  CreatorType, Ancestor, Caption, UnitFile: string;
+  CreatorType, Ancestor, Caption, UnitFile, CreateFile, FormName, Problem: string;
   Obj: TJSONObject;
   Index: Integer;
   Cpp: Boolean;
@@ -292,31 +295,41 @@ begin
     Exit;
   end;
   Cpp := SameText(Project.Personality, sCBuilderPersonality);
-  { Delphi unit names may be dotted (App.Csv.Reader); form names and C++ file names may not. }
-  if (Name <> '') and not IsValidIdent(Name, (CreatorType = sUnit) and not Cpp) then
+  if not CheckUnitName(Kind, UnitName, Cpp, ProjectUnitNames(Project), Problem) then
   begin
-    ResultText := 'Not a valid identifier: ' + Name;
+    ResultText := Problem;
     Exit;
   end;
-  UnitFile := NextUnitFile(Project.FileName, IfThen(Cpp, '.cpp', '.pas'));
-  if (CreatorType = sUnit) and (Name <> '') then
+  FormName := Name;
+  if FormName = '' then
+    FormName := LastPart(UnitName);
+  { Form names are plain identifiers even where unit names are dotted. }
+  if (CreatorType = sForm) and not IsValidIdent(FormName) then
   begin
-    UnitFile := IncludeTrailingPathDelimiter(ExtractFileDir(Project.FileName)) + Name + IfThen(Cpp, '.cpp', '.pas');
-    if FileExists(UnitFile) or ((BorlandIDEServices as IOTAModuleServices).FindModule(UnitFile) <> nil) then
-    begin
-      ResultText := 'File already exists: ' + UnitFile;
-      Exit;
-    end;
+    ResultText := 'Not a valid identifier: ' + FormName;
+    Exit;
   end;
-  Caption := TrF('modulecreator.addCaption', [LowerCase(Kind), Name,
+  UnitFile := IncludeTrailingPathDelimiter(ExtractFileDir(Project.FileName)) + UnitName + IfThen(Cpp, '.cpp', '.pas');
+  { The IDE cannot create a form in a dotted unit ("'Xm.UI.XForm' is not a valid identifier"); the
+    form is made under the last part and then saved as the dotted unit, as Save As would. }
+  CreateFile := UnitFile;
+  if (CreatorType = sForm) and UnitName.Contains('.') then
+    CreateFile := ExtractFilePath(UnitFile) + LastPart(UnitName) + ExtractFileExt(UnitFile);
+  if FileExists(UnitFile) or FileExists(CreateFile) or
+    ((BorlandIDEServices as IOTAModuleServices).FindModule(UnitFile) <> nil) then
+  begin
+    ResultText := 'File already exists: ' + IfThen(FileExists(UnitFile), UnitFile, CreateFile);
+    Exit;
+  end;
+  Caption := TrF('modulecreator.addCaption', [LowerCase(Kind), UnitName,
     ExtractFileName(Project.FileName)]);
   if (Approval = nil) or not Approval.ApproveChange(Project.FileName, '', Caption) then
   begin
     ResultText := SEditCancelled;
     Exit(True);
   end;
-  Creator := TModuleCreator.Create(Project, CreatorType, Ancestor, Name, Cpp, Project.FrameworkType,
-    UnitFile);
+  Creator := TModuleCreator.Create(Project, CreatorType, Ancestor, IfThen(CreatorType = sForm, FormName, ''),
+    Cpp, Project.FrameworkType, CreateFile);
   CreatorRef := Creator;
   try
     Module := (BorlandIDEServices as IOTAModuleServices).CreateModule(CreatorRef);
@@ -330,6 +343,11 @@ begin
   if Module = nil then
   begin
     ResultText := 'Failed to create module.';
+    Exit;
+  end;
+  if (CreateFile <> UnitFile) and not SaveUnitAs(Module, UnitFile) then
+  begin
+    ResultText := 'The module was created as ' + CreateFile + ' but could not be saved as ' + UnitFile + '.';
     Exit;
   end;
   Obj := TJSONObject.Create;

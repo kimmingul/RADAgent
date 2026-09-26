@@ -41,9 +41,12 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | OmpLaunch | omp를 띄우기 전에 쓰는 파일(C++은 clangd 연결 포함): rad.* 문서를 시스템 프롬프트에 넣는 `omp-host-p<pid>.yml`(`tools.xdevInlineDevices`), 프로젝트 안내 `project-guide-p<pid>.md`(`--append-system-prompt`, 프로젝트의 UI 작성 방식 규칙 포함), Delphi 프로젝트의 `.omp/lsp.json`. |
 | Skills | BPL 리소스의 RAD Studio 스킬(`src\skills\radstudio-delphi`, `radstudio-cpp`) 중 프로젝트 언어에 맞는 것을 `%TEMP%\RADAgent\skills\<언어>`에 쓰고, 사용자의 `skills.customDirectories` 뒤에 붙여 `--config`로 넘긴다. |
 | HostToolDefs | 프로필에 맞춘 rad.* 목록: 폼이 있을 때만 폼 도구, VCL/FMX와 Delphi/C++ 문구. |
-| FormBatch / ModuleCreator | `rad.form_apply`(폼 변경 묶음, 승인 한 번), `rad.new_module`(폼·프레임·데이터 모듈·유닛 추가, 파일 이름 `UnitN`을 정하고 폼 소스는 Delphi·C++ 모두 직접 준다). |
-| FormShot | `rad.form_screenshot`: VCL은 `PaintTo`, FMX는 모듈과 디자이너를 보인 뒤 디자이너의 `FMTForm` 창(제목은 폼 `Caption`)을 화면에서 복사해 PNG. 도구 결과에 image 부분으로 보낸다. |
-| FormText | `rad.form_text_edit`: 속성 줄만 텍스트로 일괄 수정, 구문(`ObjectTextToBinary`)과 속성 이름(살아 있는 컴포넌트) 검사, 승인 한 번, IdeFiles로 다시 읽기. |
+| FormBatch / ModuleCreator | `rad.form_apply`(폼 변경 묶음, 승인 한 번), `rad.new_module`(폼·프레임·데이터 모듈·유닛 추가, UnitNaming 규칙의 유닛 이름으로 파일을 정하고 폼 소스는 Delphi·C++ 모두 직접 준다. IDE는 점 있는 유닛에 폼을 만들지 못하므로 마지막 부분 이름으로 만든 뒤 UnitRename의 Save As로 옮긴다). |
+| UnitNaming | 새·바뀐 유닛 이름 규칙: 필수, `UnitN` 금지, 폼 `Form`/`Dialog`·프레임 `Frame`·데이터 모듈 `DataModule` 접미사, 프로젝트 유닛 대부분이 쓰는 점 접두사 사용, C++은 점 없음. ToolsAPI 없음. |
+| UnitRename | `rad.rename_unit`: IDE의 Save As(`IOTAModule.FileName` + `Save`)로 유닛·폼 파일·`.dpr`·`.dproj`를 새 이름으로 옮기고 옛 파일을 지운 뒤, 프로젝트 다른 유닛의 `uses` 절(바이트 그대로 보존)을 고치고 다시 읽는다. |
+| FormShot | `rad.form_screenshot`: VCL은 `PaintTo`, FMX는 모듈과 디자이너를 보인 뒤 디자이너 창(폼은 `FMTForm`, 프레임은 `FMTControlForm`)의 보이는 부분을 화면에서 복사해 PNG. 그동안 겹친 IDE의 떠 있는 창(채팅)은 숨기고, 다른 프로그램 창이 덮고 있으면 결과 글에 알린다. 도구 결과에 image 부분으로 보낸다. |
+| FormText | `rad.form_text_edit`: 속성 줄만 텍스트로 일괄 수정, 구문(`ObjectTextToBinary`)과 속성 이름(살아 있는 컴포넌트, 비시각 컴포넌트의 `Left`/`Top` 허용) 검사, 승인 한 번, IdeFiles로 다시 읽기. |
+| FormNonVisual | 비시각 컴포넌트(컨트롤도 다른 컴포넌트의 항목도 아닌 것) 판별과 아이콘 위치(`DesignInfo`). 폼 아래쪽에 종류별(메뉴, 액션, 대화상자, 타이머, 이미지, 데이터, 스타일, 기타)로 줄 세우고 `rad.form_arrange_nonvisual`을 처리한다. |
 | HandlerCode | 이벤트 핸들러 코드: Delphi는 디자이너 스텁에 주석 한 줄(빈 핸들러는 저장 때 지워짐), C++은 `.h` `__published` 선언과 `.cpp` 본문을 버퍼에 쓴다(C++ 디자이너는 코드를 쓰지 않음). |
 | CppDiagnostics | C++ 빌드 실패 때 바뀐 `.cpp`를 활성 플랫폼 컴파일러(bcc64x/bcc64/bcc32c)로 다시 컴파일해 오류를 읽는다. |
 | CppLsp | C++ 프로젝트의 clangd 연결: 활성 플랫폼 컴파일러의 헤더·타깃·매크로와 프로젝트 옵션으로 `.omp\clangd\compile_commands.json`, `.omp\lsp.json`. clangd는 설정 또는 PATH. |
@@ -101,7 +104,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | AgentVersion | RAD Agent 버전(BPL 버전 정보, `RADAgent.dproj` 한 곳에서 올린다), IDE 비트, `bds.exe` 버전, 릴리스 노트 주소, 버그 보고용 버전 줄. ToolsAPI 없음. |
 | AboutInfo | IDE 시작 화면과 Help → About의 설치 제품 목록에 RAD Agent 버전과 아이콘(`resources\PluginIcon-24/48.png`)을 넣고, 패키지를 내릴 때 뺀다. `rpc.log`에 버전 줄을 남긴다. |
 | MenuIcon | `resources\MenuIcon-16/32.png`(`RADAgentResources.rc`의 RCDATA)를 IDE 이미지 목록에 넣어 View 메뉴 항목 아이콘으로 쓴다. `INTAServices280`이 없는 10.4에서는 아이콘 없이 둔다. |
-| IdeContext | 활성 `.dproj` 경로, 열린 모듈, 에디터 버퍼 위치. |
+| IdeContext | 활성 `.dproj` 경로, 열린 모듈, 에디터 버퍼 위치, 도구 경로 정규화(`/`→`\`, 프로젝트 기준 상대 경로). |
 | IdeFiles | 프로젝트 모듈 저장, 디스크에서 바뀐 모듈 다시 읽기, 사용자가 고치던 모듈은 충돌로 돌려준다. 지워진 파일의 모듈은 닫는다. 폼이 있는 모듈은 `Refresh` 대신 닫았다 다시 연다: `Refresh`는 글만 다시 읽고 폼 디자이너가 알던 클래스 모양(필드·메서드와 위치)은 그대로 두어, 다음 디자이너 변경이 필드를 엉뚱한 곳에 넣거나 파싱 오류로 실패하고 반쯤 지운 컴포넌트가 Object Inspector에 남는다(되돌리기 뒤의 접근 위반). 편집기 탭이 열려 있었으면 다시 보인다. |
 | ChatDiskSync | 프롬프트 전·`rad.*` 변경 후 저장, omp 도구가 끝날 때와 턴 끝에 다시 읽기, 충돌 알림. |
 | GitRepo | git 실행, `git init`과 `.gitignore`, 별도 index로 만드는 체크포인트 커밋(`refs/radagent/`, 보낸 시각 `RADAgent-Time` 트레일러), 되돌리기(이름이 바뀐 파일 포함, 지우지 못한 파일은 알림), 체크포인트에서 브랜치. ToolsAPI 없음. |
@@ -116,7 +119,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | DebugExceptionWatch | 승인된 실행·스텝이 시작되기 직전부터 그 도구가 끝날 때까지만, IDE의 "Debugger Exception Notification" 창(ToolsAPI가 없어 폼 클래스로 찾는다)을 Break 단추(캡션이나 컴포넌트 이름으로 확인)로 닫고 메시지를 보관한다. Break임을 확인하지 못하면 창을 그대로 둔다. 이 창이 떠 있으면 도구와 턴이 누가 누를 때까지 멈췄다. |
 | FormDesigner | 유닛의 폼 디자이너 찾기, 이름→컴포넌트, 속성 값 문자열화, 디자이너 수정 통지. |
 | FormTools | `rad.form_*` 분배와 읽기(컴포넌트 목록, published 속성). |
-| FormEdits | 승인 후 속성 변경, 컴포넌트 추가(FMX 항목 컨테이너 아래는 `IDesigner.CreateChild`, 그 밖에는 부모를 먼저 선택해 FMX 디자이너가 선택된 항목 안에 넣지 않게 한다)·삭제(먼저 폼을 선택해 Object Inspector가 지우는 컴포넌트를 붙들지 않게 한다)·이름 변경(폼 자체 포함). 끝나면 ChatDiskSync가 저장한다. |
+| FormEdits | 승인 후 속성 변경(비시각 컴포넌트의 `Left`/`Top`은 아이콘 위치), 컴포넌트 추가(FMX 항목 컨테이너 아래는 `IDesigner.CreateChild`, 그 밖에는 부모를 먼저 선택해 FMX 디자이너가 선택된 항목 안에 넣지 않게 한다. 비시각 컴포넌트는 아래쪽 줄로)·삭제(먼저 폼을 선택해 Object Inspector가 지우는 컴포넌트를 붙들지 않게 한다)·이름 변경(폼 자체 포함). 끝나면 ChatDiskSync가 저장한다. |
 | FormEvents | 승인 후 이벤트 연결·해제. 디자이너에 없는 이벤트면 연결 가능한 목록을 돌려준다. |
 
 ## 데이터 흐름
