@@ -19,7 +19,7 @@ uses
   System.SysUtils, System.Classes, System.JSON, System.NetEncoding, Winapi.Windows,
   RADAgent.RpcProtocol, RADAgent.RpcDispatch, RADAgent.RpcEvents, RADAgent.ChatCommand,
   RADAgent.OmpProbe, RADAgent.Options, RADAgent.SlashRoutes, RADAgent.SessionData,
-  RADAgent.UsageReport;
+  RADAgent.UsageReport, RADAgent.RpcResponses;
 
 type
   TLineSink = class
@@ -272,6 +272,27 @@ begin
   Check(LastCodeBlock('a'#10'```pas'#10'x := 1;'#10'```'#10'b'#10'```'#10'y'#10'```') = 'y', 'the last code block');
 end;
 
+{ The fields the turn times read, in the shape omp 18.2.11 recorded them (rpc.log): "timestamp"
+  on every message, "completedAt" on some answers only, and a stop while tools ran as a textless
+  answer with stopReason "aborted" after a textless tool-call answer. }
+procedure TestMessageTimes(const Check: TCheckProc);
+var
+  Items: TArray<THistoryItem>;
+  Cursor: string;
+begin
+  Check(ParseMessagesPage('{"id":"r","type":"response","command":"get_messages_page","success":true,"data":{' +
+    '"messages":[{"role":"user","content":[{"type":"text","text":"Run it"}],"attribution":"user","timestamp":1790402467006},' +
+    '{"role":"assistant","content":[{"type":"toolCall","id":"c1","name":"bash","arguments":{}}],"stopReason":"toolUse","timestamp":1790402471058},' +
+    '{"role":"toolResult","content":[{"type":"text","text":"..."}],"timestamp":1790402493993},' +
+    '{"role":"assistant","content":[],"stopReason":"aborted","timestamp":1790402494020}],"totalMessages":4}}', Items, Cursor) and
+    (Length(Items) = 2) and (Items[0].Timestamp = 1790402467006) and Items[1].Stopped and
+    (Items[1].CompletedAt = 1790402494020), 'a turn stopped during a tool keeps its send time, end time and stop');
+  Check(ParseMessagesPage('{"type":"response","command":"get_messages_page","success":true,"data":{"messages":[' +
+    '{"role":"assistant","content":[{"type":"text","text":"C"}],"stopReason":"stop","timestamp":1790343127049,' +
+    '"completedAt":1790343129800}]}}', Items, Cursor) and (Items[0].CompletedAt = 1790343129800) and not Items[0].Stopped,
+    'an answer''s completedAt is its end time');
+end;
+
 procedure RunOmpCompatTests(const Check: TCheckProc);
 begin
   TestSlashRoutes(Check);
@@ -280,6 +301,7 @@ begin
   TestProtocolChoice(Check);
   TestApprovalMatching(Check);
   TestLocalPrompts(Check);
+  TestMessageTimes(Check);
 end;
 
 procedure RunLiveOmpProbe(const Check: TCheckProc);

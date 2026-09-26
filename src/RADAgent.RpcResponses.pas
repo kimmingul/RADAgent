@@ -193,7 +193,15 @@ begin
       if (Role <> 'user') and (Role <> 'assistant') then
         Continue;
       Text := ContentText(Msg.GetValue('content'));
-      if Text = '' then
+      { An answer without text (tool calls only, or stopped while thinking) still ends the turn:
+        its time and stop go to the answer shown before it, or stand alone (no bubble). }
+      if (Text = '') and (Role = 'assistant') and (Count > 0) and (Items[Count - 1].Role = 'assistant') then
+      begin
+        Items[Count - 1].CompletedAt := JsonInt(Msg, 'completedAt', JsonInt(Msg, 'timestamp'));
+        Items[Count - 1].Stopped := JsonStr(Msg, 'stopReason') = 'aborted';
+        Continue;
+      end;
+      if (Text = '') and (Role = 'user') then
         Continue;
       Items[Count].Role := Role;
       Items[Count].Text := Text;

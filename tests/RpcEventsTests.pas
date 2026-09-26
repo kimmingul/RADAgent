@@ -188,6 +188,20 @@ begin
   Check(Items[0].Text = 'Hi', 'get_messages_page: Item 0 Text');
   Check(Items[1].Role = 'assistant', 'get_messages_page: Item 1 Role');
   Check(Items[1].Text = 'A' + sLineBreak + 'B', 'get_messages_page: Item 1 Text joined');
+  { Stopped while thinking: the answer has no text, but its end time and stop belong to the turn. }
+  Ok := ParseMessagesPage('{"type":"response","command":"get_messages_page","success":true,"data":{"messages":[' +
+    '{"role":"user","content":"Go","timestamp":1000},' +
+    '{"role":"assistant","content":[],"stopReason":"aborted","timestamp":1500,"completedAt":4000}]}}', Items, Cursor);
+  Check(Ok and (Length(Items) = 2) and (Items[1].Role = 'assistant') and (Items[1].Text = '') and
+    Items[1].Stopped and (Items[1].CompletedAt = 4000) and (Items[0].Timestamp = 1000),
+    'get_messages_page: an answer stopped before any text still ends its turn, stopped');
+  { Stopped after a tool step that did write text: that earlier answer is not the end of the turn. }
+  Ok := ParseMessagesPage('{"type":"response","command":"get_messages_page","success":true,"data":{"messages":[' +
+    '{"role":"user","content":"Go","timestamp":1000},' +
+    '{"role":"assistant","content":"Checking","stopReason":"toolUse","timestamp":1500,"completedAt":2000},' +
+    '{"role":"assistant","content":[],"stopReason":"aborted","timestamp":2500,"completedAt":6000}]}}', Items, Cursor);
+  Check(Ok and (Length(Items) = 2) and Items[1].Stopped and (Items[1].CompletedAt = 6000),
+    'get_messages_page: a textless stopped answer moves the turn end onto the answer shown');
 end;
 
 procedure TestMalformedJson(const Check: TCheckProc);

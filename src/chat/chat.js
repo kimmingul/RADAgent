@@ -279,7 +279,7 @@
         turn.appendChild(bubble); global.ChatTurnTime.stamp(turn, item.ts);
         logEl.appendChild(turn);
         if (item.seq) global.ChatCheckpoints.attach(turn, item.seq);
-      } else {
+      } else if (!item.text) { global.ChatTurnTime.append(logEl, item); } else {
         if (item.model && item.model !== lastModel) logEl.appendChild(modelTag(item.model));
         const turn = document.createElement('div');
         turn.className = 'turn turn-assistant';
