@@ -96,7 +96,8 @@ begin
     Problem := SEditCancelled;
 end;
 
-function RunOrContinue(const Approval: IAgentApproval; out Problem: string): Boolean;
+function RunOrContinue(const Approval: IAgentApproval; Watch: TDebugExceptionWatch;
+  out Problem: string): Boolean;
 var
   Process: IOTAProcess;
   Action: TContainedAction;
@@ -119,6 +120,7 @@ begin
     end;
     if not Approved(Approval, Tr('debugcontrol.runBuild'), Problem) then
       Exit;
+    Watch.Arm;
     Action.Execute;
   end
   else
@@ -136,13 +138,15 @@ begin
       Problem := 'Debugger state changed while waiting for approval.';
       Exit;
     end;
+    Watch.Arm;
     Process.Run(ormRun);
   end;
   WaitSettled;
   Result := True;
 end;
 
-function StepProcess(const Mode: string; const Approval: IAgentApproval; out Problem: string): Boolean;
+function StepProcess(const Mode: string; const Approval: IAgentApproval; Watch: TDebugExceptionWatch;
+  out Problem: string): Boolean;
 var
   Process: IOTAProcess;
   RunMode: TOTARunMode;
@@ -168,6 +172,7 @@ begin
     Problem := 'Debugger state changed while waiting for approval.';
     Exit;
   end;
+  Watch.Arm;
   Process.Run(RunMode);
   WaitSettled;
   Result := True;
@@ -267,9 +272,9 @@ begin
   Watch := TDebugExceptionWatch.Create;
   try
     if ToolName = ToolDebugRun then
-      Ok := RunOrContinue(Approval, Problem)
+      Ok := RunOrContinue(Approval, Watch, Problem)
     else if ToolName = ToolDebugStep then
-      Ok := StepProcess(Args.Mode, Approval, Problem)
+      Ok := StepProcess(Args.Mode, Approval, Watch, Problem)
     else if ToolName = ToolDebugPause then
       Ok := PauseProcess(Approval, Problem)
     else if ToolName = ToolDebugReset then
