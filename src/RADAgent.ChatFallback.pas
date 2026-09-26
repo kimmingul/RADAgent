@@ -46,6 +46,32 @@ begin
     Obj.GetValue<string>(Turn + 'a', '') + Obj.GetValue<string>(Turn + 'error', '') + sLineBreak);
 end;
 
+{ Restored conversation history: replay user and assistant turns in order. }
+procedure AppendHistory(Memo: TMemo; Obj: TJSONObject);
+var
+  Items: TJSONArray;
+  Item: TJSONValue;
+  ItemObj: TJSONObject;
+  Role, Text: string;
+begin
+  if not (Obj.GetValue('items') is TJSONArray) then
+    Exit;
+  Items := TJSONArray(Obj.GetValue('items'));
+  for Item in Items do
+  begin
+    if Item is TJSONObject then
+    begin
+      ItemObj := TJSONObject(Item);
+      Role := ItemObj.GetValue<string>('role', '');
+      Text := ItemObj.GetValue<string>('text', '');
+      if Role = 'user' then
+        Append(Memo, sLineBreak + '> ' + Text + sLineBreak)
+      else if Role = 'assistant' then
+        Append(Memo, Text + sLineBreak);
+    end;
+  end;
+end;
+
 procedure AppendFallback(Memo: TMemo; const Json: string);
 var
   Value: TJSONValue;
@@ -60,6 +86,8 @@ begin
     Kind := Obj.GetValue<string>('t', '');
     if Kind = 'user' then
       Append(Memo, sLineBreak + '> ' + Obj.GetValue<string>('text', '') + sLineBreak)
+    else if Kind = 'history' then
+      AppendHistory(Memo, Obj)
     else if Kind = 'assistantDelta' then
       Append(Memo, Obj.GetValue<string>('text', ''))
     else if Kind = 'assistantEnd' then

@@ -39,10 +39,13 @@ type
     FOnUi: TRpcLogEvent;
     FEvents: TRpcDispatch;
     FLinkError: string;
-    FStopping: Boolean;
+    FStopping, FExited, FExitedConnected: Boolean;
     FProtocol: Integer;
+    { Bumped by Start and Stop; a reader's queued work (FReaderGen) dies with its child. }
+    FGeneration, FReaderGen: Integer;
     FToolProfile: TToolProfile;
-    procedure WriteFrame(const Frame, FrameType: string);
+    function WriteFrame(const Frame, FrameType: string): Boolean;
+    procedure RunLive(const Work: TProc);
     procedure QueueFrame(const Frame, FrameType: string);
     procedure QueueHost(const CallId, ToolName, Args: string);
     procedure QueueUi(const Line: string);
@@ -62,7 +65,8 @@ type
     procedure Stop;
     function SendPrompt(const Message: string; const ImagesJson: string = ''): Boolean;
     procedure SendAbort;
-    procedure SendRaw(const FrameType, Frame: string);
+    { False when the frame did not reach omp (not ready, over MaxFrameBytes, broken pipe). }
+    function SendRaw(const FrameType, Frame: string): Boolean;
     procedure SendHostResult(const CallId, Text: string; IsError: Boolean; const ImagePng: string = '');
     procedure ResendHostTools(const Profile: TToolProfile);
     function WasCancelled(const CallId: string): Boolean;
@@ -78,6 +82,11 @@ type
     property OnAgentEvent: TRpcAgentEvent read FOnAgentEvent write FOnAgentEvent;
     property OnUi: TRpcLogEvent read FOnUi write FOnUi;
     property LinkError: string read FLinkError;
+    { The child's stdout ended without Stop (until Stop/Start); it had been connected. }
+    property Exited: Boolean read FExited;
+    property ExitedConnected: Boolean read FExitedConnected;
+    { Changes when the child is stopped or started: stale replies must not reach a new child. }
+    property Generation: Integer read FGeneration;
     property ToolProfile: TToolProfile read FToolProfile write FToolProfile;
   end;
 procedure ShutdownActiveClient;
@@ -88,6 +97,16 @@ uses
 var
   GActive: TAgentRpcClient;
   GGate: TCriticalSection;
+{ Only: replace GActive only while it is Only (nil: always). }
+procedure SetActive(Client, Only: TAgentRpcClient);
+begin
+  GGate.Acquire;
+  try
+    if (Only = nil) or (GActive = Only) then GActive := Client;
+  finally
+    GGate.Release;
+  end;
+end;
 procedure ShutdownActiveClient;
 begin
   GGate.Acquire;
@@ -120,79 +139,75 @@ begin
   FLock.Free;
   inherited;
 end;
+procedure TAgentRpcClient.RunLive(const Work: TProc);
+var
+  Gen: Integer;
+begin
+  Gen := FReaderGen;
+  TThread.Queue(TThread(nil), procedure begin if FAlive and (Gen = FGeneration) then Work(); end);
+end;
 procedure TAgentRpcClient.Post(const Text: string);
 begin
-  if not FAlive or not Assigned(FOnLog) or (Text = '') then
-    Exit;
-  TThread.Queue(TThread(nil),
-    procedure
-    begin
-      if FAlive and Assigned(FOnLog) then
-        FOnLog(Text);
-    end);
+  if FAlive and Assigned(FOnLog) and (Text <> '') then
+    RunLive(procedure begin if Assigned(FOnLog) then FOnLog(Text); end);
 end;
-procedure TAgentRpcClient.WriteFrame(const Frame, FrameType: string);
+function TAgentRpcClient.WriteFrame(const Frame, FrameType: string): Boolean;
 var
   Bytes: TBytes;
   Offset, Written: DWORD;
 begin
+  Result := False;
   if not AllowOutbound(FReady, FrameType) then
     Exit;
   Bytes := TEncoding.UTF8.GetBytes(Frame + #10);
   if Length(Bytes) > MaxFrameBytes then
+  begin
+    AppendRpcLog(Format('> [not sent: %s frame of %d bytes]', [FrameType, Length(Bytes)]));
     Exit;
+  end;
   AppendRpcLog('> ' + Frame);
   TCriticalSection(FLock).Acquire;
   try
     Offset := 0;
     while (FStdIn <> 0) and (Offset < DWORD(Length(Bytes))) do
     begin
-      if not WriteFile(FStdIn, Bytes[Offset], DWORD(Length(Bytes)) - Offset, Written, nil) then
-        Exit;
-      if Written = 0 then
+      if not WriteFile(FStdIn, Bytes[Offset], DWORD(Length(Bytes)) - Offset, Written, nil) or (Written = 0) then
         Exit;
       Inc(Offset, Written);
     end;
+    Result := Offset = DWORD(Length(Bytes));
   finally
     TCriticalSection(FLock).Release;
   end;
 end;
 procedure TAgentRpcClient.QueueFrame(const Frame, FrameType: string);
 begin
-  TThread.Queue(TThread(nil),
-    procedure
-    begin
-      if FAlive then
-        WriteFrame(Frame, FrameType);
-    end);
+  RunLive(procedure begin WriteFrame(Frame, FrameType); end);
 end;
 procedure TAgentRpcClient.QueueHost(const CallId, ToolName, Args: string);
 begin
-  TThread.Queue(TThread(nil), procedure begin if FAlive and Assigned(FOnHostTool) then FOnHostTool(CallId, ToolName, Args); end);
+  RunLive(procedure begin if Assigned(FOnHostTool) then FOnHostTool(CallId, ToolName, Args); end);
 end;
 procedure TAgentRpcClient.QueueUi(const Line: string);
 begin
-  TThread.Queue(TThread(nil), procedure begin if FAlive and Assigned(FOnUi) then FOnUi(Line); end);
+  RunLive(procedure begin if Assigned(FOnUi) then FOnUi(Line); end);
 end;
 procedure TAgentRpcClient.QueueResponse(const Line: string);
 begin
-  TThread.Queue(TThread(nil), procedure begin if FAlive and Assigned(FOnResponse) then FOnResponse(Line); end);
+  RunLive(procedure begin if Assigned(FOnResponse) then FOnResponse(Line); end);
 end;
 procedure TAgentRpcClient.QueueEvent(const Event: TAgentEvent);
 begin
-  TThread.Queue(TThread(nil), procedure begin if FAlive and Assigned(FOnAgentEvent) then FOnAgentEvent(Event); end);
+  RunLive(procedure begin if Assigned(FOnAgentEvent) then FOnAgentEvent(Event); end);
 end;
 procedure TAgentRpcClient.NoteCancel(const CallId: string);
-var
-  List: TStringList;
 begin
   if CallId = '' then
     Exit;
   TCriticalSection(FLock).Acquire;
   try
-    List := TStringList(FCancel);
-    if List.IndexOf(CallId) < 0 then
-      List.Add(CallId);
+    if TStringList(FCancel).IndexOf(CallId) < 0 then
+      TStringList(FCancel).Add(CallId);
   finally
     TCriticalSection(FLock).Release;
   end;
@@ -209,16 +224,12 @@ end;
 procedure TAgentRpcClient.NoteReady;
 begin
   FReady := True;
-  TThread.Queue(TThread(nil), procedure begin if FAlive then SendHostTools; end);
+  RunLive(procedure begin SendHostTools; end);
 end;
 procedure TAgentRpcClient.SendHostTools;
 begin
   if FHostToolsSent or not FReady then Exit;
-  if FProtocol = 0 then
-  begin
-    FLinkError := Tr('rpcclient.unsupportedProtocol');
-    Exit;
-  end;
+  if FProtocol = 0 then begin FLinkError := Tr('rpcclient.unsupportedProtocol'); Exit; end;
   { v2 carries frames over 1 MiB losslessly as rpc_chunk runs (ReadStdoutLines rebuilds them). }
   if FProtocol = 2 then WriteFrame(BuildNegotiateFrame(NewRequestId(FNextId), 2), 'negotiate_protocol');
   WriteFrame(BuildSetHostToolsFrame(NewRequestId(FNextId), FToolProfile), 'set_host_tools');
@@ -249,6 +260,8 @@ begin
   Result := TThread.CurrentThread.CheckTerminated or (FStdOut = 0);
 end;
 procedure TAgentRpcClient.ReadLoop;
+var
+  Reason: string;
 begin
   FEvents.Post := Post;
   FEvents.BecomeReady := NoteReady;
@@ -258,12 +271,16 @@ begin
   ReadStdoutLines(FStdOut, ReaderStopped, ReaderLine);
   if FAlive and not FStopping then
   begin
-    FLinkError := ChildExitReason(OmpStderrLog);
-    TThread.Queue(TThread(nil),
-      procedure
+    Reason := ChildExitReason(OmpStderrLog);
+    { The child is gone: nothing may be sent or counted as connected any more. }
+    RunLive(procedure
       begin
-        if FAlive and Assigned(FOnStatus) then
-          FOnStatus();
+        FExitedConnected := FHostToolsSent;
+        FExited := True;
+        FReady := False;
+        FHostToolsSent := False;
+        FLinkError := Reason;
+        if Assigned(FOnStatus) then FOnStatus();
       end);
   end;
 end;
@@ -294,8 +311,9 @@ begin
   FThreadHandle := Pipes.Thread;
   FPid := Pipes.Pid;
   FCwd := WorkDir;
-  FReady := False;
-  FHostToolsSent := False;
+  FReady := False; FHostToolsSent := False; FExited := False; FExitedConnected := False;
+  Inc(FGeneration);
+  FReaderGen := FGeneration;
   FLinkError := '';
   FStopping := False;
   FNextId := 0;
@@ -305,16 +323,12 @@ begin
   FReader.Client := Self;
   FReader.FreeOnTerminate := False;
   FReader.Start;
-  GGate.Acquire;
-  try
-    GActive := Self;
-  finally
-    GGate.Release;
-  end;
+  SetActive(Self, nil);
   Result := True;
 end;
 procedure TAgentRpcClient.Stop;
 begin
+  Inc(FGeneration);
   FStopping := True;
   FReady := False;
   FHostToolsSent := False;
@@ -330,28 +344,13 @@ begin
   end
   else
     CloseQuiet(FStdOut);
-  if FProcess <> 0 then
-  begin
-    if WaitForSingleObject(FProcess, 2000) = WAIT_TIMEOUT then
-      TerminateProcess(FProcess, 1);
-    CloseHandle(FProcess);
-    FProcess := 0;
-  end;
-  if FThreadHandle <> 0 then
-  begin
-    CloseHandle(FThreadHandle);
-    FThreadHandle := 0;
-  end;
-  FPid := 0;
-  GGate.Acquire;
-  try
-    if GActive = Self then
-      GActive := nil;
-  finally
-    GGate.Release;
-  end;
-  if FAlive and Assigned(FOnStatus) then
-    FOnStatus();
+  if (FProcess <> 0) and (WaitForSingleObject(FProcess, 2000) = WAIT_TIMEOUT) then
+    TerminateProcess(FProcess, 1);
+  CloseQuiet(FProcess);
+  CloseQuiet(FThreadHandle);
+  FPid := 0; FExited := False;
+  SetActive(nil, Self);
+  if FAlive and Assigned(FOnStatus) then FOnStatus();
 end;
 function TAgentRpcClient.SendPrompt(const Message, ImagesJson: string): Boolean;
 var
@@ -360,31 +359,32 @@ begin
   Id := NewRequestId(FNextId);
   Result := TryBuildPromptFrame(FReady, FHostToolsSent, Id, Message, Frame, ImagesJson);
   if not Result then
-  begin
-    Dec(FNextId);
-    Exit;
-  end;
-  WriteFrame(Frame, 'prompt');
+    Dec(FNextId)
+  else
+    Result := WriteFrame(Frame, 'prompt');
 end;
 procedure TAgentRpcClient.SendAbort;
 begin
-  if not FReady then
-    Exit;
-  WriteFrame(BuildAbortFrame(NewRequestId(FNextId)), 'abort');
+  if FReady then
+    WriteFrame(BuildAbortFrame(NewRequestId(FNextId)), 'abort');
 end;
-procedure TAgentRpcClient.SendRaw(const FrameType, Frame: string);
+function TAgentRpcClient.SendRaw(const FrameType, Frame: string): Boolean;
 var
   Line: string;
 begin
-  if not FReady then Exit;
-  Line := WithRequestId(FrameType, Frame, FNextId);
-  if Line <> '' then WriteFrame(Line, FrameType);
+  Line := '';
+  if FReady then
+    Line := WithRequestId(FrameType, Frame, FNextId);
+  Result := (Line <> '') and WriteFrame(Line, FrameType);
 end;
 procedure TAgentRpcClient.SendHostResult(const CallId, Text: string; IsError: Boolean; const ImagePng: string);
 begin
   if not FReady or WasCancelled(CallId) then
     Exit;
-  WriteFrame(BuildHostToolResultFrame(CallId, Text, IsError, ImagePng), 'host_tool_result');
+  { omp must get an answer for every call, so an oversized result becomes an error it can act on. }
+  if not WriteFrame(BuildHostToolResultFrame(CallId, Text, IsError, ImagePng), 'host_tool_result') then
+    WriteFrame(BuildHostToolResultFrame(CallId, 'The result was too large to send (over 1 MiB). ' +
+      'Ask for less, e.g. a narrower range or fewer items.', True), 'host_tool_result');
 end;
 { The rad.* tools again for a changed project, e.g. after its first form. }
 procedure TAgentRpcClient.ResendHostTools(const Profile: TToolProfile);

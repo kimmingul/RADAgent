@@ -51,9 +51,54 @@ end;
 
 function StructureLine(const Line: string): Boolean;
 begin
-  Result := TRegEx.IsMatch(Line, '^\s*(object|inherited|inline)\s+\w+\s*:|^\s*end\s*$', [roIgnoreCase]);
+  Result := TRegEx.IsMatch(Line, '^\s*(object|inherited|inline)\s+\w*\s*:|^\s*end\s*$', [roIgnoreCase]);
 end;
 
+function StructureLines(const Text: string): TArray<string>;
+var
+  Lines: TArray<string>;
+  Line, Trimmed: string;
+begin
+  Result := nil;
+  Lines := Text.Split([#10]);
+  for Line in Lines do
+  begin
+    Trimmed := Trim(Line);
+    if StructureLine(Trimmed) then
+      Result := Result + [Trimmed];
+  end;
+end;
+
+function SameStructure(const BeforeText, AfterText: string): Boolean;
+var
+  BeforeLines, AfterLines: TArray<string>;
+  Index: Integer;
+begin
+  BeforeLines := StructureLines(BeforeText);
+  AfterLines := StructureLines(AfterText);
+  if Length(BeforeLines) <> Length(AfterLines) then
+    Exit(False);
+  for Index := 0 to High(BeforeLines) do
+    if not SameText(BeforeLines[Index], AfterLines[Index]) then
+      Exit(False);
+  Result := True;
+end;
+
+function ModuleHasUnsavedEdits(const Module: IOTAModule): Boolean;
+var
+  Index: Integer;
+  Editor: IOTAEditor;
+begin
+  Result := False;
+  if Module = nil then
+    Exit;
+  for Index := 0 to Module.ModuleFileCount - 1 do
+  begin
+    Editor := Module.ModuleFileEditors[Index];
+    if (Editor <> nil) and Editor.Modified then
+      Exit(True);
+  end;
+end;
 { The object a line belongs to: the nearest "object Name:" above it with less indentation. }
 function OwnerName(const Lines: TArray<string>; Index: Integer): string;
 var
@@ -174,7 +219,7 @@ begin
       Found.After := Found.Before;
     end;
     if (OldText = '') or StructureLine(OldText) or StructureLine(NewText) or
-      TRegEx.IsMatch(OldText + #10 + NewText, '(?m)^\s*(object|inherited|inline)\s+\w+\s*:|^\s*end\s*$',
+      TRegEx.IsMatch(OldText + #10 + NewText, '(?m)^\s*(object|inherited|inline)\s+\w*\s*:|^\s*end\s*$',
       [roIgnoreCase]) then
     begin
       Problem := 'Only property text may change; add, remove or rename components with rad.form_apply.';
@@ -190,6 +235,11 @@ begin
   end;
   for Item in Files do
   begin
+    if not SameStructure(Item.Before, Item.After) then
+    begin
+      Problem := 'Only property text may change; add, remove or rename components with rad.form_apply.';
+      Exit;
+    end;
     if not ValidText(Item.After) then
     begin
       Problem := ExtractFileName(Item.FormPath) + ': the edited form text does not parse.';
@@ -209,8 +259,11 @@ var
   Args: TJSONValue;
   Files: TObjectList<TFormFile>;
   Item: TFormFile;
-  Problem, Before, After, Unsaved: string;
+  Problem, Before, After, Unsaved, Conflicts, CurText: string;
   Module: IOTAModule;
+  Bytes: TBytes;
+  CurEncoding: TEncoding;
+  HasConflict: Boolean;
 begin
   Result := False;
   Args := TJSONObject.ParseJSONValue(ArgumentsJson);
@@ -222,7 +275,14 @@ begin
       Exit;
     end;
     { The designer may hold changes the files do not have yet. }
-    SaveProjectModules(ExcludeTrailingPathDelimiter(ActiveProjectDir), Unsaved);
+    if not SaveProjectModules(ExcludeTrailingPathDelimiter(ActiveProjectDir), Unsaved) then
+    begin
+      if Unsaved <> '' then
+        ResultText := 'Failed to save project modules before editing form text: ' + Unsaved
+      else
+        ResultText := 'Failed to save project modules before editing form text.';
+      Exit;
+    end;
     if not Prepare(TJSONArray(TJSONObject(Args).GetValue('edits')), Files, Problem) then
     begin
       if Problem = '' then
@@ -241,6 +301,46 @@ begin
     begin
       ResultText := SEditCancelled;
       Exit(True);
+    end;
+    { Re-check every file before writing anything: disk bytes decode to Item.Before
+      and module has no unsaved edits. }
+    Conflicts := '';
+    for Item in Files do
+    begin
+      HasConflict := False;
+      if not FileExists(Item.FormPath) then
+        HasConflict := True
+      else
+      begin
+        Bytes := TFile.ReadAllBytes(Item.FormPath);
+        CurEncoding := nil;
+        TEncoding.GetBufferEncoding(Bytes, CurEncoding, TEncoding.Default);
+        CurText := CurEncoding.GetString(Bytes, Length(CurEncoding.GetPreamble),
+          Length(Bytes) - Length(CurEncoding.GetPreamble));
+        if CurText <> Item.Before then
+          HasConflict := True;
+      end;
+      if not HasConflict then
+      begin
+        Module := (BorlandIDEServices as IOTAModuleServices).FindModule(Item.UnitPath);
+        if (Module = nil) and (Item.Editor <> nil) then
+          Module := Item.Editor.Module;
+        if Module = nil then
+          Module := (BorlandIDEServices as IOTAModuleServices).FindModule(Item.FormPath);
+        if ModuleHasUnsavedEdits(Module) then
+          HasConflict := True;
+      end;
+      if HasConflict then
+      begin
+        if Conflicts <> '' then
+          Conflicts := Conflicts + ', ';
+        Conflicts := Conflicts + ExtractFileName(Item.FormPath);
+      end;
+    end;
+    if Conflicts <> '' then
+    begin
+      ResultText := Format('Form file(s) modified on disk or have unsaved edits (%s); please retry.', [Conflicts]);
+      Exit;
     end;
     for Item in Files do
     begin

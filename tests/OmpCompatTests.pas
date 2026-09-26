@@ -191,6 +191,9 @@ begin
     'a rad.* tool called by name is a rad approval');
   Check(not ApprovalTargetsRad(Ui('Allow tool: write'#10'Path: C:\p\Unit1.pas', ['Approve', 'Deny'])),
     'a disk write is not a rad approval');
+  Check(not ApprovalTargetsRad(Ui('Allow tool: write'#10'Path: C:\p\notes.md'#10'Content:'#10 +
+    'Call xd://rad.compile after editing.', ['Approve', 'Deny'])),
+    'xd://rad.* quoted in the content of a disk write does not make it a rad approval');
   Check(ApproveOption(Ui('Allow tool: bash', ['Deny', 'Allow once'])) = 'Allow once',
     'approve option found by wording, not position');
   Check(DenyOption(Ui('Allow tool: bash', ['Approve', 'Reject'])) = 'Reject', 'deny option found by wording');

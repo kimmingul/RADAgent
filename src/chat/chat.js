@@ -277,6 +277,7 @@
         bubble.appendChild(body);
         turn.appendChild(bubble);
         logEl.appendChild(turn);
+        if (item.seq) global.ChatCheckpoints.attach(turn, item.seq);
       } else {
         if (item.model && item.model !== lastModel) logEl.appendChild(modelTag(item.model));
         const turn = document.createElement('div');
@@ -320,7 +321,6 @@
       case 'plan': global.ChatCards.plan(msg); break;
       case 'btw': global.ChatBtw.update(msg); break;
       case 'checkpoint': global.ChatCheckpoints.one(msg); break;
-      case 'checkpoints': global.ChatCheckpoints.list(msg); break;
       case 'btwList': global.ChatBtw.setList(msg); break;
       case 'focusInput': global.ChatComposer.focus(); break;
       case 'toolInputDelta': global.ChatActivity.toolInputDelta(msg.id, msg.name, msg.text); break;

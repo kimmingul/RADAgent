@@ -262,6 +262,7 @@ var
   Client: TAgentRpcClient;
   Dir: string;
   Deadline: UInt64;
+  Process: THandle;
 begin
   Dir := AgentTempRoot + 'rpc-cwd';
   ForceDirectories(Dir);
@@ -273,8 +274,18 @@ begin
       CheckSynchronize(100);
     Check(Client.Ready, 'ready received');
     Check(Client.HostToolsSent, 'host tools sent after ready');
+    Check(not Client.SendPrompt(StringOfChar('x', MaxFrameBytes)),
+      'a prompt over the frame limit is reported as not sent');
     Check(Client.SendPrompt('ping'), 'prompt allowed after ready');
     Client.SendAbort;
+    Process := OpenProcess(PROCESS_TERMINATE, False, Client.Pid);
+    TerminateProcess(Process, 1);
+    CloseHandle(Process);
+    Deadline := GetTickCount64 + 10000;
+    while not Client.Exited and (GetTickCount64 < Deadline) do
+      CheckSynchronize(100);
+    Check(Client.Exited and not Client.Ready and not Client.SendPrompt('ping'),
+      'a child that dies leaves the client disconnected');
   finally
     Client.Free;
   end;

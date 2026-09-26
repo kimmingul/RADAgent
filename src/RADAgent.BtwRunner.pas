@@ -44,7 +44,7 @@ implementation
 
 uses
   System.Classes, System.JSON, Winapi.Windows, RADAgent.RpcProtocol, RADAgent.RpcJson,
-  RADAgent.ChatCommand, RADAgent.Options, RADAgent.Lang;
+  RADAgent.RpcEvents, RADAgent.ChatCommand, RADAgent.Options, RADAgent.Lang;
 
 const
   ReadyTimeoutMs = 90000;
@@ -111,6 +111,7 @@ procedure TBtwRun.HandleLine(const Line: string);
 var
   Obj, Data, Msg, Stream: TJSONObject;
   Kind, Reply: string;
+  Ev: TAgentEvent;
 begin
   Obj := JsonObject(Line);
   if Obj = nil then
@@ -139,12 +140,38 @@ begin
       Data := JsonChild(Obj, 'data');
       if IsJsonFalse(Obj.GetValue('success')) then
       begin
-        FError := JsonStr(Obj, 'error');
         if JsonStr(Obj, 'command') = 'prompt' then
+        begin
+          FError := JsonStr(Obj, 'error');
+          if FError = '' then
+            FError := 'Prompt failed';
           CloseInput;
+          FChanged := True;
+        end;
       end
       else if (JsonStr(Obj, 'command') = 'get_state') and (Data <> nil) then
-        FSessionFile := JsonStr(Data, 'sessionFile');
+        FSessionFile := JsonStr(Data, 'sessionFile')
+      else if (JsonStr(Obj, 'command') = 'prompt') and (Data <> nil) and
+        IsJsonFalse(Data.GetValue('agentInvoked')) then
+      begin
+        FEnded := True;
+        CloseInput;
+      end;
+    end
+    else if (Kind = 'prompt_result') and
+      (IsJsonFalse(Obj.GetValue('agentInvoked')) or (Obj.GetValue('agentInvoked') = nil)) then
+    begin
+      FEnded := True;
+      CloseInput;
+    end
+    else if Kind = 'command_output' then
+    begin
+      Ev := ParseAgentEvent(Line);
+      if Ev.Text <> '' then
+      begin
+        FText := FText + Ev.Text;
+        FChanged := True;
+      end;
     end
     else if Kind = 'extension_ui_request' then
     begin
@@ -169,7 +196,11 @@ begin
         if ContentText(Msg.GetValue('content')) <> '' then
           FText := ContentText(Msg.GetValue('content'));
         if JsonStr(Msg, 'stopReason') = 'error' then
+        begin
           FError := JsonStr(Msg, 'errorMessage');
+          if FError = '' then
+            FError := 'Error';
+        end;
         FChanged := True;
       end;
     end
@@ -220,13 +251,14 @@ begin
   CloseQuiet(FPipes.StdOut);
   CloseQuiet(FPipes.Thread);
   CloseQuiet(FPipes.Process);
-  if (FText <> '') and not FAborted then
-    FError := ''
-  else if (FError = '') and not FAborted and FileExists(FStderr) then
-    { The child died before answering; its last stderr line says why. }
-    FError := ChildExitReason(FStderr);
   if (FError = '') and (FText = '') and not FAborted then
-    FError := Tr('btwrunner.endedWithoutAnswer');
+  begin
+    if FileExists(FStderr) then
+      { The child died before answering; its last stderr line says why. }
+      FError := ChildExitReason(FStderr);
+    if FError = '' then
+      FError := Tr('btwrunner.endedWithoutAnswer');
+  end;
   if (FError = '') and FileExists(FStderr) then
     System.SysUtils.DeleteFile(FStderr);
 end;

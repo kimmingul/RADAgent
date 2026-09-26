@@ -1,13 +1,19 @@
 unit RADAgent.ChatStop;
 
-{ The stop button. First press sends omp an abort frame. When omp has not ended the turn
-  StopGraceMs later, or the user presses stop again, the omp child is killed and restarted on
-  the same session file: a child stuck in a request (an unreachable provider) answers no frame
-  at all, abort included. Main thread only. }
+{ Stopping and losing the omp child. The stop button first sends omp an abort frame. When the
+  same turn has not ended StopGraceMs later, or the user presses stop again, the child is killed
+  and restarted on the same session file: a child stuck in a request (an unreachable provider)
+  answers no frame at all, abort included. Whenever the child goes away, work waiting on it
+  (approval cards, a "!" shell command) is dropped with it. Main thread only. }
 
 interface
 
 procedure StopTurn;
+{ Stops the omp child after refusing the approvals and ending the shell command waiting on it. }
+procedure StopChild;
+{ omp ended by itself: closes the turn and, when it had been connected, restarts it on the same
+  session - at most once a minute, so a child that keeps dying is not restarted in a loop. }
+procedure RecoverExitedChild;
 
 implementation
 
@@ -17,21 +23,36 @@ uses
 
 const
   StopGraceMs = 5000;
+  RecoverGapMs = 60000;
 
 type
   TStopWatch = class
     Timer: TTimer;
     AbortAt: UInt64;
+    { The turn the abort was sent for (TChatActivity.StartTick). }
+    Turn: UInt64;
     procedure Tick(Sender: TObject);
+    procedure Disarm;
   end;
 
 var
   GWatch: TStopWatch;
+  GRecoverAt: UInt64;
+
+procedure TStopWatch.Disarm;
+begin
+  Timer.Enabled := False;
+  AbortAt := 0;
+end;
+
+function Armed: Boolean;
+begin
+  Result := (GWatch.AbortAt <> 0) and ChatSession.Busy and (ChatSession.Activity.StartTick = GWatch.Turn);
+end;
 
 procedure ForceStop;
 begin
-  GWatch.Timer.Enabled := False;
-  GWatch.AbortAt := 0;
+  GWatch.Disarm;
   ChatSession.Notice('warn', Tr('chatstop.forced'));
   ChatSession.Emit(PageTurnEnd);
   ChatSession.Restart(True);
@@ -39,11 +60,9 @@ end;
 
 procedure TStopWatch.Tick(Sender: TObject);
 begin
-  if not ChatSession.Busy then
-  begin
-    Timer.Enabled := False;
-    AbortAt := 0;
-  end
+  { The aborted turn ended (a new one may already run): that one is not ours to kill. }
+  if not Armed then
+    Disarm
   else if GetTickCount64 - AbortAt >= StopGraceMs then
     ForceStop;
 end;
@@ -62,7 +81,7 @@ begin
       ChatSession.Client.SendAbort;
     Exit;
   end;
-  if GWatch.AbortAt <> 0 then
+  if Armed then
   begin
     ForceStop;
     Exit;
@@ -70,7 +89,37 @@ begin
   ChatSession.Client.SendAbort;
   ChatSession.Notice('info', Tr('chatstop.stopping'));
   GWatch.AbortAt := GetTickCount64;
+  GWatch.Turn := ChatSession.Activity.StartTick;
   GWatch.Timer.Enabled := True;
+end;
+
+procedure StopChild;
+begin
+  RefuseAllApprovals;
+  ResetShell;
+  GWatch.Disarm;
+  if ChatSession.Client <> nil then
+    ChatSession.Client.Stop;
+end;
+
+procedure RecoverExitedChild;
+var
+  Session: TChatSession;
+begin
+  Session := ChatSession;
+  if Session.Busy then
+  begin
+    Session.Activity.Reset;
+    Session.Emit(PageTurnEnd);
+  end;
+  RefuseAllApprovals;
+  ResetShell;
+  GWatch.Disarm;
+  if not Session.Client.ExitedConnected or (GetTickCount64 - GRecoverAt < RecoverGapMs) then
+    Exit;
+  GRecoverAt := GetTickCount64;
+  Session.Notice('warn', TrF('chatstop.childExited', [Session.Client.LinkError]));
+  Session.Restart(True);
 end;
 
 initialization

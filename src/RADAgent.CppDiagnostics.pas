@@ -11,14 +11,15 @@ uses
   ToolsAPI, RADAgent.RpcProtocol;
 
 { Errors from the .cpp files changed since the last good build (all of them when unknown). }
-function CppBuildErrors(const Project: IOTAProject; const PlatformName: string): TArray<TAgentCompileError>;
+function CppBuildErrors(const Project: IOTAProject; const PlatformName: string;
+  const ConfigName: string = ''): TArray<TAgentCompileError>;
 { The platform's C++ compiler (bcc64x for Win64x, bcc64, bcc32c), '' when there is none. }
 function Compiler(const PlatformName: string): string;
 { Include folders (absolute) and defines of the active configuration for PlatformName. }
 procedure ProjectOptions(const Project: IOTAProject; const PlatformName: string;
   out Includes, Defines: TArray<string>);
 { Call after a successful build: later checks start from here. }
-procedure NoteCppBuildOk;
+procedure NoteCppBuildOk(const ProjectFile, ConfigName, PlatformName: string);
 { Parses compiler output ("Error E1525 MainForm.cpp 33(10): expected expression"). Dir resolves
   relative file names. }
 function ParseCppErrors(const Output, Dir: string): TArray<TAgentCompileError>;
@@ -27,18 +28,31 @@ implementation
 
 uses
   System.SysUtils, System.StrUtils, System.Classes, System.IOUtils, System.RegularExpressions,
-  RADAgent.ProcessRun, RADAgent.Options;
+  System.Generics.Collections, RADAgent.ProcessRun, RADAgent.Options;
 
 const
   MaxFiles = 12;
   MaxErrors = 30;
 
 var
-  GLastOk: TDateTime;
+  GLastOk: TDictionary<string, TDateTime>;
 
-procedure NoteCppBuildOk;
+function TargetKey(const ProjectFile, Config, Platform: string): string;
 begin
-  GLastOk := Now;
+  Result := LowerCase(ProjectFile + '|' + Config + '|' + Platform);
+end;
+
+procedure NoteCppBuildOk(const ProjectFile, ConfigName, PlatformName: string);
+begin
+  if GLastOk <> nil then
+    GLastOk.AddOrSetValue(TargetKey(ProjectFile, ConfigName, PlatformName), Now);
+end;
+
+function LastOkTime(const ProjectFile, ConfigName, PlatformName: string): TDateTime;
+begin
+  Result := 0;
+  if GLastOk <> nil then
+    GLastOk.TryGetValue(TargetKey(ProjectFile, ConfigName, PlatformName), Result);
 end;
 
 function ParseCppErrors(const Output, Dir: string): TArray<TAgentCompileError>;
@@ -151,15 +165,24 @@ end;
 
 { The project's .cpp files changed since the last good build, plus the ones including a changed
   header; all of them when there was no good build yet. At most MaxFiles. }
-function ChangedSources(const Project: IOTAProject): TArray<string>;
+function ChangedSources(const Project: IOTAProject; const PlatformName, ConfigName: string): TArray<string>;
 var
   Index: Integer;
-  FileName, Header: string;
+  FileName, Header, ActiveConfig: string;
   All, Headers: TArray<string>;
+  LastOk: TDateTime;
+  Configs: IOTAProjectOptionsConfigurations;
 begin
   Result := nil;
   All := nil;
   Headers := nil;
+  ActiveConfig := ConfigName;
+  if (ActiveConfig = '') and (Project <> nil) and
+    Supports(Project.ProjectOptions, IOTAProjectOptionsConfigurations, Configs) then
+    ActiveConfig := Configs.ActiveConfigurationName;
+  LastOk := 0;
+  if Project <> nil then
+    LastOk := LastOkTime(Project.FileName, ActiveConfig, PlatformName);
   for Index := 0 to Project.GetModuleCount - 1 do
   begin
     FileName := Project.GetModule(Index).FileName;
@@ -167,7 +190,7 @@ begin
     begin
       All := All + [FileName];
       Header := ChangeFileExt(FileName, '.h');
-      if (GLastOk > 0) and FileExists(Header) and (TFile.GetLastWriteTime(Header) > GLastOk) then
+      if (LastOk > 0) and FileExists(Header) and (TFile.GetLastWriteTime(Header) > LastOk) then
         Headers := Headers + [ExtractFileName(Header)];
     end;
   end;
@@ -178,9 +201,9 @@ begin
   begin
     if Length(Result) >= MaxFiles then
       Break;
-    if GLastOk = 0 then
+    if LastOk = 0 then
       Result := Result + [FileName]
-    else if TFile.GetLastWriteTime(FileName) > GLastOk then
+    else if TFile.GetLastWriteTime(FileName) > LastOk then
       Result := Result + [FileName]
     else
       for Header in Headers do
@@ -192,7 +215,8 @@ begin
   end;
 end;
 
-function CppBuildErrors(const Project: IOTAProject; const PlatformName: string): TArray<TAgentCompileError>;
+function CppBuildErrors(const Project: IOTAProject; const PlatformName: string;
+  const ConfigName: string = ''): TArray<TAgentCompileError>;
 var
   Exe, Dir, Args, Output, FileName, ObjFile: string;
 begin
@@ -203,7 +227,7 @@ begin
   Dir := ExtractFileDir(Project.FileName);
   Args := ProjectArgs(Project, PlatformName);
   ObjFile := ProcessTempFile('cppcheck.o');
-  for FileName in ChangedSources(Project) do
+  for FileName in ChangedSources(Project, PlatformName, ConfigName) do
   begin
     RunCaptured('"' + Exe + '"' + Args + ' -c -o "' + ObjFile + '" "' + FileName + '"', Dir, Output, 120000);
     Result := Result + ParseCppErrors(Output, ExtractFileDir(FileName));
@@ -212,5 +236,11 @@ begin
   end;
   System.SysUtils.DeleteFile(ObjFile);
 end;
+
+initialization
+  GLastOk := TDictionary<string, TDateTime>.Create;
+
+finalization
+  GLastOk.Free;
 
 end.

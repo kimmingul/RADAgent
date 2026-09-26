@@ -103,12 +103,29 @@ begin
 end;
 
 procedure AppendRpcLog(const Line: string);
+const
+  MaxLogBytes = 20 * 1024 * 1024;
+var
+  Root, LogPath, BackupPath: string;
 begin
   GLogGate.Acquire;
   try
     try
-      ForceDirectories(AgentTempRoot);
-      TFile.AppendAllText(AgentTempRoot + 'rpc.log', Line + sLineBreak, TEncoding.UTF8);
+      Root := AgentTempRoot;
+      ForceDirectories(Root);
+      LogPath := Root + 'rpc.log';
+      BackupPath := Root + 'rpc.1.log';
+      if FileExists(LogPath) and (TFile.GetSize(LogPath) >= MaxLogBytes) then
+      begin
+        if FileExists(BackupPath) then
+          System.SysUtils.DeleteFile(BackupPath);
+        if not MoveFileEx(PChar(LogPath), PChar(BackupPath), MOVEFILE_REPLACE_EXISTING) then
+        begin
+          System.SysUtils.DeleteFile(BackupPath);
+          System.SysUtils.RenameFile(LogPath, BackupPath);
+        end;
+      end;
+      TFile.AppendAllText(LogPath, Line + sLineBreak, TEncoding.UTF8);
     except
     end;
   finally

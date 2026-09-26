@@ -10,7 +10,7 @@ $ErrorActionPreference = 'Stop'
 $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
 $key = 'HKLM:\SOFTWARE\SafeNet\Authentication\SAC\General'
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath, '-TimeoutSeconds', $TimeoutSeconds)
+    $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"", '-TimeoutSeconds', $TimeoutSeconds)
     $process = Start-Process -FilePath 'powershell.exe' -ArgumentList $arguments -Verb RunAs -Wait -PassThru
     if ($process.ExitCode -ne 0) { throw "Elevated configuration failed with exit code $($process.ExitCode)." }
 } else {

@@ -256,6 +256,8 @@ begin
       Item.AddPair('text', Items[Index].Text);
       if Items[Index].Model <> '' then
         Item.AddPair('model', Items[Index].Model);
+      if Items[Index].Checkpoint > 0 then
+        Item.AddPair('seq', TJSONNumber.Create(Items[Index].Checkpoint));
       List.AddElement(Item);
     end;
     Obj.AddPair('items', List);

@@ -21,8 +21,8 @@ function InsertAtCaret(const Text: string; const Approval: IAgentApproval;
   out Problem: string): Boolean;
 var
   View: IOTAEditView;
-  Current: TEditorText;
-  StartRow: Integer;
+  TargetFile: string;
+  TargetLine, TargetCol, StartRow: Integer;
 begin
   Result := False;
   Problem := '';
@@ -32,27 +32,31 @@ begin
     Exit;
   end;
   View := (BorlandIDEServices as IOTAEditorServices).TopView;
-  if (View = nil) or (View.Position = nil) or (View.Buffer = nil) then
+  if (View = nil) or (View.Position = nil) or (View.Buffer = nil) or (View.Buffer.FileName = '') then
   begin
     Problem := 'No active editor.';
     Exit;
   end;
-  Current := CurrentEditorText;
-  if (Approval = nil) or not Approval.ApproveChange(Current.FileName, '', Text) then
+  TargetFile := View.Buffer.FileName;
+  TargetLine := View.CursorPos.Line;
+  TargetCol := View.CursorPos.Col;
+  if (Approval = nil) or not Approval.ApproveChange(TargetFile, '', Text) then
   begin
     Problem := 'User did not approve applying changes to buffer.';
     Exit;
   end;
   View := (BorlandIDEServices as IOTAEditorServices).TopView;
-  if (View = nil) or (View.Position = nil) then
+  if (View = nil) or (View.Position = nil) or (View.Buffer = nil) or
+    not SameText(View.Buffer.FileName, TargetFile) or
+    (View.CursorPos.Line <> TargetLine) or (View.CursorPos.Col <> TargetCol) then
   begin
-    Problem := 'No active editor.';
+    Problem := 'The editor or caret changed while waiting for approval; ask again.';
     Exit;
   end;
   StartRow := View.CursorPos.Line;
   View.Position.InsertText(Text);
   Result := True;
-  Approval.ChangeApplied(Current.FileName, '', Text, StartRow);
+  Approval.ChangeApplied(View.Buffer.FileName, '', Text, StartRow);
 end;
 
 end.

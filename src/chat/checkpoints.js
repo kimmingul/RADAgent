@@ -33,32 +33,6 @@
     actions(turns[turns.length - 1], msg.seq);
   }
 
-  function text(turn) {
-    const body = turn.querySelector('.user-text');
-    return body ? body.textContent.trim() : '';
-  }
-
-  // A reloaded history: match messages to checkpoints from the newest back, by text.
-  function list(msg) {
-    const points = (msg.items || []).slice();
-    const turns = [...document.querySelectorAll('#log .turn-user')].filter(t => !t.dataset.seq);
-    let limit = Infinity;
-    for (let i = turns.length - 1; i >= 0; i--) {
-      const shown = text(turns[i]);
-      if (!shown) continue;
-      for (let k = points.length - 1; k >= 0; k--) {
-        const p = points[k];
-        if (p.seq >= limit) continue;
-        const prompt = (p.prompt || '').trim();
-        if (prompt === shown || prompt.startsWith(shown) || shown.startsWith(prompt)) {
-          actions(turns[i], p.seq);
-          limit = p.seq;
-          points.splice(k, 1);
-          break;
-        }
-      }
-    }
-  }
-
-  global.ChatCheckpoints = { init: p => { post = p; }, one, list };
+  // A reloaded history: the IDE matched each user message to its checkpoint (by when it was sent).
+  global.ChatCheckpoints = { init: p => { post = p; }, one, attach: actions };
 })(typeof window !== 'undefined' ? window : globalThis);

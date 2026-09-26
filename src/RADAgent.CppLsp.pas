@@ -11,7 +11,7 @@ unit RADAgent.CppLsp;
 interface
 
 uses
-  RADAgent.ProjectProfile;
+  System.JSON, RADAgent.ProjectProfile;
 
 const
   { For omp's guide: what to ignore from clangd. }
@@ -26,11 +26,15 @@ const
 function ClangdExecutable: string;
 { Writes the compilation database and .omp\lsp.json; False when clangd or the compiler is missing. }
 function EnsureClangd(const Profile: TProjectProfile): Boolean;
+{ Updates <ProjectDir>\.omp\lsp.json with ServerConfig for ServerName ('delphilsp' or 'clangd'),
+  preserving other servers and root keys. Returns False without modifying if existing file is invalid JSON.
+  ServerConfig is consumed (freed) by this call. }
+function UpdateLspServer(const ProjectDir, ServerName: string; ServerConfig: TJSONObject): Boolean;
 
 implementation
 
 uses
-  System.SysUtils, System.StrUtils, System.Classes, System.IOUtils, System.JSON, System.RegularExpressions,
+  System.SysUtils, System.StrUtils, System.Classes, System.IOUtils, System.RegularExpressions,
   System.Generics.Collections, Winapi.Windows, ToolsAPI, RADAgent.AgentSettings,
   RADAgent.IdeContext, RADAgent.CppDiagnostics, RADAgent.ProcessRun, RADAgent.Options;
 
@@ -155,9 +159,92 @@ begin
 end;
 
 procedure WriteJson(const Path: string; Value: TJSONValue);
+var
+  Text: string;
 begin
+  Text := Value.Format(2);
+  if FileExists(Path) and (TFile.ReadAllText(Path, TEncoding.UTF8) = Text) then
+    Exit;
   ForceDirectories(ExtractFileDir(Path));
-  TFile.WriteAllBytes(Path, TEncoding.UTF8.GetBytes(Value.Format(2)));
+  TFile.WriteAllBytes(Path, TEncoding.UTF8.GetBytes(Text));
+end;
+
+function UpdateLspServer(const ProjectDir, ServerName: string; ServerConfig: TJSONObject): Boolean;
+var
+  LspPath, ExistingText, NewText: string;
+  Root, Servers: TJSONObject;
+  Parsed, ServersVal, OldServerVal: TJSONValue;
+  OldPair: TJSONPair;
+  Added: Boolean;
+begin
+  Result := False;
+  if (ProjectDir = '') or (ServerConfig = nil) then
+  begin
+    ServerConfig.Free;
+    Exit;
+  end;
+  LspPath := TPath.Combine(ProjectDir, '.omp\lsp.json');
+  ExistingText := '';
+  if FileExists(LspPath) then
+  begin
+    try
+      ExistingText := TFile.ReadAllText(LspPath, TEncoding.UTF8);
+    except
+      ServerConfig.Free;
+      Exit;
+    end;
+    Parsed := TJSONObject.ParseJSONValue(ExistingText);
+    if not (Parsed is TJSONObject) then
+    begin
+      Parsed.Free;
+      ServerConfig.Free;
+      Exit;
+    end;
+    Root := TJSONObject(Parsed);
+  end
+  else
+    Root := TJSONObject.Create;
+
+  Added := False;
+  try
+    ServersVal := Root.GetValue('servers');
+    if ServersVal is TJSONObject then
+      Servers := TJSONObject(ServersVal)
+    else
+    begin
+      if ServersVal <> nil then
+      begin
+        OldPair := Root.RemovePair('servers');
+        OldPair.Free;
+      end;
+      Servers := TJSONObject.Create;
+      Root.AddPair('servers', Servers);
+    end;
+
+    OldServerVal := Servers.GetValue(ServerName);
+    if (OldServerVal is TJSONObject) and (OldServerVal.ToJSON = ServerConfig.ToJSON) then
+    begin
+      Result := True;
+      Exit;
+    end;
+
+    OldPair := Servers.RemovePair(ServerName);
+    OldPair.Free;
+    Servers.AddPair(ServerName, ServerConfig);
+    Added := True;
+
+    NewText := Root.Format(2);
+    if NewText <> ExistingText then
+    begin
+      ForceDirectories(ExtractFileDir(LspPath));
+      TFile.WriteAllBytes(LspPath, TEncoding.UTF8.GetBytes(NewText));
+    end;
+    Result := True;
+  finally
+    if not Added then
+      ServerConfig.Free;
+    Root.Free;
+  end;
 end;
 
 function EnsureClangd(const Profile: TProjectProfile): Boolean;
@@ -167,7 +254,7 @@ var
   Facts: TCompilerFacts;
   Includes, Defines, Files: TArray<string>;
   Db: TJSONArray;
-  Entry, Root, Servers, Server: TJSONObject;
+  Entry, Server: TJSONObject;
   Index: Integer;
 begin
   Result := False;
@@ -204,25 +291,16 @@ begin
   finally
     Db.Free;
   end;
-  Root := TJSONObject.Create;
-  try
-    Servers := TJSONObject.Create;
-    Root.AddPair('servers', Servers);
-    Server := TJSONObject.Create;
-    Servers.AddPair('clangd', Server);
-    Server.AddPair('command', Clangd);
-    { No background index: it would write .cache\ into the project (and every checkpoint). }
-    Server.AddPair('args', TJSONArray.Create.Add('--compile-commands-dir=' + DbDir)
-      .Add('--background-index=false').Add('--log=error'));
-    Server.AddPair('fileTypes', TJSONArray.Create.Add('.cpp').Add('.h').Add('.hpp').Add('.cc').Add('.cxx'));
-    Server.AddPair('languageId', 'cpp');
-    Server.AddPair('rootMarkers', TJSONArray.Create.Add('*.cbproj').Add('*.groupproj'));
-    Server.AddPair('warmupTimeoutMs', TJSONNumber.Create(60000));
-    WriteJson(TPath.Combine(Profile.ProjectDir, '.omp\lsp.json'), Root);
-  finally
-    Root.Free;
-  end;
-  Result := True;
+  Server := TJSONObject.Create;
+  Server.AddPair('command', Clangd);
+  { No background index: it would write .cache\ into the project (and every checkpoint). }
+  Server.AddPair('args', TJSONArray.Create.Add('--compile-commands-dir=' + DbDir)
+    .Add('--background-index=false').Add('--log=error'));
+  Server.AddPair('fileTypes', TJSONArray.Create.Add('.cpp').Add('.h').Add('.hpp').Add('.cc').Add('.cxx'));
+  Server.AddPair('languageId', 'cpp');
+  Server.AddPair('rootMarkers', TJSONArray.Create.Add('*.cbproj').Add('*.groupproj'));
+  Server.AddPair('warmupTimeoutMs', TJSONNumber.Create(60000));
+  Result := UpdateLspServer(Profile.ProjectDir, 'clangd', Server);
 end;
 
 initialization

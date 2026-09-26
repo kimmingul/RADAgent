@@ -343,12 +343,19 @@ begin
   Result := (Ui.Method = 'select') and Ui.Title.TrimLeft.StartsWith('Allow tool', True);
 end;
 
+{ omp's title is "Allow tool: <tool>", then "Path: <target>", then the content, which may quote
+  anything (xd://rad.* included). Only the tool and path lines say what is being approved. }
 function ApprovalTargetsRad(const Ui: TExtensionUi): Boolean;
 var
-  Text: string;
+  Lines: TArray<string>;
 begin
-  Text := LowerCase(Ui.Title + #10 + Ui.Message);
-  Result := IsToolApproval(Ui) and (Text.Contains('xd://rad.') or Text.Contains('allow tool: rad.'));
+  Result := False;
+  if not IsToolApproval(Ui) then
+    Exit;
+  Lines := Ui.Title.Split([#10]);
+  if LowerCase(Trim(Lines[0])).StartsWith('allow tool: rad.') then
+    Exit(True);
+  Result := (Length(Lines) > 1) and LowerCase(Trim(Lines[1])).StartsWith('path: xd://rad.');
 end;
 
 function OptionStarting(const Ui: TExtensionUi; const Words: array of string): string;

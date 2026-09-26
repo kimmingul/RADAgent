@@ -116,6 +116,15 @@ begin
   GTimer.Enabled := True;
 end;
 
+function IsCurrentProject(const ProjectDir: string): Boolean;
+var
+  CurrentDir: string;
+begin
+  CurrentDir := ExcludeTrailingPathDelimiter(ActiveProjectDir);
+  Result := (CurrentDir <> '') and (ProjectDir <> '') and
+    SameText(ExcludeTrailingPathDelimiter(ProjectDir), CurrentDir);
+end;
+
 procedure AskBtw(const Question, TopicId: string);
 var
   Active: TActiveBtw;
@@ -131,13 +140,16 @@ begin
     ChatSession.Notice('warn', Tr('chatbtw.needProject'));
     Exit;
   end;
-  if (TopicId <> '') and GActive.ContainsKey(TopicId) then
-  begin
-    ChatSession.Notice('warn', Tr('chatbtw.alreadyRunning'));
-    Exit;
-  end;
   if TopicId <> '' then
   begin
+    if GActive.ContainsKey(TopicId) then
+    begin
+      if IsCurrentProject(GActive[TopicId].ProjectDir) then
+        ChatSession.Notice('warn', Tr('chatbtw.alreadyRunning'))
+      else
+        ChatSession.Notice('warn', Tr('chatbtw.notFound'));
+      Exit;
+    end;
     if not LoadTopic(Dir, TopicId, Topic) then
     begin
       ChatSession.Notice('warn', Tr('chatbtw.notFound'));
@@ -166,7 +178,8 @@ begin
   Active.Topic := Topic;
   GActive.Add(Topic.Id, Active);
   SaveTopic(Dir, Topic);
-  ChatSession.Emit(CardJson(Topic, High(Topic.Turns)));
+  if IsCurrentProject(Dir) then
+    ChatSession.Emit(CardJson(Topic, High(Topic.Turns)));
   EnsureTimer;
 end;
 
@@ -205,13 +218,15 @@ begin
     Settle(Active);
     if Active.Run.Finished then
     begin
-      ChatSession.Emit(CardJson(Active.Topic, High(Active.Topic.Turns)));
+      if IsCurrentProject(Active.ProjectDir) then
+        ChatSession.Emit(CardJson(Active.Topic, High(Active.Topic.Turns)));
       Done := Done + [Id];
     end
     else if GetTickCount64 - Active.LastPost >= ProgressIntervalMs then
     begin
       Active.LastPost := GetTickCount64;
-      ChatSession.PostToView(CardJson(Active.Topic, High(Active.Topic.Turns)));
+      if IsCurrentProject(Active.ProjectDir) then
+        ChatSession.PostToView(CardJson(Active.Topic, High(Active.Topic.Turns)));
     end;
   end;
   for Id in Done do
@@ -237,7 +252,8 @@ begin
   end;
   if Dir <> '' then
     DeleteTopic(Dir, TopicId);
-  ChatSession.PostToView(PageBtwList);
+  if IsCurrentProject(Dir) then
+    ChatSession.PostToView(PageBtwList);
 end;
 
 function PageBtwList: string;
@@ -257,7 +273,7 @@ begin
     if Dir <> '' then
       for Topic in LoadTopics(Dir) do
         { A running topic on disk looks stopped; the live one is current. }
-        if GActive.ContainsKey(Topic.Id) then
+        if GActive.ContainsKey(Topic.Id) and IsCurrentProject(GActive[Topic.Id].ProjectDir) then
           Items.AddElement(TopicToJson(GActive[Topic.Id].Topic))
         else
           Items.AddElement(TopicToJson(Topic));

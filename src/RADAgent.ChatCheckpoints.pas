@@ -7,13 +7,17 @@ unit RADAgent.ChatCheckpoints;
 
 interface
 
+uses
+  RADAgent.RpcResponses;
+
 { The project folder's repository, or a new one (git init). Once per folder per IDE session. }
 procedure EnsureProjectRepo(const ProjectDir: string);
 { Checkpoint for the prompt about to be sent; 0 when there is none. Call after saving. }
 function CheckpointBeforePrompt(const Prompt: string): Integer;
-{ Page messages: one checkpoint for the user message just shown, or all of them for a history. }
+{ Page message: the checkpoint of the user message just shown. }
 function PageCheckpoint(Seq: Integer): string;
-function PageCheckpointList: string;
+{ A reloaded history: sets Checkpoint of each user message that has one, by when omp recorded it. }
+procedure AttachCheckpoints(var Items: TArray<THistoryItem>);
 { Back to the state before message Seq; AsBranch also starts a git branch there. }
 procedure GoBackTo(Seq: Integer; AsBranch: Boolean);
 { The get_entries reply a GoBackTo waits for: branches the conversation at that message. }
@@ -32,6 +36,8 @@ var
   GCheckedDir: string;
   GNotedNoGit: Boolean;
   GPendingPrompt, GRestoreNotice: string;
+  { When the checkpoint GoBackTo returns to was taken: its message is the first one after it. }
+  GPendingStamp: Int64;
 
 function ProjectDir: string;
 begin
@@ -94,27 +100,25 @@ begin
   Result := Finish(Obj);
 end;
 
-function PageCheckpointList: string;
+procedure AttachCheckpoints(var Items: TArray<THistoryItem>);
 var
-  Obj, Item: TJSONObject;
-  Items: TJSONArray;
-  Point: TCheckpoint;
+  Points: TArray<TCheckpoint>;
   Root: string;
+  Index: Integer;
+  After: Int64;
 begin
-  Obj := TJSONObject.Create;
-  Obj.AddPair('t', 'checkpoints');
-  Items := TJSONArray.Create;
-  Obj.AddPair('items', Items);
   Root := GitRoot(ProjectDir);
-  if Root <> '' then
-    for Point in ListCheckpoints(Root) do
+  if Root = '' then
+    Exit;
+  Points := ListCheckpoints(Root);
+  After := 0;
+  for Index := 0 to High(Items) do
+    if Items[Index].Role = 'user' then
     begin
-      Item := TJSONObject.Create;
-      Item.AddPair('seq', TJSONNumber.Create(Point.Seq));
-      Item.AddPair('prompt', Point.Prompt);
-      Items.AddElement(Item);
+      Items[Index].Checkpoint := CheckpointFor(Points, After, Items[Index].Timestamp, Items[Index].Text);
+      if Items[Index].Timestamp > 0 then
+        After := Items[Index].Timestamp;
     end;
-  Result := Finish(Obj);
 end;
 
 function FindCheckpoint(const Root: string; Seq: Integer; out Point: TCheckpoint): Boolean;
@@ -157,6 +161,9 @@ begin
     ChatSession.Notice('error', TrF('chatcheckpoints.revertFailed', [Problem]));
     Exit;
   end;
+  { Files that could not be deleted (open elsewhere, read-only) stay; say so instead of success. }
+  if Problem <> '' then
+    ChatSession.Notice('warn', TrF('chatcheckpoints.notRemoved', [Problem]));
   ReloadChangedModules(ProjectDir, Conflicts);
   Branch := '';
   if AsBranch then
@@ -175,6 +182,7 @@ begin
     GRestoreNotice := TrF('chatcheckpoints.restored', [Seq, Point.When, SafetyRefs + Format('%.6d', [Safety])]);
   { The conversation goes back with the files: branch the omp session before that message. }
   GPendingPrompt := Point.Prompt;
+  GPendingStamp := Point.Stamp;
   ChatSession.SendCommand('get_entries', BuildIdTypeFrame('req', 'get_entries'));
 end;
 
@@ -189,6 +197,7 @@ var
   Obj, Data, Entry, Msg: TJSONObject;
   Item: TJSONValue;
   Id, Text, Wanted: string;
+  Stamp, Best: Int64;
 begin
   Result := GPendingPrompt <> '';
   if not Result then
@@ -196,6 +205,7 @@ begin
   Wanted := Trim(GPendingPrompt);
   GPendingPrompt := '';
   Id := '';
+  Best := High(Int64);
   Obj := JsonObject(Line);
   try
     Data := JsonChild(Obj, 'data');
@@ -209,9 +219,14 @@ begin
         if (JsonStr(Entry, 'type') <> 'message') or (JsonStr(Msg, 'role') <> 'user') then
           Continue;
         Text := Trim(ContentText(Msg.GetValue('content')));
-        { The newest message with this text; omp may add expanded @file parts after it. }
-        if (Text = Wanted) or Text.StartsWith(Wanted) then
+        Stamp := JsonInt(Msg, 'timestamp');
+        { The first message with this text recorded after the checkpoint was taken; omp may add
+          expanded @file parts after the text. The same words sent again later are other messages. }
+        if ((Text = Wanted) or Text.StartsWith(Wanted)) and (Stamp >= GPendingStamp) and (Stamp < Best) then
+        begin
+          Best := Stamp;
           Id := JsonStr(Entry, 'id');
+        end;
       end;
   finally
     Obj.Free;

@@ -37,6 +37,13 @@ var
   GPickModel: Boolean;
   GHistory: TArray<THistoryItem>;
 
+{ False, with a notice, when a file could not be saved: omp would work on outdated files. }
+function SaveBeforeSend: Boolean;
+begin
+  Result := SaveProject;
+  if not Result then
+    ChatSession.Notice('error', Tr('chatactions.notSentUnsaved'));
+end;
 function SubmitChat(const Text, Attachment, AttachmentLabel, ImagesJson: string; FollowUp: Boolean): Boolean;
 var
   Session: TChatSession;
@@ -67,11 +74,17 @@ begin
       Session.Notice('warn', Tr('chatslash.busy'));
       Exit;
     end;
-    SaveProject;
-    Exit(QueueMessage(Text + Attachment, Display, ImagesJson, FollowUp));
+    if not SaveBeforeSend then
+      Exit;
+    Seq := CheckpointBeforePrompt(Text + Attachment);
+    Result := QueueMessage(Text + Attachment, Display, ImagesJson, FollowUp);
+    if Result and (Seq > 0) then
+      Session.Emit(PageCheckpoint(Seq));
+    Exit;
   end;
   { omp reads and edits files on disk: they must hold what the IDE shows. }
-  SaveProject;
+  if not SaveBeforeSend then
+    Exit;
   if Text.TrimLeft.StartsWith('!') then
     Exit(RunShell(Copy(Trim(Text), 2, MaxInt)));
   if ClassifyChat(Text, Arg1, Arg2) = ccPrompt then
@@ -79,7 +92,9 @@ begin
     Seq := CheckpointBeforePrompt(Text + Attachment);
     Result := Session.SendPrompt(Text + Attachment, Display, ImagesJson);
     if Result and (Seq > 0) then
-      Session.Emit(PageCheckpoint(Seq));
+      Session.Emit(PageCheckpoint(Seq))
+    else if not Result then
+      Session.Notice('error', Tr('chatactions.sendFailed'));
     Exit;
   end;
   if DispatchSlash(Text, Session.SendCommand, PickModels) then
@@ -285,8 +300,8 @@ begin
       LoadHistoryPage(Cursor)
     else
     begin
+      AttachCheckpoints(GHistory);
       ChatSession.Emit(PageHistory(GHistory));
-      ChatSession.Emit(PageCheckpointList);
       FollowUp := TakeRestoreNotice;
       if FollowUp <> '' then
         ChatSession.Notice('info', FollowUp);
@@ -314,10 +329,14 @@ var
   Session: TChatSession;
   Text, Image: string;
   IsError: Boolean;
+  Generation: Integer;
 begin
   Session := ChatSession;
   if (Session.Client = nil) or Session.Client.WasCancelled(CallId) then
     Exit;
+  { Approvals pump messages: the child that asked may be gone (restart, project switch) when the
+    tool returns, and its call id means nothing to the next one. }
+  Generation := Session.Client.Generation;
   Image := '';
   if PlanActive and IsChangingTool(ToolName) then
   begin
@@ -326,13 +345,16 @@ begin
   end
   else
     ExecuteHostTool(ToolName, ArgumentsJson, Session.Approval, Text, IsError, Image);
+  if (Session.Client = nil) or (Session.Client.Generation <> Generation) then
+    Exit;
   { A first form makes the form tools available. }
   if (ToolName = ToolNewModule) and not IsError then
     Session.RefreshHostTools;
   { omp works on disk: what the IDE just changed must be there before omp reads it. }
-  if IsChangingTool(ToolName) and not IsError then
-    SaveProject;
-  if (Session.Client <> nil) and not Session.Client.WasCancelled(CallId) then
+  if IsChangingTool(ToolName) and not IsError and not SaveProject then
+    Text := Text + sLineBreak + 'Warning: the change is in the IDE but could not be saved to disk, so ' +
+      'files on disk may be outdated. Ask the user to save before reading or editing them.';
+  if not Session.Client.WasCancelled(CallId) then
     Session.Client.SendHostResult(CallId, Text, IsError, Image);
 end;
 
@@ -340,8 +362,15 @@ procedure HandleUiRequest(const Line: string);
 var
   Reply, Text: string;
   Cancelled: Boolean;
+  Generation: Integer;
 begin
+  if ChatSession.Client = nil then
+    Exit;
+  Generation := ChatSession.Client.Generation;
   if not ExtensionReply(Line, Reply, Text, Cancelled) then
+    Exit;
+  { The dialog or card pumped messages; a reply for a child that is gone must not reach the next. }
+  if ChatSession.Client.Generation <> Generation then
     Exit;
   { omp re-asks for the code after a cancel and has no command to stop a login; only a restart
     ends it. The session resumes on the same file. }

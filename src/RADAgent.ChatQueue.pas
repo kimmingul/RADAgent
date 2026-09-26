@@ -6,11 +6,14 @@ unit RADAgent.ChatQueue;
 
 interface
 
-{ Sends Text into the running turn: now (steer) or after the turn (FollowUp). }
+{ Sends Text into the running turn: now (steer) or after the turn (FollowUp). False when it did
+  not reach omp (a notice says so). }
 function QueueMessage(const Text, DisplayText, ImagesJson: string; FollowUp: Boolean): Boolean;
 { "!command": omp runs it in its shell and keeps the output in the context. }
 function RunShell(const Command: string): Boolean;
 function ShellRunning: Boolean;
+{ The omp child that ran the shell command is gone: its reply will never come. }
+procedure ResetShell;
 { Stop button while a shell command runs. }
 procedure AbortShell;
 procedure AbortRetry;
@@ -49,11 +52,14 @@ begin
       else
         Images.Free;
     end;
-    ChatSession.SendCommand(Kinds[FollowUp], Obj.ToJSON);
+    Result := ChatSession.Client.SendRaw(Kinds[FollowUp], Obj.ToJSON);
   finally
     Obj.Free;
   end;
-  ChatSession.Emit(PageQueuedUser(DisplayText, Tags[FollowUp]));
+  if Result then
+    ChatSession.Emit(PageQueuedUser(DisplayText, Tags[FollowUp]))
+  else
+    ChatSession.Notice('error', Tr('chatactions.sendFailed'));
 end;
 
 function RunShell(const Command: string): Boolean;
@@ -75,6 +81,14 @@ end;
 function ShellRunning: Boolean;
 begin
   Result := GShell;
+end;
+
+procedure ResetShell;
+begin
+  if not GShell then
+    Exit;
+  GShell := False;
+  ChatSession.Changed;
 end;
 
 procedure AbortShell;

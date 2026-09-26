@@ -88,7 +88,7 @@ uses
   RADAgent.ChatApproval, RADAgent.IdeContext, RADAgent.ChatTheme,
   RADAgent.ChatPageMessages, RADAgent.ChatAttention, RADAgent.ChatActions,
   RADAgent.AgentSettings, RADAgent.OmpSettings, RADAgent.OmpLaunch, RADAgent.ProjectProfile,
-  RADAgent.ChatDiskSync, RADAgent.Lang;
+  RADAgent.ChatDiskSync, RADAgent.ChatStop, RADAgent.Lang;
 
 var
   GSession: TChatSession;
@@ -233,7 +233,7 @@ begin
   if (FClient <> nil) and (FClient.Pid <> 0) and (Dir <> '') and
     not SameText(ExcludeTrailingPathDelimiter(FClient.Cwd), Dir) then
   begin
-    FClient.Stop;
+    StopChild;
     FResumeFile := '';
     ClearTranscript;
     Notice('info', TrF('chatsession.projectDirChanged', [Dir]));
@@ -275,8 +275,7 @@ begin
   FActivity.Reset;
   FRestartPending := False;
   FResumeFile := FState.SessionFile;
-  if FClient <> nil then
-    FClient.Stop;
+  StopChild;
   Notice('info', Tr('chatsession.restartingToApplySettings'));
   EnsureStarted;
 end;
@@ -305,7 +304,9 @@ end;
 
 procedure TChatSession.Tick(Sender: TObject);
 begin
-  if (FView <> nil) and not Connected then
+  if (FClient <> nil) and FClient.Exited then
+    RecoverExitedChild
+  else if (FView <> nil) and not Connected then
     EnsureStarted
   else if Busy then
     Changed;

@@ -14,7 +14,7 @@
     return escapeHtml(str);
   }
 
-  const FILE_REF_RE = /(?:([A-Za-z]:[\\/](?:[^\s\\/:*?"<>|()]+[\\/])*[^\s\\/:*?"<>|()]+\.(?:pas|dpr|dproj|dfm|inc|PAS|DPR|DPROJ|DFM|INC))(?:(?:\((\d+)(?:,\s*(\d+))?\))|(?::(\d+)))?)|(?:\\b((?:[A-Za-z0-9_.\-]+[\\/])*[A-Za-z0-9_]+\.(?:pas|dpr|dproj|dfm|inc|PAS|DPR|DPROJ|DFM|INC))(?:(?:\((\d+)(?:,\s*(\d+))?\))|(?::(\d+))))/g;
+  const FILE_REF_RE = /(?:([A-Za-z]:[\\/](?:[^\s\\/:*?"<>|()]+[\\/])*[^\s\\/:*?"<>|()]+\.(?:pas|dpr|dproj|dfm|inc|PAS|DPR|DPROJ|DFM|INC))(?:(?:\((\d+)(?:,\s*(\d+))?\))|(?::(\d+)))?)|(?:\b((?:[A-Za-z0-9_.\-]+[\\/])*[A-Za-z0-9_]+\.(?:pas|dpr|dproj|dfm|inc|PAS|DPR|DPROJ|DFM|INC))(?:(?:\((\d+)(?:,\s*(\d+))?\))|(?::(\d+))))/g;
 
   function linkFileRefs(text) {
     if (!text) return '';
@@ -23,7 +23,7 @@
       const path = p1 || p2;
       const lineStr = l1 || l2 || l3 || l4;
       const line = lineStr ? parseInt(lineStr, 10) : 0;
-      return `<span class="file-ref" data-path="${escapeAttr(path)}" data-line="${line}">${match}</span>`;
+      return `<span class="file-ref" data-path="${path}" data-line="${line}">${match}</span>`;
     });
   }
 
@@ -122,10 +122,10 @@
     text = text.replace(/`([^`]+)`/g, (_, code) => pushPh(`<code>${linkFileRefs(code)}</code>`));
 
     // 2. Markdown links [text](url)
-    text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) => pushPh(`<a href="#" class="chat-link" data-url="${escapeAttr(url)}">${label}</a>`));
+    text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) => pushPh(`<a href="#" class="chat-link" data-url="${url}">${label}</a>`));
 
     // 3. Bare URLs http:// or https://
-    text = text.replace(/\b(https?:\/\/[^\s<>()"']+)/g, (_, url) => pushPh(`<a href="#" class="chat-link" data-url="${escapeAttr(url)}">${url}</a>`));
+    text = text.replace(/\b(https?:\/\/[^\s<>()"']+)/g, (_, url) => pushPh(`<a href="#" class="chat-link" data-url="${url}">${url}</a>`));
 
     // 4. File references
     text = linkFileRefs(text);

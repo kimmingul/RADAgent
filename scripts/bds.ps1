@@ -31,7 +31,18 @@ if ($Version) {
   if (-not $bds) { Fail "RAD Studio $Version is not installed (no $key\$Version\RootDir)." }
 } elseif ($env:BDS -and (Test-Path (Join-Path $env:BDS 'bin\rsvars.bat'))) {
   $bds = $env:BDS.TrimEnd('\')
-  $Version = Split-Path -Leaf $bds
+  $matchedVer = $null
+  foreach ($ver in InstalledBdsVersions) {
+    $root = RootOf $ver
+    if ($root -and ($root.TrimEnd('\') -ieq $bds)) {
+      $matchedVer = $ver
+      break
+    }
+  }
+  if (-not $matchedVer) {
+    Fail "BDS path '$bds' does not match any registered RAD Studio installation in $key."
+  }
+  $Version = $matchedVer
 } else {
   $installed = @(InstalledBdsVersions)
   if ($installed.Count -eq 0) { Fail 'No supported RAD Studio found (10.4 Sydney or later).' }

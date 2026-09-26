@@ -49,7 +49,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | CppLsp | C++ 프로젝트의 clangd 연결: 활성 플랫폼 컴파일러의 헤더·타깃·매크로와 프로젝트 옵션으로 `.omp\clangd\compile_commands.json`, `.omp\lsp.json`. clangd는 설정 또는 PATH. |
 | ClangdInstall | 설정 창의 clangd 설치: GitHub 최신 릴리스의 Windows zip을 뒤에서 받아 `%LOCALAPPDATA%\RADAgent\clangd\<버전>`에 푼다. |
 | ProcessRun | 창 없이 콘솔 프로그램 실행과 출력 수집(git, C++ 컴파일러). |
-| ChatExtensions | 입력 상자 `＋` 메뉴의 IDE 쪽: 첨부 파일·사진(prompt images), 작업 폴더 추가, 커넥터(MCP)와 플러그인 목록과 켜기/끄기. |
+| ChatExtensions | 입력 상자 `＋` 메뉴의 IDE 쪽: 첨부 파일·사진(prompt images), 작업 폴더 추가, MCP 서버와 플러그인 목록과 켜기/끄기. |
 | ChatApproval | 채팅의 승인 계약 구현: 승인 카드(페이지가 없으면 승인 창), 충돌 알림, 버퍼에 반영된 편집의 파일 카드. |
 | ChatApprovalCard | 채팅 안 승인 카드: diff 메시지를 보내고 답이 올 때까지 메시지를 돌린다. 중지하면 모두 거부. |
 | ChatPlan | 계획 모드: 들어가기·나오기(omp 재시작), `rad.submit_plan`으로 `docs\plans` 계획서 작성, `docs` 파일 프로젝트 추가, 진행 후속 프롬프트. |
@@ -73,7 +73,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | OmpSettings / OmpCatalog / OmpCli | 프로젝트 omp 설정 파일 `<프로젝트>\.omp\radagent.yml`(`--config`로 전달)과 omp가 읽는 스킬·확장·하위 에이전트·MCP 목록. `omp config list`를 읽기만 하고 전역 설정은 쓰지 않는다. |
 | EditorContext | 활성 파일, 선택 영역, 저장 안 한 파일 수, 링크로 파일 열기. |
 | Sessions | 같은 프로젝트의 omp 세션 파일 목록과 선택. |
-| ChatStop | 중지 단추: abort를 보내고, 5초 안에 턴이 끝나지 않거나 다시 누르면 omp 자식을 끝내고 같은 세션으로 다시 시작한다. |
+| ChatStop | 중지 단추: abort를 보내고, 그 턴이 5초 안에 끝나지 않거나 다시 누르면 omp 자식을 끝내고 같은 세션으로 다시 시작한다. 자식이 멈추면(중지·재시작·프로젝트 전환) 기다리던 승인 카드와 `!` 셸 명령을 함께 끝낸다. 연결된 뒤 omp가 스스로 끝나면 같은 세션으로 다시 시작한다(1분에 한 번까지). |
 | BrandTable / BrandIcons | provider·모델 → 로고. 규칙은 `src\chat\brands\brands.json`(RCDATA, 채팅 페이지 `brands.js`와 같은 파일). VCL 목록은 `resources\brands\Brands-*.png` 스프라이트로 owner-draw. |
 | ChatAttention | IDE가 뒤에 있을 때 작업 표시줄 깜빡임. |
 | IdeMenus | 에디터와 메시지 창 오른쪽 클릭 메뉴 항목. |
@@ -91,7 +91,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | SessionData | 세션 응답 해석(갈라질 메시지, 트리, 마지막 답·코드 블록, 하위 에이전트 대화, 셸 결과). ToolsAPI 없음. |
 | ChatCommand | 채팅 입력을 기존 omp RPC 프레임으로 분류한다. 새 명령 `type`을 만들지 않는다. |
 | AskDialog | `extension_ui_request`와 슬래시 명령 선택 모달. |
-| Options | omp 실행 파일, 명령줄(인자 인용), `%TEMP%\RADAgent` 로그 경로(omp에 넘기는 파일과 stderr 로그는 IDE 프로세스마다 `-p<pid>`, 끝난 IDE의 것은 처음 쓸 때 지움), 자식이 일찍 끝난 이유(stderr 마지막 줄), 공통 `--config` 내용. |
+| Options | omp 실행 파일, 명령줄(인자 인용), `%TEMP%\RADAgent` 로그 경로(omp에 넘기는 파일과 stderr 로그는 IDE 프로세스마다 `-p<pid>`, 끝난 IDE의 것은 처음 쓸 때 지움, `rpc.log`는 20MB가 넘으면 `rpc.1.log`로 돌림), 자식이 일찍 끝난 이유(stderr 마지막 줄), 공통 `--config` 내용. |
 | RpcChunks | RPC v2 `rpc_chunk` 조각을 원래 프레임으로 되돌린다(순서·크기·끊김 검사). |
 | OmpProbe | 설치된 omp 호환성 검사: 버전, 명령줄 옵션, RPC 시작·프로토콜, `rad.*` 등록과 xd:// 연결, 응답 필드, `config list`. 모델 호출 없음. 시험과 IDE가 같이 쓴다. |
 | OmpCheck | omp 버전이 바뀌면 첫 시작 때 OmpProbe를 뒤에서 돌려 채팅에 알리고, 설정 창에서 바로 돌린다. |
@@ -99,8 +99,8 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | IdeContext | 활성 `.dproj` 경로, 열린 모듈, 에디터 버퍼 위치. |
 | IdeFiles | 프로젝트 모듈 저장, 디스크에서 바뀐 모듈 다시 읽기(`Refresh`), 사용자가 고치던 모듈은 충돌로 돌려준다. 지워진 파일의 모듈은 닫는다. |
 | ChatDiskSync | 프롬프트 전·`rad.*` 변경 후 저장, omp 도구가 끝날 때와 턴 끝에 다시 읽기, 충돌 알림. |
-| GitRepo | git 실행, `git init`과 `.gitignore`, 별도 index로 만드는 체크포인트 커밋(`refs/radagent/`), 되돌리기, 체크포인트에서 브랜치. ToolsAPI 없음. |
-| ChatCheckpoints | 프로젝트 저장소 보장, 메시지마다 체크포인트, 채팅의 되돌리기·브랜치(파일은 git, 대화는 omp `get_entries`/`branch`). |
+| GitRepo | git 실행, `git init`과 `.gitignore`, 별도 index로 만드는 체크포인트 커밋(`refs/radagent/`, 보낸 시각 `RADAgent-Time` 트레일러), 되돌리기(이름이 바뀐 파일 포함, 지우지 못한 파일은 알림), 체크포인트에서 브랜치. ToolsAPI 없음. |
+| ChatCheckpoints | 프로젝트 저장소 보장, 메시지마다 체크포인트(작업 중 보낸 steer·follow-up 포함), 채팅의 되돌리기·브랜치(파일은 git, 대화는 omp `get_entries`/`branch`). 기록의 메시지와 체크포인트는 문장이 아니라 omp가 메시지를 기록한 시각으로 짝짓는다. |
 | Compile | 활성 프로젝트 빌드와 완료 통지. 결과는 메시지 뷰로 보낸다. |
 | HostToolDefs | host-tool 이름과 `set_host_tools` 스키마. ToolsAPI 없음. |
 | HostTools | host-tool 호출을 도구별 구현으로 나눠 보낸다. 버퍼 읽기, 컴파일. 메인 스레드에서만 ToolsAPI를 호출한다. |

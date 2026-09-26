@@ -70,7 +70,7 @@ end;
 function EnsureDelphiLsp(const Profile: TProjectProfile): Boolean;
 var
   Settings, Server: string;
-  Root, Servers, Delphi, Init, Config: TJSONObject;
+  Delphi, Init, Config: TJSONObject;
   Types, Markers: TJSONArray;
 begin
   Settings := DelphiLspSettingsFile(Profile);
@@ -81,35 +81,27 @@ begin
   Result := (Settings <> '') and FileExists(Server);
   if not Result then
     Exit;
-  Root := TJSONObject.Create;
-  try
-    Servers := TJSONObject.Create;
-    Root.AddPair('servers', Servers);
-    Delphi := TJSONObject.Create;
-    Servers.AddPair('delphilsp', Delphi);
-    Delphi.AddPair('command', Server);
-    Types := TJSONArray.Create;
-    Types.Add('.pas').Add('.dpr').Add('.dpk').Add('.pp').Add('.inc');
-    Delphi.AddPair('fileTypes', Types);
-    Delphi.AddPair('languageId', 'pascal');
-    Markers := TJSONArray.Create;
-    Markers.Add('*.dproj').Add('*.dpr').Add('*.groupproj');
-    Delphi.AddPair('rootMarkers', Markers);
-    Delphi.AddPair('warmupTimeoutMs', TJSONNumber.Create(60000));
-    Init := TJSONObject.Create;
-    Init.AddPair('serverType', 'controller');
-    Init.AddPair('agentCount', TJSONNumber.Create(2));
-    Init.AddPair('returnDccFlags', TJSONTrue.Create);
-    Init.AddPair('returnHoverModel', TJSONTrue.Create);
-    Init.AddPair('storeProjectSettings', TJSONFalse.Create);
-    Delphi.AddPair('initOptions', Init);
-    Config := TJSONObject.Create;
-    Config.AddPair('settingsFile', FileUri(Settings));
-    Delphi.AddPair('settings', Config);
-    WriteText(TPath.Combine(Profile.ProjectDir, '.omp\lsp.json'), Root.Format(2));
-  finally
-    Root.Free;
-  end;
+  Delphi := TJSONObject.Create;
+  Delphi.AddPair('command', Server);
+  Types := TJSONArray.Create;
+  Types.Add('.pas').Add('.dpr').Add('.dpk').Add('.pp').Add('.inc');
+  Delphi.AddPair('fileTypes', Types);
+  Delphi.AddPair('languageId', 'pascal');
+  Markers := TJSONArray.Create;
+  Markers.Add('*.dproj').Add('*.dpr').Add('*.groupproj');
+  Delphi.AddPair('rootMarkers', Markers);
+  Delphi.AddPair('warmupTimeoutMs', TJSONNumber.Create(60000));
+  Init := TJSONObject.Create;
+  Init.AddPair('serverType', 'controller');
+  Init.AddPair('agentCount', TJSONNumber.Create(2));
+  Init.AddPair('returnDccFlags', TJSONTrue.Create);
+  Init.AddPair('returnHoverModel', TJSONTrue.Create);
+  Init.AddPair('storeProjectSettings', TJSONFalse.Create);
+  Delphi.AddPair('initOptions', Init);
+  Config := TJSONObject.Create;
+  Config.AddPair('settingsFile', FileUri(Settings));
+  Delphi.AddPair('settings', Config);
+  Result := UpdateLspServer(Profile.ProjectDir, 'delphilsp', Delphi);
 end;
 
 var

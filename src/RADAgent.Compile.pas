@@ -227,13 +227,13 @@ begin
     Messages.AddToolMessage('', Tr('compile.buildSuccess'), 'RAD Agent', 0, 0);
     SetLength(Errors, 0);
     if IsCpp then
-      NoteCppBuildOk;
+      NoteCppBuildOk(Project.FileName, ConfigName, PlatformName);
   end
   else
   begin
     { Error Insight has nothing for C++; its compiler is asked again instead. }
     if IsCpp then
-      Errors := CppBuildErrors(Project, PlatformName)
+      Errors := CppBuildErrors(Project, PlatformName, ConfigName)
     else
       Errors := CollectErrorsAfterFailure;
     if Length(Errors) = 0 then

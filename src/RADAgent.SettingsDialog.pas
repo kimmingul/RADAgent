@@ -183,6 +183,11 @@ begin
   AddRow(Page, Tr('settingsdialog.clangdPath'), FClangd);
   FClangdButton := AddButton(AddButtons(Page), Tr('settingsdialog.btnInstallClangd'), InstallClangdClick);
   FClangdStatus := AddNote(Page, Tr('settingsdialog.noteInstallClangd'));
+  if IsClangdInstalling then
+  begin
+    FClangdButton.Enabled := False;
+    FClangdStatus.Caption := Tr('settingsdialog.installingClangd');
+  end;
   FEnglish := AddCheck(Page, Tr('settingsdialog.englishWork'));
   FEnglish.Checked := EnglishWork;
   AddHeading(Page, Tr('settingsdialog.headingCompatibility'));
@@ -196,6 +201,8 @@ var
 
 procedure TSettingsForm.InstallClangdClick(Sender: TObject);
 begin
+  if IsClangdInstalling then
+    Exit;
   if not AskYes(Tr('settingsdialog.btnInstallClangd'), Tr('settingsdialog.askInstallClangd')) then
     Exit;
   FClangdButton.Enabled := False;

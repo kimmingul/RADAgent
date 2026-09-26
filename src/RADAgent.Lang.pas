@@ -39,14 +39,14 @@ function PageStrings: string;
 implementation
 
 uses
-  System.SysUtils, System.Classes, System.JSON, System.Generics.Collections, Winapi.Windows;
-
+  System.SysUtils, System.Classes, System.JSON, System.Generics.Collections, System.SyncObjs,
+  Winapi.Windows;
 var
   GLoaded: Boolean;
   GCurrent: TLanguage = lgEnglish;
   GGeneration: Integer;
+  GLock: TCriticalSection;
   GTable, GEnglish: TDictionary<string, string>;
-
 procedure LoadTable(Language: TLanguage; Table: TDictionary<string, string>);
 var
   Name: string;
@@ -103,55 +103,122 @@ end;
 procedure SelectLanguage(const Code: string);
 var
   Language: TLanguage;
+  NewTable, OldTable, NewEnglish, OldEnglish: TDictionary<string, string>;
+  NeedEnglish: Boolean;
 begin
   Language := LanguageFromCode(Code);
   if Language = lgAuto then
     Language := SystemLanguage;
-  if GLoaded and (Language = GCurrent) then
-    Exit;
-  if GEnglish.Count = 0 then
-    LoadTable(lgEnglish, GEnglish);
-  LoadTable(Language, GTable);
-  GCurrent := Language;
-  GLoaded := True;
-  Inc(GGeneration);
+
+  GLock.Acquire;
+  try
+    if GLoaded and (Language = GCurrent) then
+      Exit;
+    NeedEnglish := GEnglish.Count = 0;
+  finally
+    GLock.Release;
+  end;
+
+  NewTable := TDictionary<string, string>.Create;
+  NewEnglish := nil;
+  OldTable := nil;
+  OldEnglish := nil;
+  try
+    LoadTable(Language, NewTable);
+    if NeedEnglish then
+    begin
+      NewEnglish := TDictionary<string, string>.Create;
+      LoadTable(lgEnglish, NewEnglish);
+    end;
+
+    GLock.Acquire;
+    try
+      OldTable := GTable;
+      GTable := NewTable;
+      NewTable := nil;
+
+      if (NewEnglish <> nil) and (GEnglish.Count = 0) then
+      begin
+        OldEnglish := GEnglish;
+        GEnglish := NewEnglish;
+        NewEnglish := nil;
+      end;
+
+      GCurrent := Language;
+      GLoaded := True;
+      Inc(GGeneration);
+    finally
+      GLock.Release;
+    end;
+  finally
+    NewTable.Free;
+    NewEnglish.Free;
+    OldTable.Free;
+    OldEnglish.Free;
+  end;
 end;
 
 procedure EnsureLoaded;
 begin
   if GLoaded then
     Exit;
-  if Assigned(LanguageSetting) then
-    SelectLanguage(LanguageSetting())
-  else
-    SelectLanguage('');
+  GLock.Acquire;
+  try
+    if GLoaded then
+      Exit;
+    if Assigned(LanguageSetting) then
+      SelectLanguage(LanguageSetting())
+    else
+      SelectLanguage('');
+  finally
+    GLock.Release;
+  end;
 end;
 
 function CurrentLanguage: TLanguage;
 begin
   EnsureLoaded;
-  Result := GCurrent;
+  GLock.Acquire;
+  try
+    Result := GCurrent;
+  finally
+    GLock.Release;
+  end;
 end;
 
 function LanguageGeneration: Integer;
 begin
   EnsureLoaded;
-  Result := GGeneration;
+  GLock.Acquire;
+  try
+    Result := GGeneration;
+  finally
+    GLock.Release;
+  end;
 end;
 
 function Tr(const Key: string): string;
 begin
   EnsureLoaded;
-  if not GTable.TryGetValue(Key, Result) and not GEnglish.TryGetValue(Key, Result) then
-    Result := Key;
+  GLock.Acquire;
+  try
+    if not GTable.TryGetValue(Key, Result) and not GEnglish.TryGetValue(Key, Result) then
+      Result := Key;
+  finally
+    GLock.Release;
+  end;
 end;
 
 function HasKey(const Key: string): Boolean;
 begin
   EnsureLoaded;
-  Result := GTable.ContainsKey(Key) or GEnglish.ContainsKey(Key);
+  GLock.Acquire;
+  try
+    Result := GTable.ContainsKey(Key) or GEnglish.ContainsKey(Key);
+  finally
+    GLock.Release;
+  end;
 end;
-
 function TrF(const Key: string; const Args: array of const): string;
 var
   Name: string;
@@ -172,18 +239,27 @@ end;
 function PageStrings: string;
 var
   Obj, Items: TJSONObject;
-  Key: string;
+  Key, Val: string;
 begin
   EnsureLoaded;
   Obj := TJSONObject.Create;
   try
-    Obj.AddPair('t', 'strings');
-    Obj.AddPair('lang', LanguageCodes[GCurrent]);
-    Items := TJSONObject.Create;
-    for Key in GEnglish.Keys do
-      if Key.StartsWith('page.') then
-        Items.AddPair(Key, Tr(Key));
-    Obj.AddPair('items', Items);
+    GLock.Acquire;
+    try
+      Obj.AddPair('t', 'strings');
+      Obj.AddPair('lang', LanguageCodes[GCurrent]);
+      Items := TJSONObject.Create;
+      for Key in GEnglish.Keys do
+        if Key.StartsWith('page.') then
+        begin
+          if not GTable.TryGetValue(Key, Val) and not GEnglish.TryGetValue(Key, Val) then
+            Val := Key;
+          Items.AddPair(Key, Val);
+        end;
+      Obj.AddPair('items', Items);
+    finally
+      GLock.Release;
+    end;
     Result := Obj.ToJSON;
   finally
     Obj.Free;
@@ -191,11 +267,12 @@ begin
 end;
 
 initialization
+  GLock := TCriticalSection.Create;
   GTable := TDictionary<string, string>.Create;
   GEnglish := TDictionary<string, string>.Create;
 
 finalization
-  GEnglish.Free;
-  GTable.Free;
-
+  FreeAndNil(GEnglish);
+  FreeAndNil(GTable);
+  FreeAndNil(GLock);
 end.

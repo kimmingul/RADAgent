@@ -18,6 +18,7 @@
   let withSelection = false;
   let selection = '';
   let attachments = [];
+  const pendingSubmissions = [];
   function T(key, ...args) {
     return global.T ? global.T(key, ...args) : key;
   }
@@ -54,27 +55,60 @@
     // Side question: its own omp child answers, so it also goes out while the agent works.
     const btw = /^\/btw(?:\s+([\s\S]*))?$/i.exec(text);
     if (btw) {
-      if (btw[1] && btw[1].trim()) post({ t: 'btw', text: btw[1].trim(), composer: true });
+      if (btw[1] && btw[1].trim()) {
+        const raw = input.value;
+        pendingSubmissions.push({ raw, text, attachments: [] });
+        post({ t: 'btw', text: btw[1].trim(), composer: true });
+      }
       else { input.value = ''; autosize(); refreshSend(); global.ChatBtw.open(); }
       return;
     }
     if ((!text && !attachments.length) || state.shell || !state.connected) return;
+    const raw = input.value;
     if (!text) text = T('page.composer.defaultAttachmentPrompt');
+    const attPaths = attachments.map(a => a.path);
+    pendingSubmissions.push({ raw, text, attachments: attPaths });
     post({ t: 'submit', text, withSelection: withSelection && !!selection,
-      attachments: attachments.map(a => a.path), followUp: !!followUp });
+      attachments: attPaths, followUp: !!followUp });
   }
 
   // The IDE accepted the prompt: remember it and clear the box.
+  // The host posts 'submitted' (no payload) only when it accepted a submission.
+  // If the host rejected an earlier submission it posted nothing, so earlier
+  // unacknowledged snapshots may linger in pendingSubmissions. We match by comparing
+  // snapshot raw value to the current input: if a later snapshot matches current input,
+  // earlier ones were rejected and are dropped. If none match (e.g. the user edited the
+  // draft while waiting), we fall back to the oldest snapshot.
   function submitted() {
-    const text = input.value.trim();
-    if (text && history[history.length - 1] !== text) history.push(text);
+    if (!pendingSubmissions.length) return;
+    let snap;
+    const matchIdx = pendingSubmissions.findIndex(s => s.raw === input.value);
+    if (matchIdx !== -1) {
+      if (matchIdx > 0) pendingSubmissions.splice(0, matchIdx);
+      snap = pendingSubmissions.shift();
+    } else {
+      snap = pendingSubmissions.shift();
+    }
+    if (!snap) return;
+
+    if (snap.text && history[history.length - 1] !== snap.text) history.push(snap.text);
     if (history.length > MaxHistory) history.shift();
     historyIndex = -1;
-    input.value = '';
-    withSelection = false;
-    attachments = [];
+
+    let cleared = false;
+    if (input.value === snap.raw) {
+      input.value = '';
+      withSelection = false;
+      cleared = true;
+    }
+
+    if (snap.attachments && snap.attachments.length) {
+      const snapPaths = new Set(snap.attachments);
+      attachments = attachments.filter(a => !snapPaths.has(a.path));
+    }
+
     renderChips(lastContext);
-    autosize();
+    if (cleared) autosize();
     refreshSend();
   }
 
