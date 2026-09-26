@@ -19,7 +19,7 @@ implementation
 
 uses
   System.SysUtils, Winapi.Windows, Vcl.ExtCtrls, RADAgent.ChatSession, RADAgent.ChatApprovalCard,
-  RADAgent.ChatPageMessages, RADAgent.ChatQueue, RADAgent.Lang;
+  RADAgent.ChatTurnTime, RADAgent.ChatQueue, RADAgent.Lang;
 
 const
   StopGraceMs = 5000;
@@ -54,7 +54,7 @@ procedure ForceStop;
 begin
   GWatch.Disarm;
   ChatSession.Notice('warn', Tr('chatstop.forced'));
-  ChatSession.Emit(PageTurnEnd);
+  ReportTurnEnd(True);
   ChatSession.Restart(True);
 end;
 
@@ -70,6 +70,7 @@ end;
 procedure StopTurn;
 begin
   RefuseAllApprovals;
+  ChatSession.Activity.NoteStopRequested;
   if ShellRunning then
   begin
     AbortShell;
@@ -109,8 +110,8 @@ begin
   Session := ChatSession;
   if Session.Busy then
   begin
+    ReportTurnEnd(True);
     Session.Activity.Reset;
-    Session.Emit(PageTurnEnd);
   end;
   RefuseAllApprovals;
   ResetShell;

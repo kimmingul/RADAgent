@@ -24,7 +24,7 @@ type
     FPages: TPageControl;
     FShows: TListView;
     FFontSize, FLanguage: TComboBox;
-    FHighContrast, FEnglish: TCheckBox;
+    FHighContrast, FEnglish, FTurnNotify: TCheckBox;
     FOmpPath, FOmpArgs, FClangd: TEdit;
     FClangdButton: TButton;
     FClangdStatus: TLabel;
@@ -164,6 +164,8 @@ begin
   FFontSize.ItemIndex := FFontSize.Items.IndexOf(IntToStr(ChatFontSize));
   FHighContrast := AddCheck(Page, Tr('settingsdialog.highContrast'));
   FHighContrast.Checked := HighContrastEnabled;
+  FTurnNotify := AddCheck(Page, Tr('settingsdialog.turnNotify'));
+  FTurnNotify.Checked := TurnNotifications;
 end;
 
 procedure TSettingsForm.BuildAdvanced(Page: TWinControl);
@@ -272,6 +274,7 @@ begin
   if FFontSize.ItemIndex >= 0 then
     SetChatFontSize(StrToInt(FFontSize.Items[FFontSize.ItemIndex]));
   SetHighContrast(FHighContrast.Checked);
+  SetTurnNotifications(FTurnNotify.Checked);
   Restart := (Trim(FOmpPath.Text) <> OmpPathOverride) or (Trim(FOmpArgs.Text) <> OmpExtraArgs) or
     (FEnglish.Checked <> EnglishWork) or (Trim(FClangd.Text) <> ClangdPath);
   SetClangdPath(FClangd.Text);

@@ -75,7 +75,8 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | Sessions | 같은 프로젝트의 omp 세션 파일 목록과 선택. |
 | ChatStop | 중지 단추: abort를 보내고, 그 턴이 5초 안에 끝나지 않거나 다시 누르면 omp 자식을 끝내고 같은 세션으로 다시 시작한다. 자식이 멈추면(중지·재시작·프로젝트 전환) 기다리던 승인 카드와 `!` 셸 명령을 함께 끝낸다. 연결된 뒤 omp가 스스로 끝나면 같은 세션으로 다시 시작한다(1분에 한 번까지). |
 | BrandTable / BrandIcons | provider·모델 → 로고. 규칙은 `src\chat\brands\brands.json`(RCDATA, 채팅 페이지 `brands.js`와 같은 파일). VCL 목록은 `resources\brands\Brands-*.png` 스프라이트로 owner-draw. |
-| ChatAttention | IDE가 뒤에 있을 때 작업 표시줄 깜빡임. |
+| ChatAttention | IDE가 뒤에 있을 때 사용자를 부른다: 작업 표시줄 깜빡임, 끝난 턴의 Windows 알림(알림 영역 풍선, 누르면 IDE를 앞으로). |
+| ChatTurnTime | 턴 끝 보고: 채팅의 끝난 시각·걸린 시간 줄(`turnEnd`의 started/ended/stopped, 다시 불러온 기록은 omp의 timestamp·completedAt), 메시지 창 한 줄, 뒤에 있을 때 알림. |
 | IdeMenus | 에디터와 메시지 창 오른쪽 클릭 메뉴 항목. |
 | DockKeeper | 디버그 시작·종료로 데스크톱이 바뀐 뒤 채팅을 다시 보여 준다. |
 | ApprovalDialog / LineDiff | 승인 창과 줄 diff. |

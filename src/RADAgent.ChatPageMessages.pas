@@ -7,6 +7,7 @@ interface
 uses
   RADAgent.RpcEvents, RADAgent.RpcResponses, RADAgent.AgentSettings;
 
+{ ts: when it was sent (ms since 1970, UTC), shown on hover. }
 function PageUser(const Text: string): string;
 { A message sent while omp works: Queue is 'steer' (read at the next step) or 'followUp'. }
 function PageQueuedUser(const Text, Queue: string): string;
@@ -33,14 +34,17 @@ function PageNotice(const Level, Text: string): string;
 function PageModelNotice(const Level, Text: string; const Models: array of string): string;
 { The model answering from here on ("provider/model"). }
 function PageModel(const Selector: string): string;
-function PageTurnEnd: string;
+{ A turn ended: when it started and ended (ms since 1970, UTC), and whether the user stopped it. }
+function PageTurnEnd(StartedAt, EndedAt: Int64; Stopped: Boolean): string;
 function PageClear: string;
+{ A reloaded conversation. User messages carry ts (sent); the last answer of each turn carries
+  started/ended/stopped like turnEnd, from the times omp recorded. }
 function PageHistory(const Items: TArray<THistoryItem>): string;
 
 implementation
 
 uses
-  System.SysUtils, System.JSON;
+  System.SysUtils, System.JSON, RADAgent.RpcJson;
 
 function Build(const Kind: string; const Names, Values: array of string): string;
 var
@@ -60,12 +64,12 @@ end;
 
 function PageUser(const Text: string): string;
 begin
-  Result := Build('user', ['text'], [Text]);
+  Result := Build('user', ['text', 'ts'], [Text, IntToStr(UnixMs)]);
 end;
 
 function PageQueuedUser(const Text, Queue: string): string;
 begin
-  Result := Build('user', ['text', 'queue'], [Text, Queue]);
+  Result := Build('user', ['text', 'queue', 'ts'], [Text, Queue, IntToStr(UnixMs)]);
 end;
 
 function PageSheet(const Title, Markdown: string): string;
@@ -229,9 +233,27 @@ begin
   Result := Build('model', ['model'], [Selector]);
 end;
 
-function PageTurnEnd: string;
+procedure AddTurnTimes(Obj: TJSONObject; StartedAt, EndedAt: Int64; Stopped: Boolean);
 begin
-  Result := Build('turnEnd', [], []);
+  if (StartedAt <= 0) or (EndedAt < StartedAt) then
+    Exit;
+  Obj.AddPair('started', TJSONNumber.Create(StartedAt));
+  Obj.AddPair('ended', TJSONNumber.Create(EndedAt));
+  Obj.AddPair('stopped', TJSONBool.Create(Stopped));
+end;
+
+function PageTurnEnd(StartedAt, EndedAt: Int64; Stopped: Boolean): string;
+var
+  Obj: TJSONObject;
+begin
+  Obj := TJSONObject.Create;
+  try
+    Obj.AddPair('t', 'turnEnd');
+    AddTurnTimes(Obj, StartedAt, EndedAt, Stopped);
+    Result := Obj.ToJSON;
+  finally
+    Obj.Free;
+  end;
 end;
 
 function PageClear: string;
@@ -244,11 +266,13 @@ var
   Obj, Item: TJSONObject;
   List: TJSONArray;
   Index: Integer;
+  SentAt: Int64;
 begin
   Obj := TJSONObject.Create;
   try
     Obj.AddPair('t', 'history');
     List := TJSONArray.Create;
+    SentAt := 0;
     for Index := 0 to High(Items) do
     begin
       Item := TJSONObject.Create;
@@ -258,6 +282,15 @@ begin
         Item.AddPair('model', Items[Index].Model);
       if Items[Index].Checkpoint > 0 then
         Item.AddPair('seq', TJSONNumber.Create(Items[Index].Checkpoint));
+      if Items[Index].Role = 'user' then
+      begin
+        SentAt := Items[Index].Timestamp;
+        if SentAt > 0 then
+          Item.AddPair('ts', TJSONNumber.Create(SentAt));
+      end
+      { The turn's last answer: the next message is the user's, or there is none. }
+      else if (Index = High(Items)) or (Items[Index + 1].Role = 'user') then
+        AddTurnTimes(Item, SentAt, Items[Index].CompletedAt, Items[Index].Stopped);
       List.AddElement(Item);
     end;
     Obj.AddPair('items', List);

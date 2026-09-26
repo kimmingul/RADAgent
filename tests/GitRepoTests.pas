@@ -13,7 +13,7 @@ procedure RunGitRepoTests(const Check: TCheckProc);
 implementation
 
 uses
-  System.SysUtils, System.IOUtils, Winapi.Windows, RADAgent.GitRepo, RADAgent.Options;
+  System.SysUtils, System.IOUtils, Winapi.Windows, RADAgent.GitRepo, RADAgent.Options, RADAgent.RpcJson;
 
 procedure RunGitRepoTests(const Check: TCheckProc);
 var

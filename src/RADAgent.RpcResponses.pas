@@ -14,9 +14,15 @@ type
     Todos: TArray<TTodoItem>;
   end;
   { Model: "provider/model" of an assistant message, when omp recorded it. }
-  { Timestamp: ms since 1970 (UTC) when omp recorded it, 0 when unknown. Checkpoint: the git
-    checkpoint taken just before a user message was sent, 0 when none (ChatCheckpoints). }
-  THistoryItem = record Role, Text, Model: string; Timestamp: Int64; Checkpoint: Integer; end;
+  { Timestamp: ms since 1970 (UTC) when omp recorded it, 0 when unknown; CompletedAt: when an
+    answer finished (its Timestamp when omp gave no completedAt); Stopped: the user stopped it.
+    Checkpoint: the git checkpoint taken just before a user message was sent, 0 when none. }
+  THistoryItem = record
+    Role, Text, Model: string;
+    Timestamp, CompletedAt: Int64;
+    Checkpoint: Integer;
+    Stopped: Boolean;
+  end;
   TLoginProvider = record Id, Name: string; Authenticated: Boolean; end;
 
 function ParseAvailableCommands(const Line: string; out Commands: TArray<TSlashCommand>): Boolean;
@@ -193,6 +199,8 @@ begin
       Items[Count].Text := Text;
       Items[Count].Model := '';
       Items[Count].Timestamp := JsonInt(Msg, 'timestamp');
+      Items[Count].CompletedAt := JsonInt(Msg, 'completedAt', Items[Count].Timestamp);
+      Items[Count].Stopped := JsonStr(Msg, 'stopReason') = 'aborted';
       Items[Count].Checkpoint := 0;
       if (Role = 'assistant') and (JsonStr(Msg, 'model') <> '') then
         Items[Count].Model := JsonStr(Msg, 'provider') + '/' + JsonStr(Msg, 'model');

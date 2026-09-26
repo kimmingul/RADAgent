@@ -39,6 +39,22 @@ begin
   end;
 end;
 
+{ The composer's answer for submission Id: accepted (clear that draft) or not (keep it). }
+function Submitted(const Id: string; Accepted: Boolean): string;
+var
+  Obj: TJSONObject;
+begin
+  Obj := TJSONObject.Create;
+  try
+    Obj.AddPair('t', 'submitted');
+    Obj.AddPair('id', Id);
+    Obj.AddPair('ok', TJSONBool.Create(Accepted));
+    Result := Obj.ToJSON;
+  finally
+    Obj.Free;
+  end;
+end;
+
 function SubmitFromPage(const Text: string; WithSelection: Boolean;
   const Attachments: TArray<string>; FollowUp: Boolean): Boolean;
 var
@@ -122,16 +138,14 @@ begin
     Kind := Obj.GetValue<string>('t', '');
     Text := Obj.GetValue<string>('text', '');
     if Kind = 'submit' then
-    begin
-      if SubmitFromPage(Text, Obj.GetValue<Boolean>('withSelection', False),
-        StringsOf(Obj.GetValue('attachments')), Obj.GetValue<Boolean>('followUp', False)) then
-        Session.PostToView(Post('submitted', '', ''));
-    end
+      Session.PostToView(Submitted(Obj.GetValue<string>('id', ''),
+        SubmitFromPage(Text, Obj.GetValue<Boolean>('withSelection', False),
+        StringsOf(Obj.GetValue('attachments')), Obj.GetValue<Boolean>('followUp', False))))
     else if Kind = 'btw' then
     begin
       AskBtw(Text, Obj.GetValue<string>('topic', ''));
       if Obj.GetValue<Boolean>('composer', False) then
-        Session.PostToView(Post('submitted', '', ''));
+        Session.PostToView(Submitted(Obj.GetValue<string>('id', ''), True));
     end
     else if Kind = 'restore' then
       GoBackTo(Obj.GetValue<Integer>('seq', 0), Obj.GetValue<Boolean>('branch', False))

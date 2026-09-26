@@ -16,9 +16,17 @@ type
     FState: TActivity;
     FToolName: string;
     FStartTick: UInt64;
+    FStartedAt: Int64;
+    FStopRequested, FTurnOpen: Boolean;
     FRunningTools: Integer;
+    procedure Start;
   public
     procedure PromptSent;
+    { The user pressed stop in this turn (it ends stopped rather than done). }
+    procedure NoteStopRequested;
+    { Once per started turn: True with when it started (ms since 1970, UTC); False when no turn
+      was started since the last call. }
+    function CloseTurn(out StartedAt: Int64): Boolean;
     procedure Apply(const Event: TAgentEvent);
     procedure Reset;
     function Busy: Boolean;
@@ -28,18 +36,40 @@ type
     property State: TActivity read FState;
     { Tick the current turn started; identifies the turn while Busy. }
     property StartTick: UInt64 read FStartTick;
+    property StopRequested: Boolean read FStopRequested;
   end;
 
 implementation
 
 uses
-  System.SysUtils, Winapi.Windows, RADAgent.Lang;
+  System.SysUtils, Winapi.Windows, RADAgent.Lang, RADAgent.RpcJson;
+
+procedure TChatActivity.Start;
+begin
+  FStartTick := GetTickCount64;
+  FStartedAt := UnixMs;
+  FStopRequested := False;
+  FTurnOpen := True;
+  FState := acWaiting;
+end;
 
 procedure TChatActivity.PromptSent;
 begin
   if FState = acIdle then
-    FStartTick := GetTickCount64;
-  FState := acWaiting;
+    Start;
+end;
+
+procedure TChatActivity.NoteStopRequested;
+begin
+  if FState <> acIdle then
+    FStopRequested := True;
+end;
+
+function TChatActivity.CloseTurn(out StartedAt: Int64): Boolean;
+begin
+  Result := FTurnOpen;
+  StartedAt := FStartedAt;
+  FTurnOpen := False;
 end;
 
 procedure TChatActivity.Reset;
@@ -54,10 +84,7 @@ begin
   case Event.Kind of
     aekAgentStart:
       if FState = acIdle then
-      begin
-        FStartTick := GetTickCount64;
-        FState := acWaiting;
-      end;
+        Start;
     aekAgentEnd:
       if Event.IsTerminal then
         Reset;

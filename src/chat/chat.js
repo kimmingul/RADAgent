@@ -119,7 +119,7 @@
   }
 
   // queue: sent while omp worked, 'steer' (read at its next step) or 'followUp' (after the turn).
-  function handleUser(text, queue) {
+  function handleUser(text, queue, ts) {
     const wasNear = isNearBottom();
     closeAssistantBlock();
     currentTurn = null;
@@ -138,7 +138,7 @@
       tag.textContent = global.T(queue === 'followUp' ? 'page.chat.queuedFollowUp' : 'page.chat.queuedSteer');
       bubble.appendChild(tag);
     }
-    turn.appendChild(bubble);
+    turn.appendChild(bubble); global.ChatTurnTime.stamp(turn, ts);
     // Above the working line: the turn goes on below the message.
     const working = document.getElementById('working');
     if (queue && working && logEl.lastElementChild === working) logEl.insertBefore(turn, working);
@@ -240,12 +240,13 @@
     handleNewContent(wasNear);
   }
 
-  function handleTurnEnd() {
+  function handleTurnEnd(msg) {
     logEl.querySelectorAll('.retry-cancel').forEach(b => b.remove());
     closeAssistantBlock();
     global.ChatActivity.endTurn();
     global.ChatTools.endTurn();
     currentTurn = null;
+    const wasNear = isNearBottom(); if (global.ChatTurnTime.append(logEl, msg)) handleNewContent(wasNear);
   }
 
   function handleClear() {
@@ -275,7 +276,7 @@
         body.className = 'user-text';
         body.textContent = item.text || '';
         bubble.appendChild(body);
-        turn.appendChild(bubble);
+        turn.appendChild(bubble); global.ChatTurnTime.stamp(turn, item.ts);
         logEl.appendChild(turn);
         if (item.seq) global.ChatCheckpoints.attach(turn, item.seq);
       } else {
@@ -289,7 +290,7 @@
         body.innerHTML = global.Markdown.render(item.text || '');
         bubble.appendChild(body);
         turn.appendChild(bubble);
-        logEl.appendChild(turn);
+        logEl.appendChild(turn); global.ChatTurnTime.append(logEl, item);
       }
     }
     scrollToBottom(false);
@@ -300,7 +301,7 @@
     switch (msg.t) {
       case 'strings': handleStrings(msg); if (global.ChatModelPicker && logEl) global.ChatModelPicker.relabel(); break;
       case 'theme': handleTheme(msg.vars); break;
-      case 'user': handleUser(msg.text, msg.queue); break;
+      case 'user': handleUser(msg.text, msg.queue, msg.ts); break;
       case 'assistantDelta': handleAssistantDelta(msg.text); break;
       case 'assistantEnd': handleAssistantEnd(); break;
       case 'toolStart': global.ChatTools.start(msg.id, msg.name, msg.detail, msg.input); break;
@@ -310,7 +311,7 @@
       case 'catalog': global.ChatComposer.setCatalog(msg); break;
       case 'context': global.ChatComposer.context(msg); break;
       case 'commands': global.ChatComposer.commands(msg.items); break;
-      case 'submitted': global.ChatComposer.submitted(); break;
+      case 'submitted': global.ChatComposer.submitted(msg.id, msg.ok); break;
       case 'setInput': global.ChatComposer.setInput(msg.text); break;
       case 'insertText': global.ChatComposer.insertText(msg.text); break;
       case 'attachments': global.ChatComposer.addAttachments(msg.items); break;
@@ -333,7 +334,7 @@
       case 'display': global.ChatActivity.display(msg.show); break;
       case 'notice': handleNotice(msg.level, msg.text, msg.models); break;
       case 'model': handleModel(msg.model); break;
-      case 'turnEnd': handleTurnEnd(); break;
+      case 'turnEnd': handleTurnEnd(msg); break;
       case 'clear': handleClear(); break;
       case 'history': handleHistory(msg.items); break;
       case 'sheet': global.ChatPanels.sheet(msg); break;

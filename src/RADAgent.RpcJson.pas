@@ -18,11 +18,22 @@ function IsJsonFalse(Value: TJSONValue): Boolean;
 { Joins the text parts of a message "content" (string or part array). }
 function ContentText(Value: TJSONValue): string;
 function CollapseWhitespace(const S: string): string;
+{ Now as omp stamps its messages ("timestamp", "completedAt"): ms since 1970, UTC. }
+function UnixMs: Int64;
 
 implementation
 
 uses
-  System.SysUtils, System.Generics.Collections;
+  System.SysUtils, System.Generics.Collections, Winapi.Windows;
+
+function UnixMs: Int64;
+var
+  Time: TFileTime;
+begin
+  GetSystemTimeAsFileTime(Time);
+  { 100 ns steps since 1601 -> ms since 1970. }
+  Result := (Int64(Time.dwHighDateTime) shl 32 + Time.dwLowDateTime - 116444736000000000) div 10000;
+end;
 
 function JsonObject(const Line: string): TJSONObject;
 var

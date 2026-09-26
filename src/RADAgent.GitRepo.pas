@@ -35,8 +35,6 @@ function ListCheckpoints(const Root: string): TArray<TCheckpoint>;
   prompt matches Text. 0 when there is none. Text alone is not enough: the same words are sent
   again, in this and in other sessions. }
 function CheckpointFor(const Points: TArray<TCheckpoint>; After, Stamp: Int64; const Text: string): Integer;
-{ Now as ms since 1970 (UTC), the clock omp stamps its messages with. }
-function UnixMs: Int64;
 { Makes the working tree equal to Commit: writes its files and deletes the files that exist in
   Current (a checkpoint of the tree as it is now) but not in Commit. Problem names the files that
   could not be deleted (the rest is restored, so the result stays True). }
@@ -47,7 +45,8 @@ function BranchAtCheckpoint(const Root, Commit, Name: string; out Problem: strin
 implementation
 
 uses
-  System.SysUtils, System.Classes, System.IOUtils, Winapi.Windows, RADAgent.Lang, RADAgent.ProcessRun;
+  System.SysUtils, System.Classes, System.IOUtils, Winapi.Windows, RADAgent.Lang, RADAgent.ProcessRun,
+  RADAgent.RpcJson;
 
 const
   RecordEnd = '<<RADAgent-end>>';
@@ -152,15 +151,6 @@ begin
   for Line in Output.Split([#10], TStringSplitOptions.ExcludeEmpty) do
     if StrToIntDef(Copy(Line.Trim, Length(RefPrefix) + 1, MaxInt), 0) >= Result then
       Result := StrToIntDef(Copy(Line.Trim, Length(RefPrefix) + 1, MaxInt), 0) + 1;
-end;
-
-function UnixMs: Int64;
-var
-  Time: TFileTime;
-begin
-  GetSystemTimeAsFileTime(Time);
-  { 100 ns steps since 1601 -> ms since 1970. }
-  Result := (Int64(Time.dwHighDateTime) shl 32 + Time.dwLowDateTime - 116444736000000000) div 10000;
 end;
 
 function CreateCheckpoint(const Root, RefPrefix, Prompt: string; out Seq: Integer;

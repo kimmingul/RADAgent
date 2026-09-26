@@ -86,7 +86,7 @@ implementation
 uses
   System.JSON, Winapi.Windows, RADAgent.Options, RADAgent.ChatCommand,
   RADAgent.ChatApproval, RADAgent.IdeContext, RADAgent.ChatTheme,
-  RADAgent.ChatPageMessages, RADAgent.ChatAttention, RADAgent.ChatActions,
+  RADAgent.ChatPageMessages, RADAgent.ChatTurnTime, RADAgent.ChatActions,
   RADAgent.AgentSettings, RADAgent.OmpSettings, RADAgent.OmpLaunch, RADAgent.ProjectProfile,
   RADAgent.ChatDiskSync, RADAgent.ChatStop, RADAgent.Lang;
 
@@ -341,8 +341,7 @@ begin
   if not FStream.Apply(Event) then
     if ((Event.Kind = aekAgentEnd) and Event.IsTerminal) or (Event.Kind = aekPromptLocal) then
     begin
-      Emit(PageTurnEnd);
-      RequestAttention;
+      ReportTurnEnd(False);
       if FRestartPending then
         Restart
       else

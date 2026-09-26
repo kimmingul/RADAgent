@@ -64,6 +64,7 @@ contains
   RADAgent.ChatFallback in 'RADAgent.ChatFallback.pas',
   RADAgent.Sessions in 'RADAgent.Sessions.pas',
   RADAgent.ChatAttention in 'RADAgent.ChatAttention.pas',
+  RADAgent.ChatTurnTime in 'RADAgent.ChatTurnTime.pas',
   RADAgent.ChatActions in 'RADAgent.ChatActions.pas',
   RADAgent.ChatSession in 'RADAgent.ChatSession.pas',
   RADAgent.IdeMenus in 'RADAgent.IdeMenus.pas',

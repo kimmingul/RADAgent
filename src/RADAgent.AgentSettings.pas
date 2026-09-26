@@ -25,6 +25,9 @@ function HighContrastEnabled: Boolean;
 procedure SetHighContrast(Value: Boolean);
 function ChatFontSize: Integer;
 procedure SetChatFontSize(Value: Integer);
+{ A Windows notification when a turn ends while the IDE is in the background (on by default). }
+function TurnNotifications: Boolean;
+procedure SetTurnNotifications(Value: Boolean);
 { omp.exe chosen by the user; '' means search PATH. }
 function OmpPathOverride: string;
 procedure SetOmpPathOverride(const Value: string);
@@ -164,6 +167,16 @@ end;
 procedure SetChatFontSize(Value: Integer);
 begin
   WriteValue('FontSize', Value);
+end;
+
+function TurnNotifications: Boolean;
+begin
+  Result := Integer(ReadValue('TurnNotify', 1)) <> 0;
+end;
+
+procedure SetTurnNotifications(Value: Boolean);
+begin
+  WriteValue('TurnNotify', Ord(Value));
 end;
 
 function OmpPathOverride: string;
