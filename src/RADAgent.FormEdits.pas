@@ -225,6 +225,10 @@ begin
   else
 {$ENDIF}
   try
+    { The FMX designer puts a new component into the selected container, not the parent it is
+      given: after a menu item was made, a toolbar for the form would land inside that item. }
+    if DesignerOf(Editor) <> nil then
+      DesignerOf(Editor).SelectComponent(ParentNative);
     Created := Editor.CreateComponent(FindOta(Editor, ParentNative), Args.ClassName,
       Args.Left, Args.Top, -1, -1);
     Native := NativeOf(Created);
@@ -285,10 +289,23 @@ begin
     Exit;
   end;
   Ota := FindOta(Editor, Native);
-  if (Ota = nil) or not Ota.Delete then
-  begin
-    Problem := 'Failed to delete component: ' + Args.Component;
-    Exit;
+  { The Object Inspector must not keep showing it: a delete that fails half-way (the designer
+    could not update the unit) leaves a half-freed component there, and painting its properties
+    raises access violations in the IDE (FMX TMainMenu.GetImages). }
+  if DesignerOf(Editor) <> nil then
+    DesignerOf(Editor).SelectComponent(RootOf(Editor));
+  try
+    if (Ota = nil) or not Ota.Delete then
+    begin
+      Problem := 'Failed to delete component: ' + Args.Component;
+      Exit;
+    end;
+  except
+    on E: Exception do
+    begin
+      Problem := 'Failed to delete component: ' + E.Message;
+      Exit;
+    end;
   end;
   MarkDesignerModified(Editor);
   Result := True;

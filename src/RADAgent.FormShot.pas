@@ -13,12 +13,12 @@ function FormScreenshot(const Path: string; out ImagePng, Text: string): Boolean
 implementation
 
 uses
-  System.SysUtils, System.Classes, System.NetEncoding, Winapi.Windows, Vcl.Graphics, Vcl.Controls,
-  Vcl.Forms, ToolsAPI, RADAgent.FormDesigner;
+  System.SysUtils, System.Classes, System.NetEncoding, System.TypInfo, Winapi.Windows, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, ToolsAPI, RADAgent.FormDesigner;
 
 var
   GFound: HWND;
-  GWanted: string;
+  GWanted, GWantedCaption: string;
 
 function PngBase64(Bitmap: Vcl.Graphics.TBitmap): string;
 var
@@ -47,7 +47,7 @@ begin
   if IsWindowVisible(Wnd) and (GetClassName(Wnd, Name, Length(Name)) > 0) and (string(Name) = 'FMTForm') then
   begin
     GetWindowText(Wnd, Name, Length(Name));
-    if SameText(string(Name), GWanted) then
+    if SameText(string(Name), GWanted) or ((GWantedCaption <> '') and (string(Name) = GWantedCaption)) then
     begin
       GFound := Wnd;
       Result := False;
@@ -55,19 +55,24 @@ begin
   end;
 end;
 
-{ The designer's FMX form window (class FMTForm, titled with the form's name), copied from the
-  screen where the GPU-drawn content is. }
-function CaptureFmxDesigner(const Editor: IOTAFormEditor; const RootName: string;
+{ The designer's FMX form window (class FMTForm, titled with the form's Caption, or its name when
+  the caption is empty), copied from the screen where the GPU-drawn content is. }
+function CaptureFmxDesigner(const Editor: IOTAFormEditor; Root: TComponent;
   Bitmap: Vcl.Graphics.TBitmap): Boolean;
 var
   Bounds: TRect;
   ScreenDc: HDC;
 begin
   Result := False;
+  { A module opened without an editor tab (after a reload) shows no designer until it is shown. }
+  Editor.Module.Show;
   Editor.Show;
   Application.ProcessMessages;
   GFound := 0;
-  GWanted := RootName;
+  GWanted := Root.Name;
+  GWantedCaption := '';
+  if GetPropInfo(Root, 'Caption') <> nil then
+    GWantedCaption := GetStrProp(Root, 'Caption');
   EnumChildWindows(Application.MainForm.Handle, @FindFmxForm, 0);
   if GFound = 0 then
     Exit;
@@ -112,7 +117,7 @@ begin
       Text := Format('%s (%s), %d x %d, as painted by the VCL designer.',
         [Root.Name, Root.ClassName, Bitmap.Width, Bitmap.Height]);
     end
-    else if CaptureFmxDesigner(Editor, Root.Name, Bitmap) then
+    else if CaptureFmxDesigner(Editor, Root, Bitmap) then
       Text := Format('%s (%s), %d x %d, as shown by the FMX designer.',
         [Root.Name, Root.ClassName, Bitmap.Width, Bitmap.Height])
     else

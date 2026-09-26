@@ -347,7 +347,7 @@ begin
       TFile.WriteAllBytes(Item.FormPath, Item.Encoding.GetPreamble + Item.Encoding.GetBytes(Item.After));
       Module := (BorlandIDEServices as IOTAModuleServices).FindModule(Item.UnitPath);
       if Module <> nil then
-        Module.Refresh(True);
+        ReloadModule(Module);
     end;
     ResultText := Format('{"ok":true,"files":%d}', [Files.Count]);
     Result := True;
