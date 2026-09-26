@@ -1,9 +1,10 @@
 unit RADAgent.UnitRename;
 
-{ rad.rename_unit: gives an existing unit a descriptive name (RADAgent.UnitNaming). The IDE saves
-  the module under the new file name, which moves its form file and updates the project; the
-  project's other units get the new name in their uses clauses, and the old files go. Main thread
-  only. }
+{ rad.rename_unit and rad.rename_project: give an existing unit or the project a descriptive name
+  (RADAgent.UnitNaming). The IDE saves the module under the new file name (Save As), which moves a
+  unit's form file and updates the project, or moves the project file with its program source and
+  resources; the project's other units get a renamed unit in their uses clauses, and the old files
+  go. Main thread only. }
 
 interface
 
@@ -16,32 +17,17 @@ function RenameUnit(const Path, NewUnit: string; const Approval: IAgentApproval;
 { The IDE's Save As without its dialog: the module, its form file, its unit line and the project
   entry take NewFile's name; the old files are removed. }
 function SaveUnitAs(const Module: IOTAModule; const NewFile: string): Boolean;
-{ Text with every uses clause naming OldUnit (whole word, any case) naming NewUnit instead; the
-  rest of the text is left alone. }
-function RenameInUses(const Text, OldUnit, NewUnit: string): string;
+{ The active project becomes <folder>\NewName.dproj (.cbproj) with its program source (.dpr/.cpp),
+  resources and output named after it. }
+function RenameProject(const NewName: string; const Approval: IAgentApproval;
+  out ResultText: string): Boolean;
 
 implementation
 
 uses
-  System.SysUtils, System.Classes, System.IOUtils, System.JSON, System.RegularExpressions,
+  System.SysUtils, System.Classes, System.IOUtils, System.JSON,
   RADAgent.IdeContext, RADAgent.IdeFiles, RADAgent.ModuleCreator, RADAgent.UnitNaming,
   RADAgent.FormDesigner, RADAgent.Lang;
-
-function RenameInUses(const Text, OldUnit, NewUnit: string): string;
-var
-  Match: TMatch;
-  Done: Integer;
-begin
-  Result := '';
-  Done := 1;
-  for Match in TRegEx.Matches(Text, '\buses\b[^;]*;', [roIgnoreCase]) do
-  begin
-    Result := Result + Copy(Text, Done, Match.Index - Done) +
-      TRegEx.Replace(Match.Value, '\b' + TRegEx.Escape(OldUnit) + '\b', NewUnit, [roIgnoreCase]);
-    Done := Match.Index + Match.Length;
-  end;
-  Result := Result + Copy(Text, Done, MaxInt);
-end;
 
 function KindOf(const Module: IOTAModule): string;
 var
@@ -206,6 +192,76 @@ begin
     Obj.AddPair('usesUpdated', List);
     Obj.AddPair('note', 'References outside uses clauses (' + OldUnit + '.Something) are not changed; ' +
       'compile to find any.');
+    ResultText := Obj.ToJSON;
+  finally
+    Obj.Free;
+  end;
+  Result := True;
+end;
+
+function RenameProject(const NewName: string; const Approval: IAgentApproval;
+  out ResultText: string): Boolean;
+const
+  { Files the IDE writes anew under the new name; the old ones would stay behind. }
+  Moved: array[0..4] of string = ('.dpr', '.cpp', '.res', '.dproj', '.cbproj');
+var
+  Project: IOTAProject;
+  OldFile, NewFile, OldName, Problem, Ext: string;
+  Obj: TJSONObject;
+begin
+  Result := False;
+  Project := CurrentProject;
+  if Project = nil then
+  begin
+    ResultText := 'No active project.';
+    Exit;
+  end;
+  if not CheckProjectName(NewName, Problem) then
+  begin
+    ResultText := Problem;
+    Exit;
+  end;
+  OldFile := Project.FileName;
+  OldName := ChangeFileExt(ExtractFileName(OldFile), '');
+  NewFile := IncludeTrailingPathDelimiter(ExtractFileDir(OldFile)) + NewName + ExtractFileExt(OldFile);
+  if FileExists(NewFile) or FileExists(ChangeFileExt(NewFile, '.dpr')) or
+    FileExists(ChangeFileExt(NewFile, '.cpp')) then
+  begin
+    ResultText := 'A project or program file named ' + NewName + ' already exists.';
+    Exit;
+  end;
+  if (Approval = nil) or not Approval.ApproveChange(OldFile, '', TrF('unitrename.projectPreview',
+    [OldName, NewName])) then
+  begin
+    ResultText := SEditCancelled;
+    Exit;
+  end;
+  if not SaveProjectModules(ExcludeTrailingPathDelimiter(ExtractFileDir(OldFile)), Problem) then
+  begin
+    ResultText := 'Could not save the project first: ' + Problem;
+    Exit;
+  end;
+  Project.FileName := NewFile;
+  if not Project.Save(False, True) or not FileExists(NewFile) then
+  begin
+    ResultText := 'The IDE did not save the project as ' + NewFile + '.';
+    Exit;
+  end;
+  { The IDE writes the new .res at the next build; until then the old one carries icon and version. }
+  if not FileExists(ChangeFileExt(NewFile, '.res')) and FileExists(ChangeFileExt(OldFile, '.res')) then
+    System.SysUtils.RenameFile(ChangeFileExt(OldFile, '.res'), ChangeFileExt(NewFile, '.res'));
+  for Ext in Moved do
+    if FileExists(ChangeFileExt(NewFile, Ext)) and FileExists(ChangeFileExt(OldFile, Ext)) then
+      System.SysUtils.DeleteFile(ChangeFileExt(OldFile, Ext));
+  Obj := TJSONObject.Create;
+  try
+    Obj.AddPair('ok', TJSONTrue.Create);
+    Obj.AddPair('old', OldName);
+    Obj.AddPair('new', NewName);
+    Obj.AddPair('file', NewFile);
+    Obj.AddPair('note', 'The executable is now ' + NewName + '.exe. Compile to check. Settings named after ' +
+      'the old project (' + OldName + '.delphilsp.json, per-user .local/.identcache files) are ' +
+      'written anew by the IDE.');
     ResultText := Obj.ToJSON;
   finally
     Obj.Free;

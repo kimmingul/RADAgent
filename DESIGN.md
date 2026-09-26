@@ -42,8 +42,8 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | Skills | BPL 리소스의 RAD Studio 스킬(`src\skills\radstudio-delphi`, `radstudio-cpp`) 중 프로젝트 언어에 맞는 것을 `%TEMP%\RADAgent\skills\<언어>`에 쓰고, 사용자의 `skills.customDirectories` 뒤에 붙여 `--config`로 넘긴다. |
 | HostToolDefs | 프로필에 맞춘 rad.* 목록: 폼이 있을 때만 폼 도구, VCL/FMX와 Delphi/C++ 문구. |
 | FormBatch / ModuleCreator | `rad.form_apply`(폼 변경 묶음, 승인 한 번), `rad.new_module`(폼·프레임·데이터 모듈·유닛 추가, UnitNaming 규칙의 유닛 이름으로 파일을 정하고 폼 소스는 Delphi·C++ 모두 직접 준다. IDE는 점 있는 유닛에 폼을 만들지 못하므로 마지막 부분 이름으로 만든 뒤 UnitRename의 Save As로 옮긴다). |
-| UnitNaming | 새·바뀐 유닛 이름 규칙: 필수, `UnitN` 금지, 폼 `Form`/`Dialog`·프레임 `Frame`·데이터 모듈 `DataModule` 접미사, 프로젝트 유닛 대부분이 쓰는 점 접두사 사용, C++은 점 없음. ToolsAPI 없음. |
-| UnitRename | `rad.rename_unit`: IDE의 Save As(`IOTAModule.FileName` + `Save`)로 유닛·폼 파일·`.dpr`·`.dproj`를 새 이름으로 옮기고 옛 파일을 지운 뒤, 프로젝트 다른 유닛의 `uses` 절(바이트 그대로 보존)을 고치고 다시 읽는다. |
+| UnitNaming | 새·바뀐 유닛과 프로젝트 이름 규칙: 필수, `UnitN`·`ProjectN` 금지, 폼 `Form`/`Dialog`·프레임 `Frame`·데이터 모듈 `DataModule` 접미사, 프로젝트 유닛 대부분이 쓰는 점 접두사 사용, C++·프로젝트 이름은 점 없음. `uses` 절 이름 바꾸기(완전한 점 이름만, 주석·문자열 제외). ToolsAPI 없음. |
+| UnitRename | `rad.rename_unit`: IDE의 Save As(`IOTAModule.FileName` + `Save`)로 유닛·폼 파일·`.dpr`·`.dproj`를 새 이름으로 옮기고 옛 파일을 지운 뒤, 프로젝트 다른 유닛의 `uses` 절(바이트 그대로 보존)을 고치고 다시 읽는다. `rad.rename_project`: 같은 방식으로 프로젝트 파일을 옮기고(프로그램 소스·리소스·실행 파일 이름이 따라감) 옛 `.dproj`/`.dpr`/`.res`를 치운다. |
 | FormShot | `rad.form_screenshot`: VCL은 `PaintTo`, FMX는 모듈과 디자이너를 보인 뒤 디자이너 창(폼은 `FMTForm`, 프레임은 `FMTControlForm`)의 보이는 부분을 화면에서 복사해 PNG. 그동안 겹친 IDE의 떠 있는 창(채팅)은 숨기고, 다른 프로그램 창이 덮고 있으면 결과 글에 알린다. 도구 결과에 image 부분으로 보낸다. |
 | FormText | `rad.form_text_edit`: 속성 줄만 텍스트로 일괄 수정, 구문(`ObjectTextToBinary`)과 속성 이름(살아 있는 컴포넌트, 비시각 컴포넌트의 `Left`/`Top` 허용) 검사, 승인 한 번, IdeFiles로 다시 읽기. |
 | FormNonVisual | 비시각 컴포넌트(컨트롤도 다른 컴포넌트의 항목도 아닌 것) 판별과 아이콘 위치(`DesignInfo`). 폼 아래쪽에 종류별(메뉴, 액션, 대화상자, 타이머, 이미지, 데이터, 스타일, 기타)로 줄 세우고 `rad.form_arrange_nonvisual`을 처리한다. |

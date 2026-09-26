@@ -159,6 +159,8 @@ begin
   else if ToolName = ToolRenameUnit then
     IsError := not RenameUnit(ArgText(ArgumentsJson, 'path'), ArgText(ArgumentsJson, 'unit'), Approval,
       ResultText)
+  else if ToolName = ToolRenameProject then
+    IsError := not RenameProject(ArgText(ArgumentsJson, 'name'), Approval, ResultText)
   else if ToolName = ToolListComponents then
   begin
     ResultText := ComponentsJson(ArgText(ArgumentsJson, 'filter'));

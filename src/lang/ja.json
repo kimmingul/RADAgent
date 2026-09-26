@@ -506,6 +506,7 @@
   "turntime.seconds": "%d 秒",
   "turntime.stopped": "%0:s に停止 (%1:s 経過)",
   "unitrename.preview": "ユニット %s の名前を %s に変更します (フォーム ファイル、プロジェクト、他ユニットの uses 句も更新)",
+  "unitrename.projectPreview": "プロジェクト %s の名前を %s に変更します (プロジェクト ファイル、プログラム ソース、リソース、実行ファイルも変更)",
   "webview2host.assetMissing": "チャット ページのファイルが見つかりません: %s",
   "webview2host.controllerCreateFailed": "WebView2 コントローラーを作成できませんでした (0x%.8x)。",
   "webview2host.createEnvMissing": "WebView2Loader.dll に CreateCoreWebView2EnvironmentWithOptions が見つかりません。",

@@ -506,6 +506,7 @@
   "turntime.seconds": "%d s",
   "turntime.stopped": "Arrêté à %0:s (après %1:s)",
   "unitrename.preview": "Renommer l'unité %s en %s (le fichier de fiche, le projet et les clauses uses des autres unités suivent)",
+  "unitrename.projectPreview": "Renommer le projet %s en %s (le fichier projet, le source du programme, les ressources et l'exécutable suivent)",
   "webview2host.assetMissing": "Ressource de la page de chat introuvable : %s",
   "webview2host.controllerCreateFailed": "Impossible de créer le contrôleur WebView2 (0x%.8x).",
   "webview2host.createEnvMissing": "CreateCoreWebView2EnvironmentWithOptions introuvable dans WebView2Loader.dll.",

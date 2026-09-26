@@ -506,6 +506,7 @@
   "turntime.seconds": "%d초",
   "turntime.stopped": "%0:s 중지 (%1:s 뒤)",
   "unitrename.preview": "유닛 %s의 이름을 %s(으)로 바꿉니다(폼 파일, 프로젝트, 다른 유닛의 uses 절도 함께 바뀜)",
+  "unitrename.projectPreview": "프로젝트 %s의 이름을 %s(으)로 바꿉니다(프로젝트 파일, 프로그램 소스, 리소스, 실행 파일이 함께 바뀜)",
   "webview2host.assetMissing": "채팅 페이지 파일이 없습니다: %s",
   "webview2host.controllerCreateFailed": "WebView2 컨트롤을 만들지 못했습니다 (0x%.8x).",
   "webview2host.createEnvMissing": "WebView2Loader.dll에 환경 생성 함수가 없습니다.",

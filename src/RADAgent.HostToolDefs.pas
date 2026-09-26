@@ -30,6 +30,7 @@ const
   ToolFormTextEdit = 'rad.form_text_edit';
   ToolFormArrangeNonVisual = 'rad.form_arrange_nonvisual';
   ToolRenameUnit = 'rad.rename_unit';
+  ToolRenameProject = 'rad.rename_project';
   ToolDebugRun = 'rad.debug_run';
   ToolDebugStep = 'rad.debug_step';
   ToolDebugPause = 'rad.debug_pause';
@@ -80,7 +81,8 @@ begin
     (Name = ToolSetBuildConfig) or (Name = ToolNewModule) or (Name = ToolFormApply) or
     (Name = ToolFormSetProperty) or (Name = ToolFormAddComponent) or (Name = ToolFormDeleteComponent) or
     (Name = ToolFormRenameComponent) or (Name = ToolFormSetEvent) or (Name = ToolFormTextEdit) or
-    (Name = ToolFormArrangeNonVisual) or (Name = ToolRenameUnit) or (Name = ToolDebugRun) or
+    (Name = ToolFormArrangeNonVisual) or (Name = ToolRenameUnit) or (Name = ToolRenameProject) or
+    (Name = ToolDebugRun) or
     (Name = ToolDebugStep) or (Name = ToolDebugPause) or (Name = ToolDebugReset) or
     (Name = ToolDebugAddBreakpoint);
 end;
@@ -254,6 +256,10 @@ begin
       'After approval give an existing unit (absolute path of its .pas/.cpp) a new unit name under ' +
       'the same naming rules as rad.new_module; its form file, the project and the uses clauses of ' +
       'the project''s other units follow. Compile afterwards.', 'path,unit'));
+    Tools.AddElement(ToolDef(ToolRenameProject,
+      'After approval rename the active project (the IDE''s Save Project As): name is the new ' +
+      'project name, a plain identifier (e.g. CsvViewer); the project file, program source, ' +
+      'resources and executable follow. Compile afterwards.', 'name'));
     Tools.AddElement(ToolDef(ToolListComponents,
       'Installed component classes on the IDE palette with their package; filter is a ' +
       'case-insensitive substring. Use it to pick valid classes for forms. Read-only.', 'filter'));

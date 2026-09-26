@@ -199,7 +199,7 @@ begin
       'reloads the files you change. Read and edit code with your own read/edit/write tools.');
     Lines.Add('- Never edit form files (.dfm/.fmx) or the project files (.dproj/.dpr/.cbproj/.groupproj) ' +
       'with your own write/edit tools; forms change only through the rad.form_* tools, modules through ' +
-      'rad.new_module and rad.rename_unit.');
+      'rad.new_module and rad.rename_unit, the project''s name through rad.rename_project.');
     Lines.Add('- Unit names say what the unit is for, in the project''s namespace; a form ends in Form or ' +
       'Dialog, a frame in Frame (App.UI.ExportDialog), never UnitN. Give a UnitN a real name with ' +
       'rad.rename_unit when you work on it.');

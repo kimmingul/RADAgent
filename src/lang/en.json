@@ -506,6 +506,7 @@
   "turntime.seconds": "%ds",
   "turntime.stopped": "Stopped at %0:s (after %1:s)",
   "unitrename.preview": "Rename unit %s to %s (its form file, the project and other units' uses clauses follow)",
+  "unitrename.projectPreview": "Rename project %s to %s (project file, program source, resources and executable follow)",
   "webview2host.assetMissing": "Chat page asset not found: %s",
   "webview2host.controllerCreateFailed": "Failed to create WebView2 controller (0x%.8x).",
   "webview2host.createEnvMissing": "CreateCoreWebView2EnvironmentWithOptions not found in WebView2Loader.dll.",

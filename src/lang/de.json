@@ -506,6 +506,7 @@
   "turntime.seconds": "%d s",
   "turntime.stopped": "Gestoppt um %0:s (nach %1:s)",
   "unitrename.preview": "Unit %s in %s umbenennen (Formulardatei, Projekt und uses-Klauseln anderer Units werden angepasst)",
+  "unitrename.projectPreview": "Projekt %s in %s umbenennen (Projektdatei, Programmquelle, Ressourcen und EXE werden angepasst)",
   "webview2host.assetMissing": "Datei der Chat-Seite nicht gefunden: %s",
   "webview2host.controllerCreateFailed": "WebView2-Controller konnte nicht erstellt werden (0x%.8x).",
   "webview2host.createEnvMissing": "CreateCoreWebView2EnvironmentWithOptions wurde in WebView2Loader.dll nicht gefunden.",
