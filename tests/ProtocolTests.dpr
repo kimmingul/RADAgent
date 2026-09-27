@@ -37,6 +37,8 @@ uses
   RADAgent.PropValues in '..\src\RADAgent.PropValues.pas',
   RADAgent.DesignIcons in '..\src\RADAgent.DesignIcons.pas',
   RADAgent.StyleLookups in '..\src\RADAgent.StyleLookups.pas',
+  RADAgent.DesignLintRules in '..\src\RADAgent.DesignLintRules.pas',
+  RADAgent.DesignLintLayout in '..\src\RADAgent.DesignLintLayout.pas',
   TestCheck in 'TestCheck.pas',
   RpcEventsTests in 'RpcEventsTests.pas',
   LineDiffTests in 'LineDiffTests.pas',
@@ -46,7 +48,8 @@ uses
   UnitNamingTests in 'UnitNamingTests.pas',
   DesignTokensTests in 'DesignTokensTests.pas',
   DesignProgramTests in 'DesignProgramTests.pas',
-  StyleLookupsTests in 'StyleLookupsTests.pas';
+  StyleLookupsTests in 'StyleLookupsTests.pas',
+  DesignLintLayoutTests in 'DesignLintLayoutTests.pas';
 
 {$R '..\src\RADAgentResources.res' '..\src\RADAgentResources.rc'}
 
@@ -321,6 +324,7 @@ begin
     RunDesignTokensTests(Check);
     RunDesignProgramTests(Check);
     RunStyleLookupsTests(Check);
+    RunDesignLintLayoutTests(Check);
     TestLiveReady;
     RunLiveOmpProbe(Check);
   except

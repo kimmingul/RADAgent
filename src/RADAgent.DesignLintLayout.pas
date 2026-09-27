@@ -34,14 +34,17 @@ type
     Left, Top, Width, Height, Right, Bottom: Integer;
   end;
 
-function GetVisualInfo(Comp: TComponent; const Framework: string; out Info: TVisualInfo): Boolean;
+{ Aligned: also controls placed by Align (their bounds are where the designer put them); the
+  alignment rule skips them, the button order rule does not. }
+function GetVisualInfo(Comp: TComponent; const Framework: string; out Info: TVisualInfo;
+  Aligned: Boolean = False): Boolean;
 var
   PosObj: TObject;
   X, Y, FW, FH: Double;
   Vis: PPropInfo;
 begin
   Result := False;
-  if (Comp = nil) or (Comp.Name = '') or IsControlAligned(Comp) then Exit;
+  if (Comp = nil) or (Comp.Name = '') or (not Aligned and IsControlAligned(Comp)) then Exit;
   if Framework = 'VCL' then
   begin
     if not (Comp is TControl) or not TControl(Comp).Visible then Exit;
@@ -141,7 +144,7 @@ begin
   try
     for Comp in Siblings do
       if ((Pos('button', LowerCase(Comp.ClassName)) > 0) or (Pos('bitbtn', LowerCase(Comp.ClassName)) > 0)) and
-        GetVisualInfo(Comp, Framework, Info) then Btns.Add(Info);
+        GetVisualInfo(Comp, Framework, Info, True) then Btns.Add(Info);
     if Btns.Count < 2 then Exit;
     IsMac := SameText(Preset, 'apple-macos');
     if IsMac then OrdName := 'apple-macos order (Cancel, OK)' else OrdName := 'Windows / Material order (OK, Cancel)';
