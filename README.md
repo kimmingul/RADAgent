@@ -9,7 +9,7 @@ RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키
 ## 요구사항
 
 - Windows, RAD Studio 13.2(BDS 37.0) 32-bit 또는 64-bit IDE. 10.4 Sydney, 11 Alexandria, 12 Athens도 빌드되게 맞춰 두었다(아래 "한계").
-- omp. 검증 버전 18.2.11. 없으면 설치 프로그램이 함께 설치할지 묻고(기본 켜짐) 이 PC에 맞는(x64·ARM64) 최신 릴리스를 GitHub에서 받아 `%LOCALAPPDATA%\omp\omp.exe`에 설치한다. RAD Agent는 PATH의 omp, 그다음 그 위치를 쓰고, 다른 경로는 설정에서 지정한다.
+- omp. 검증 버전 18.2.11. 없으면 설치 프로그램이 함께 설치할지 묻고(기본 켜짐) 이 PC에 맞는(x64·ARM64) 최신 릴리스를 GitHub에서 받아 `%LOCALAPPDATA%\omp\omp.exe`에 설치한다. RAD Agent는 PATH의 omp, 그다음 그 위치를 쓰고, 다른 경로는 설정에서 지정한다. 새로 받은 omp는 검증 버전보다 새것일 수 있다. 그때 RAD Agent는 처음 시작할 때 호환성 검사를 하고 문제가 있으면 채팅에 알린다.
 - Edge WebView2 런타임(Windows 10/11에 보통 들어 있다). 없으면 채팅은 글자 화면으로 동작한다.
 - git(체크포인트용). 없으면 체크포인트만 꺼진다.
 - 선택: C++Builder 프로젝트의 코드 탐색에 [clangd](https://github.com/clangd/clangd/releases). 설정 창에서 받아 설치할 수 있다.

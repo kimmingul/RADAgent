@@ -104,7 +104,7 @@ RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp이고 검
 - 설치 파일은 `scripts\package.ps1`(Inno Setup `installer\RADAgent.iss`)로만 만든다. BPL, 설치 파일, 제거 프로그램은 모두 Nanum Space 인증서로 서명하고 타임스탬프를 붙인다.
 - 토큰 PIN, 인증서, 개인 키를 저장소·스크립트·로그에 넣지 않는다. PIN은 자격 증명 관리자(`set-signing-pin.ps1`)에만 있다.
 - 설치는 사용자 단위(HKCU, 관리자 권한 없음)다. DelphiLSP, designide, clangd, WebView2 런타임은 담지 않는다.
-- omp는 설치 파일에 담지 않는다. 없을 때만 검증 버전(`TestedOmpVersion`)을 GitHub에서 받아 SHA-256을 확인하고 `%LOCALAPPDATA%\omp`에 둔다. RAD Agent를 제거해도 omp는 남긴다.
+- omp는 설치 파일에 담지 않는다. 없을 때 설치 여부를 묻고(기본 켜짐), GitHub 최신 릴리스에서 프로세서에 맞는 파일(x64·ARM64)을 받아 GitHub이 공개한 SHA-256을 확인한 뒤 `%LOCALAPPDATA%\omp`에 둔다. 최신 릴리스를 받지 못하면 예전 버전으로 대신하지 않고 omp 없이 설치를 마친다. 그래서 설치되는 omp는 검증 버전(`TestedOmpVersion`)보다 새것일 수 있다(`docs\todo.md`의 omp 추종). RAD Agent를 제거해도 omp는 남긴다.
 - 배포물에 들어가는 제3자 구성 요소는 `installer\THIRD-PARTY-NOTICES.txt`에 적는다.
 - RAD Agent는 MIT License(`LICENSE`)다. 설치 프로그램은 그 파일로 동의를 받고 `LICENSE.txt`로 설치한다. MIT와 맞지 않는 라이선스의 구성 요소를 배포물에 넣지 않는다.
 
