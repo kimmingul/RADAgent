@@ -40,6 +40,9 @@ const
   ToolDesignStyles = 'rad.design_styles';
   ToolDesignInit = 'rad.design_init';
   ToolDesignLint = 'rad.design_lint';
+  ToolDesignIcons = 'rad.design_icons';
+  ToolStyleLookups = 'rad.style_lookups';
+  ToolAppScreenshot = 'rad.app_screenshot';
 
 type
   TToolProfile = record
@@ -85,7 +88,7 @@ begin
     (Name = ToolFormSetProperty) or (Name = ToolFormAddComponent) or (Name = ToolFormDeleteComponent) or
     (Name = ToolFormRenameComponent) or (Name = ToolFormSetEvent) or (Name = ToolFormTextEdit) or
     (Name = ToolFormArrangeNonVisual) or (Name = ToolRenameUnit) or (Name = ToolRenameProject) or
-    (Name = ToolDesignInit) or
+    (Name = ToolDesignInit) or (Name = ToolAppScreenshot) or
     (Name = ToolDebugRun) or
     (Name = ToolDebugStep) or (Name = ToolDebugPause) or (Name = ToolDebugReset) or
     (Name = ToolDebugAddBreakpoint);
@@ -130,6 +133,22 @@ begin
   Result.AddPair('name', Name);
   Result.AddPair('description', Description);
   Result.AddPair('parameters', TJSONObject.ParseJSONValue(Schema));
+end;
+
+{ Schema text: an object of optional string properties (comma separated names). }
+function OptionalStrings(const PropList: string): string;
+var
+  Name: string;
+  Props: string;
+begin
+  Props := '';
+  for Name in PropList.Split([',']) do
+  begin
+    if Props <> '' then
+      Props := Props + ',';
+    Props := Props + '"' + Name + '":{"type":"string"}';
+  end;
+  Result := '{"type":"object","properties":{' + Props + '},"additionalProperties":false}';
 end;
 
 const
@@ -284,6 +303,20 @@ begin
         'rad.design_styles) with its platform preset (or preset: fluent-windows11, material3, ' +
         'apple-macos) and give the project that style (applyStyle: "false" to skip). Ask the user ' +
         'which style first unless they named one.', 'style,preset,applyStyle'));
+      Tools.AddElement(ToolDef(ToolDesignIcons,
+        'Segoe Fluent Icons glyphs by name (words, e.g. "save filter brightness"): code point and ' +
+        'the ' + Lang + ' literal, from Microsoft''s published list. Use it instead of guessing ' +
+        'icon characters. Read-only.', 'query'));
+      if Profile.Framework = 'FMX' then
+        Tools.AddElement(SchemaDef(ToolStyleLookups,
+          'Style lookups (StyleLookup names) the project''s FMX style really has, with the height ' +
+          'or width the style fixes; filter is a name substring, style a style file (default: the ' +
+          'one in DESIGN.md). Read-only.', OptionalStrings('filter,style')));
+      Tools.AddElement(SchemaDef(ToolAppScreenshot,
+        'After approval start the built program (compile first), wait for its window, return a PNG ' +
+        'of it and close it. args: command line; window: caption substring of the window to ' +
+        'capture (default: the first one); waitMs: extra settle time (default 1500).',
+        OptionalStrings('args,window,waitMs')));
     end;
     if Profile.HasForms then
       AddFormTools(Tools, Profile);

@@ -22,7 +22,8 @@ uses
   RADAgent.HostToolDefs, RADAgent.DebugTools, RADAgent.DebugControl,
   RADAgent.FormEdits, RADAgent.FormTools, RADAgent.ProjectProfile,
   RADAgent.ModuleCreator, RADAgent.ChatPlan, RADAgent.FormShot, RADAgent.FormText,
-  RADAgent.AgentSettings, RADAgent.UnitRename, RADAgent.DesignInit, RADAgent.DesignLint;
+  RADAgent.AgentSettings, RADAgent.UnitRename, RADAgent.DesignInit, RADAgent.DesignLint,
+  RADAgent.DesignIcons, RADAgent.AppShot, RADAgent.Lang;
 
 function ArgText(const ArgumentsJson, Name: string): string;
 var
@@ -120,6 +121,29 @@ begin
   Result.Line := ArgInt(ArgumentsJson, 'line');
 end;
 
+{ rad.app_screenshot: after approval run the built program, capture its window, close it. }
+function RunAppScreenshot(const ArgumentsJson: string; const Approval: IAgentApproval;
+  out ResultText, ImagePng: string): Boolean;
+var
+  Exe, Problem: string;
+begin
+  Result := False;
+  ImagePng := '';
+  if not ProjectExecutable(Exe, Problem) then
+  begin
+    ResultText := Problem;
+    Exit;
+  end;
+  if (Approval = nil) or not Approval.ApproveChange(Exe, '', TrF('hosttools.appScreenshot',
+    [ExtractFileName(Exe), ArgText(ArgumentsJson, 'args')])) then
+  begin
+    ResultText := SEditCancelled;
+    Exit(True);
+  end;
+  Result := AppScreenshot(Exe, ArgText(ArgumentsJson, 'args'), ArgText(ArgumentsJson, 'window'),
+    ArgInt(ArgumentsJson, 'waitMs'), ExcludeTrailingPathDelimiter(ActiveProjectDir), ImagePng, ResultText);
+end;
+
 procedure DispatchHostTool(const ToolName, ArgumentsJson: string;
   const Approval: IAgentApproval; out ResultText: string; out IsError: Boolean; out ImagePng: string);
 var
@@ -171,6 +195,18 @@ begin
       ArgText(ArgumentsJson, 'applyStyle'), Approval, ResultText)
   else if ToolName = ToolDesignLint then
     IsError := not DesignLint(ArgText(ArgumentsJson, 'path'), ResultText)
+  else if ToolName = ToolDesignIcons then
+  begin
+    ResultText := DesignIconsJson(ArgText(ArgumentsJson, 'query'));
+    IsError := ResultText.Contains('"ok":false');
+  end
+  else if ToolName = ToolStyleLookups then
+  begin
+    ResultText := ProjectStyleLookups(ArgText(ArgumentsJson, 'style'), ArgText(ArgumentsJson, 'filter'));
+    IsError := ResultText.Contains('"ok":false');
+  end
+  else if ToolName = ToolAppScreenshot then
+    IsError := not RunAppScreenshot(ArgumentsJson, Approval, ResultText, ImagePng)
   else if ToolName = ToolListComponents then
   begin
     ResultText := ComponentsJson(ArgText(ArgumentsJson, 'filter'));

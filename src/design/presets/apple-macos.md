@@ -152,6 +152,7 @@ Apple does not publish public numeric corner radius tokens for standard macOS co
 - Control Sizing: Controls support regular (default, 13px font), small (11px font for inspectors and dense toolbars), and mini (9px font for compact utility panels).
 - Table View: Supports alternating row background colors for wide datasets. Column headers support interactive click-to-sort and click-to-reverse sorting.
 - Stack View: Sibling views align horizontally or vertically with default minimum spacing of 8px (`NSStackView.spacing`).
+- Icons: RAD Agent's glyph catalog (`rad.design_icons`) is Segoe Fluent Icons, a Windows font. This preset's own icon set is not installed on Windows; ship icons as images (SVG or multi-resolution PNG) in an image list, or use Segoe Fluent Icons on Windows and say so in DESIGN.md. [policy: RAD Agent guidance, not a value from the preset's source]
 
 ## Do's and Don'ts
 - Do use Body (13px Regular) as the baseline for content labels and Headline (13px Bold) for standard field headers.

@@ -46,8 +46,8 @@
     <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
     <VerInfo_MajorVer>1</VerInfo_MajorVer>
     <VerInfo_MinorVer>3</VerInfo_MinorVer>
-    <VerInfo_Release>0</VerInfo_Release>
-    <VerInfo_Keys>CompanyName=Nanum Space Co., Ltd.;FileDescription=RAD Agent — an agentic coding assistant for Delphi, powered by oh-my-pi;FileVersion=1.3.0.0;InternalName=RADAgent;LegalCopyright=Copyright (C) 2026 Nanum Space Co., Ltd.;LegalTrademarks=;OriginalFilename=RADAgent.bpl;ProductName=RAD Agent;ProductVersion=1.3.0.0;Comments=</VerInfo_Keys>
+    <VerInfo_Release>1</VerInfo_Release>
+    <VerInfo_Keys>CompanyName=Nanum Space Co., Ltd.;FileDescription=RAD Agent — an agentic coding assistant for Delphi, powered by oh-my-pi;FileVersion=1.3.1.0;InternalName=RADAgent;LegalCopyright=Copyright (C) 2026 Nanum Space Co., Ltd.;LegalTrademarks=;OriginalFilename=RADAgent.bpl;ProductName=RAD Agent;ProductVersion=1.3.1.0;Comments=</VerInfo_Keys>
     <Debugger_Parameters>-pDelphi</Debugger_Parameters>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)'=='Win32'">
@@ -128,6 +128,12 @@
     <DCCReference Include="RADAgent.DesignProgram.pas"/>
     <DCCReference Include="RADAgent.DesignApply.pas"/>
     <DCCReference Include="RADAgent.DesignLintRules.pas"/>
+    <DCCReference Include="RADAgent.DesignIcons.pas"/>
+    <DCCReference Include="RADAgent.StyleLookups.pas"/>
+    <DCCReference Include="RADAgent.DesignLintType.pas"/>
+    <DCCReference Include="RADAgent.DesignLintLayout.pas"/>
+    <DCCReference Include="RADAgent.AppShot.pas"/>
+    <DCCReference Include="RADAgent.DesignTurnCheck.pas"/>
     <DCCReference Include="RADAgent.DesignLint.pas"/>
     <DCCReference Include="RADAgent.DesignInit.pas"/>
     <DCCReference Include="RADAgent.ChatDesign.pas"/>

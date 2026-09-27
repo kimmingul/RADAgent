@@ -236,8 +236,10 @@ begin
     if Profile.Tools.Framework <> '' then
       Lines.Add('- Design system: ' + IncludeTrailingPathDelimiter(Profile.ProjectDir) + 'DESIGN.md. ' +
         'When it exists, read it and skill://radstudio-ui-design before creating or changing UI, keep ' +
-        'to its spacing scale, type ramp, radii and colors, and after changing a form run ' +
-        'rad.design_lint on it and fix the findings (or say why one is intended). When it does not ' +
+        'to its spacing scale, type ramp, radii and colors, and after your last change to a form run ' +
+        'rad.design_lint on it and fix the findings (or say why one is intended); RAD Agent lints ' +
+        'the changed forms again when the turn ends. Look up icon glyphs with rad.design_icons, ' +
+        'check the running program with rad.app_screenshot after compiling. When DESIGN.md does not ' +
         'exist and the task builds new UI, first ask the user to pick a style (/design, or ' +
         'rad.design_styles then rad.design_init once they agree).');
     Lines.Add('- While a debug session is running (rad.debug_state), do not edit sources unless asked.');

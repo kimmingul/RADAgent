@@ -24,12 +24,15 @@ function InitDesign(const Style: TDesignStyle; const PresetId: string; ApplyStyl
 { rad.design_init: StyleArg is a file or style name of the project's framework. }
 function InitDesignTool(const StyleArg, PresetArg, ApplyArg: string; const Approval: IAgentApproval;
   out ResultText: string): Boolean;
+{ rad.style_lookups: StyleArg a style file or name ('' = DESIGN.md's style). }
+function ProjectStyleLookups(const StyleArg, Filter: string): string;
 
 implementation
 
 uses
   System.SysUtils, System.IOUtils, System.JSON, ToolsAPI, RADAgent.IdeContext, RADAgent.DesignDoc,
-  RADAgent.DesignApply, RADAgent.DesignTokens, RADAgent.Lang, RADAgent.IdeFiles;
+  RADAgent.DesignApply, RADAgent.DesignTokens, RADAgent.Lang, RADAgent.IdeFiles,
+  RADAgent.StyleLookups;
 
 function DesignFile: string;
 begin
@@ -226,6 +229,30 @@ begin
   else
     Result := InitDesign(Style, Trim(PresetArg), not SameText(Trim(ApplyArg), 'false'), Approval,
       ResultText);
+end;
+
+function ProjectStyleLookups(const StyleArg, Filter: string): string;
+var
+  Wanted: string;
+  Tokens: TFrontMatter;
+  Style: TDesignStyle;
+begin
+  Wanted := Trim(StyleArg);
+  if (Wanted = '') and FileExists(DesignFile) then
+  begin
+    Tokens := ReadFrontMatter(TFile.ReadAllText(DesignFile, TEncoding.UTF8));
+    try
+      Tokens.TryGetValue('radstudio.styleFile', Wanted);
+    finally
+      Tokens.Free;
+    end;
+  end;
+  if Wanted = '' then
+    Exit('{"ok":false,"error":"No style named and no DESIGN.md style; pass style (see rad.design_styles)."}');
+  if not FindStyle('FMX', Wanted, Style) then
+    Exit(Format('{"ok":false,"error":"No installed FMX style %s."}',
+      [StringReplace(Wanted, '"', '''', [rfReplaceAll])]));
+  Result := StyleLookupsJson(Style.Path, Filter);
 end;
 
 end.

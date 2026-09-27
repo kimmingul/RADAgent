@@ -1,6 +1,6 @@
 ---
 name: radstudio-ui-design
-description: Turn the project's DESIGN.md (style, spacing scale, type ramp, radii, colors) into VCL and FMX form properties. Read before creating or changing forms, frames or dialogs in a project that has DESIGN.md.
+description: Turn the project's DESIGN.md (style, spacing scale, type ramp, radii, colors) into VCL and FMX form properties, pick component variants and icons, and switch light/dark themes. Read before creating or changing forms, frames or dialogs in a project that has DESIGN.md.
 ---
 
 # RAD Studio UI design
@@ -19,10 +19,15 @@ the colors of surfaces you add yourself.
 2. Plan the form as regions (header, navigation, content, command bar, status) before adding
    controls. Use containers and alignment, not absolute coordinates, for anything that resizes.
 3. Build it with rad.form_apply, taking every number from the tokens.
-4. rad.form_screenshot, then rad.design_lint on the unit. Fix findings; a finding you keep on
-   purpose gets a one-line reason in your answer.
-5. If a token you need is missing (for example a fallback font), add it to DESIGN.md in the same
+4. rad.form_screenshot, then rad.design_lint on the unit. Fix findings and run the lint again
+   after your last change to that form; report the last result, not an earlier one. A finding
+   you keep on purpose gets a one-line reason in your answer.
+5. rad.compile, then rad.app_screenshot to see the running program (the designer does not show
+   run-time code, theme switching or the real style); check both themes when the app has them.
+6. If a token you need is missing (for example a fallback font), add it to DESIGN.md in the same
    YAML shape and tell the user; do not invent values silently.
+
+RAD Agent lints every form changed in a turn when the turn ends and shows the user the result.
 
 ## Tokens to properties
 
@@ -68,3 +73,47 @@ on the controls that differ; keep the rest styled.
 - Material 3 names Roboto; it must be installed or shipped with the app (Apache-2.0).
 - The macOS preset names SF Pro, which may only be used on Apple platforms. On Windows put a
   fallback family into DESIGN.md typography (for example Segoe UI) before using it.
+
+## Component appearance
+
+- FMX: a control's look is its style lookup. `rad.style_lookups` lists the lookups the project's
+  style really has, with the height the style fixes (Win10Modern's `speedbuttonstyle` is 46px
+  tall: a 32px button needs `buttonstyle`). Set `StyleLookup` only to a listed name; a missing
+  one silently falls back to the default look.
+- VCL: variants are properties and components, not lookups: `TButton.Style` (`bsPushButton`,
+  `bsCommandLink`, `bsSplitButton`), `TToggleSwitch` for on/off settings, `TSearchBox`,
+  `TActivityIndicator`, `TTitleBarPanel` for a custom title bar. The VCL style paints them.
+- One primary button per dialog (`Default = True`), and `Cancel = True` on the button Esc should
+  press. rad.design_lint checks their order for the preset's platform.
+
+## Icons
+
+- Windows presets: use the Segoe Fluent Icons font. Find glyphs with `rad.design_icons` (search
+  by name: "save", "filter", "brightness"); it returns the code point and the Delphi/C++ literal.
+  Never guess private-use code points.
+- VCL: a TLabel (or TSpeedButton caption) with `Font.Name = Segoe Fluent Icons`, `Font.Height` a
+  recommended icon size (-16, -20, -24), `ParentFont = False`, the glyph as its Caption. Keep the
+  font color a system color (`clWindowText`) so the style recolors it in both themes.
+- FMX: a TText or TLabel with `TextSettings.Font.Family = Segoe Fluent Icons` and the size; take
+  `Family` and `Size` out of `StyledSettings` but leave `FontColor` styled so the theme colors it.
+- In rad.form_apply pass the glyph character itself (JSON `"\uE74E"`).
+- Windows 10 has no Segoe Fluent Icons: at start-up check the installed fonts (VCL
+  `Screen.Fonts`; FMX on Windows `EnumFontFamiliesEx` from Winapi.Windows) and fall back to
+  Segoe MDL2 Assets. Many code points match between the two but not all: check the fallback with
+  rad.app_screenshot on Windows 10 or say it is unchecked.
+- Picture icons (logos, multi-colour art): VCL `TImageCollection` + `TVirtualImageList` (scales
+  per DPI, items by name); FMX `TImageList` with several resolutions and `Images`/`ImageIndex`
+  on buttons or `TGlyph`. Single-colour picture icons in FMX may be recoloured with
+  `IconTintColor` or `TTintedGlyph` where the style supports tinting: verify it on screen.
+
+## Light and dark
+
+- One routine switches the theme: VCL `TStyleManager.TrySetStyle` with DESIGN.md's `style` or
+  `darkStyle`; FMX assigns the light or dark TStyleBook (DESIGN.md names both styles). Do not
+  recolor styled controls by hand afterwards.
+- The same routine swaps what the style cannot: glyph text that depends on the mode, the image
+  list of picture icons (two image lists with the same item names or indexes, one per theme:
+  swap the `Images` property), and colors of surfaces you draw yourself (the `-dark` tokens).
+- A theme toggle button shows a glyph for the mode it switches to (Segoe Fluent Icons
+  `QuietHours` for dark, `Brightness` for light, from `rad.design_icons`) and a hint naming it;
+  it updates both whenever the theme changes, including at start-up from saved settings.

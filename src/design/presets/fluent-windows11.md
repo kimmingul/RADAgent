@@ -194,6 +194,7 @@ Desktop pointer density standardizes dimensions and inner paddings for foundatio
 - **Dialog (`ContentDialog`):** MinWidth 320px, maxWidth 548px, minHeight 184px, maxHeight 756px, 24px uniform padding (`ContentDialogPadding`), 8px button gap, 12px title bottom margin, 8px overlay corner radius.
 - **ToolTip:** MaxWidth 320px, padding `6px 9px 8px 9px` (`ToolTipBorderPadding`), 4px corner radius.
 - **Flyout:** Padding `15px 16px 17px 16px` (`FlyoutContentPadding`), 8px overlay corner radius.
+- **Icons:** Use the Segoe Fluent Icons font (ships with Windows 11; it replaced Segoe MDL2 Assets, which Windows 10 has). Draw glyphs at 16, 20, 24, 32, 40, 48 or 64px, the sizes Microsoft recommends for crisp rendering, in the same color as the text beside them so light and dark themes recolor them. Glyphs are private-use code points: look them up (RAD Agent: `rad.design_icons`), never guess. The font may not be shipped to other platforms.
 
 ## Do's and Don'ts
 
@@ -214,6 +215,8 @@ Desktop pointer density standardizes dimensions and inner paddings for foundatio
 - **Windows app title bar** — https://learn.microsoft.com/en-us/windows/apps/design/basics/titlebar-design — Retrieved: 2026-09-27 — Values: Standard title bar height 32px, extended interactive height 48px, window icon dimensions 16x16px with 16px lateral margin and 8px vertical margin. Terms: Microsoft Documentation Terms / CC-BY 4.0.
 - **WinUI 3 Theme Resources (`microsoft/microsoft-ui-xaml`)** — https://github.com/microsoft/microsoft-ui-xaml/ — Retrieved: 2026-09-27 — Values: Theme colors (`SolidBackgroundFillColorBase`, `CardStrokeColorDefaultSolid`, `SystemFillColorSuccess`, `SystemFillColorCaution`, `SystemFillColorCritical`, `SystemAccentColorDark1`, `SystemAccentColorLight2`, system accent `#0078D4`), control metrics (`ButtonPadding`, `TextControlThemeMinHeight`, `TextControlThemeMinWidth`, `TextControlThemePadding`, `ComboBoxMinHeight`, `ComboBoxThemeMinWidth`, `ComboBoxPadding`, `ComboBoxItemThemePadding`, `ListViewItemMinHeight`, `ListViewItemMinWidth`, `ListViewItemCornerRadius`, `ContentDialogMinWidth`, `ContentDialogMinHeight`, `ContentDialogMaxWidth`, `ContentDialogMaxHeight`, `ContentDialogPadding`, `ToolTipBorderPadding`, `FlyoutContentPadding`). License: MIT License.
 - **Fluent 2 Design System** — https://fluent2.microsoft.design/ (Layout, Shapes, Elevation) — Retrieved: 2026-09-27 — Values: 4px base spacing ramp, shape corner tokens (none 0, small 2, medium 4, large 8, x-large 12), stroke tokens (thin 1px, thick 2px), shadow ramp blur equations, platform note on Windows contour strokes. Terms: Microsoft Terms of Use.
+
+- **Segoe Fluent Icons font** — https://learn.microsoft.com/en-us/windows/apps/design/iconography/segoe-fluent-icons-font — Retrieved: 2026-09-27 — Values: icon font name, replacement of Segoe MDL2 Assets, recommended glyph sizes (16, 20, 24, 32, 40, 48, 64), code point list, redistribution note. Terms: Microsoft Documentation Terms.
 
 ### Usage notes
 

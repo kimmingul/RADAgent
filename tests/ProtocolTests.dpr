@@ -35,6 +35,8 @@ uses
   RADAgent.DesignDoc in '..\src\RADAgent.DesignDoc.pas',
   RADAgent.DesignProgram in '..\src\RADAgent.DesignProgram.pas',
   RADAgent.PropValues in '..\src\RADAgent.PropValues.pas',
+  RADAgent.DesignIcons in '..\src\RADAgent.DesignIcons.pas',
+  RADAgent.StyleLookups in '..\src\RADAgent.StyleLookups.pas',
   TestCheck in 'TestCheck.pas',
   RpcEventsTests in 'RpcEventsTests.pas',
   LineDiffTests in 'LineDiffTests.pas',
@@ -43,7 +45,8 @@ uses
   LangTests in 'LangTests.pas',
   UnitNamingTests in 'UnitNamingTests.pas',
   DesignTokensTests in 'DesignTokensTests.pas',
-  DesignProgramTests in 'DesignProgramTests.pas';
+  DesignProgramTests in 'DesignProgramTests.pas',
+  StyleLookupsTests in 'StyleLookupsTests.pas';
 
 {$R '..\src\RADAgentResources.res' '..\src\RADAgentResources.rc'}
 
@@ -317,6 +320,7 @@ begin
     RunUnitNamingTests(Check);
     RunDesignTokensTests(Check);
     RunDesignProgramTests(Check);
+    RunStyleLookupsTests(Check);
     TestLiveReady;
     RunLiveOmpProbe(Check);
   except

@@ -51,7 +51,11 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | DesignDoc | 프로젝트 `DESIGN.md`(Google Labs DESIGN.md 형식): `radstudio:`에 스타일, 스타일 색을 `style-*` 토큰으로, 나머지 토큰과 안내는 프리셋에서. ToolsAPI 없음. |
 | DesignProgram / DesignApply | 스타일 적용. VCL은 `Custom_Styles` 옵션(밝은·어두운 스타일)과 프로그램 소스의 `TStyleManager.TrySetStyle`(없으면 `{$R *.res}`도), FMX는 메인 폼의 `TStyleBook`(`FileName`, `UseStyleManager`). |
 | DesignInit / ChatDesign | `rad.design_styles`, `rad.design_init`(승인 두 번: DESIGN.md, 스타일 적용), `/design [스타일] [프리셋]`(목록에서 고르기). |
-| DesignTokens / DesignLint / DesignLintRules | DESIGN.md 앞머리 YAML 읽기와 `rad.design_lint`: 간격·틈, 글꼴 크기·글꼴, 스타일과 부딪히는 색, 모서리 반경을 폼에서 검사. FMX 객체는 TypInfo로만 읽는다. |
+| DesignTokens / DesignLint / DesignLintRules / DesignLintType / DesignLintLayout | DESIGN.md 앞머리 YAML 읽기와 `rad.design_lint`: 간격·틈, 글꼴 크기·글꼴(아이콘 글꼴은 권장 아이콘 크기), 스타일과 부딪히는 색, 모서리 반경, 정렬선(1–3px 어긋남), 플랫폼별 버튼 순서, 폼 안 글꼴 크기 개수를 검사. FMX 객체는 TypInfo로만 읽는다. |
+| DesignTurnCheck | 턴이 끝나면 그 턴에 파일이 바뀐 폼을 DESIGN.md로 다시 검사해 채팅에 결과를 알린다. |
+| DesignIcons | `rad.design_icons`: Microsoft Learn이 공개한 Segoe Fluent Icons 코드 포인트 목록(`src\design\icons`)에서 이름으로 글리프를 찾아 Delphi·C++ 리터럴을 준다. |
+| StyleLookups | `rad.style_lookups`: 프로젝트 FMX 스타일 파일(텍스트·바이너리)의 최상위 StyleLookup 이름과 스타일이 정한 크기(`FixedHeight` 포함). |
+| AppShot | `rad.app_screenshot`: 승인 후 빌드된 프로그램을 실행해 창을 PNG로 찍고 닫는다(PrintWindow가 한 색이면 화면에서 복사). 소스보다 오래된 실행 파일이면 알린다. |
 | PropValues | 폼 도구의 속성 값: 스트리밍 식별자(`clBtnFace`, `mrOk`, `claWhite`)와 `#RRGGBB`를 TColor/TAlphaColor로. |
 | HandlerCode | 이벤트 핸들러 코드: Delphi는 디자이너 스텁에 주석 한 줄(빈 핸들러는 저장 때 지워짐), C++은 `.h` `__published` 선언과 `.cpp` 본문을 버퍼에 쓴다(C++ 디자이너는 코드를 쓰지 않음). |
 | CppDiagnostics | C++ 빌드 실패 때 바뀐 `.cpp`를 활성 플랫폼 컴파일러(bcc64x/bcc64/bcc32c)로 다시 컴파일해 오류를 읽는다. |

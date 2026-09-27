@@ -12,7 +12,8 @@ implementation
 uses
   System.SysUtils, System.Classes, System.IOUtils, System.JSON, System.Generics.Collections,
   System.TypInfo, Vcl.Controls, ToolsAPI,
-  RADAgent.IdeContext, RADAgent.FormDesigner, RADAgent.DesignTokens, RADAgent.DesignLintRules;
+  RADAgent.IdeContext, RADAgent.FormDesigner, RADAgent.DesignTokens, RADAgent.DesignLintRules,
+  RADAgent.DesignLintType, RADAgent.DesignLintLayout;
 
 type
   TVisualInfo = record
@@ -155,7 +156,7 @@ end;
 
 function DesignLint(const Path: string; out ResultText: string): Boolean;
 var
-  DesignPath, DesignContent, Problem, Framework, PName, SummaryStr, OmitStr: string;
+  DesignPath, DesignContent, Problem, Framework, PName, SummaryStr, OmitStr, Preset: string;
   Editor: IOTAFormEditor;
   Root, Comp: TComponent;
   FrontMatter: TFrontMatter;
@@ -256,8 +257,7 @@ begin
     for Comp in AllComponents do
     begin
       if not Skipped.Contains('spacing') then CheckSpacing(Comp, Ctx, Findings);
-      if not Skipped.Contains('font-size') or not Skipped.Contains('font-family') then
-        CheckTypography(Comp, Ctx, Findings);
+      CheckTypography(Comp, Ctx, Findings);
       if not Skipped.Contains('literal-color') then CheckColors(Comp, Ctx, Findings);
       if not Skipped.Contains('radius') then CheckRadius(Comp, Ctx, Findings);
 
@@ -282,6 +282,11 @@ begin
         ReportedPairs.Free;
       end;
     end;
+
+    // Whole-form rules: alignment, button order for the preset's platform, number of type sizes
+    if not FrontMatter.TryGetValue('radstudio.preset', Preset) then
+      Preset := '';
+    CheckLayout(Root, AllComponents, Ctx, Preset, Findings);
 
     // Tally finding counts by rule
     TotalFindings := Findings.Count;

@@ -169,6 +169,7 @@ Material 3 applies rounded corner radii symmetrically across seven standardized 
 - Menu: Container corner radius 4px (Extra-small), minimum width 112px, maximum width 280px, vertical padding 8px top/bottom, container color surface-container, elevation Level 2 (3px).
 - List Item: Minimum container heights 56px (one-line), 72px (two-line), and 88px (three-line). Horizontal padding 16px leading and trailing. Corner radius 0px.
 - Density Guidance: For data-heavy desktop forms and tables, pointer input allows reducing list item vertical heights from 56px to 48px or 40px and field heights from 56px to 48px by adjusting vertical padding in multiples of 4px/8px.
+- Icons: RAD Agent's glyph catalog (`rad.design_icons`) is Segoe Fluent Icons, a Windows font. This preset's own icon set is not installed on Windows; ship icons as images (SVG or multi-resolution PNG) in an image list, or use Segoe Fluent Icons on Windows and say so in DESIGN.md. [policy: RAD Agent guidance, not a value from the preset's source]
 
 ## Do's and Don'ts
 - Do use surface container tiers (Lowest through Highest) to distinguish nested panels and cards instead of relying solely on heavy shadows.

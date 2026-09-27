@@ -18,7 +18,7 @@ implementation
 
 uses
   System.SysUtils, RADAgent.ChatSession, RADAgent.IdeFiles, RADAgent.IdeContext,
-  RADAgent.ChatCommand, RADAgent.Lang;
+  RADAgent.ChatCommand, RADAgent.Lang, RADAgent.DesignTurnCheck;
 
 function ProjectDir: string;
 begin
@@ -50,9 +50,14 @@ procedure SyncAfterEvent(const Event: TAgentEvent);
 begin
   if (Event.Kind = aekToolEnd) and (Event.ToolName = 'todo') then
     ChatSession.SendCommand('get_state', BuildIdTypeFrame('req', 'get_state'));
+  if Event.Kind = aekAgentStart then
+    DesignTurnStarted;
   if (Event.Kind = aekToolEnd) or (Event.Kind = aekPromptLocal) or
     ((Event.Kind = aekAgentEnd) and Event.IsTerminal) then
     ReloadFromDisk;
+  { After the reload, so the check sees the forms omp left on disk. }
+  if (Event.Kind = aekAgentEnd) and Event.IsTerminal then
+    DesignTurnEnded;
 end;
 
 end.

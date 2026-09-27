@@ -38,7 +38,8 @@ function ObjProp(Instance: TObject; const PropName: string): TObject;
 procedure AddFinding(var Findings: TList<TDesignLintFinding>; const Comp, Rule, Val, Exp, Msg: string);
 
 procedure CheckSpacing(Component: TComponent; const Ctx: TDesignRulesContext; var Findings: TList<TDesignLintFinding>);
-procedure CheckTypography(Component: TComponent; const Ctx: TDesignRulesContext; var Findings: TList<TDesignLintFinding>);
+{ True when SettingName (Size, Family, FontColor) is left to the style in StyledSettings. }
+function HasStyledSetting(Component: TComponent; TextSettingsObj: TObject; const SettingName: string): Boolean;
 procedure CheckColors(Component: TComponent; const Ctx: TDesignRulesContext; var Findings: TList<TDesignLintFinding>);
 procedure CheckRadius(Component: TComponent; const Ctx: TDesignRulesContext; var Findings: TList<TDesignLintFinding>);
 
@@ -149,19 +150,6 @@ begin
   Result := (Prop = nil) or GetSetProp(Owner, Prop, True).Contains(SettingName);
 end;
 
-function MatchesFontFamily(const ControlFamily: string; const AllowedFamilies: TArray<string>): Boolean;
-var
-  Allowed: string;
-begin
-  Result := False;
-  if (ControlFamily = '') or (Length(AllowedFamilies) = 0) then Exit;
-  { Weight or optical-size families of an allowed family count ("Segoe UI Variable Display Semibold"). }
-  for Allowed in AllowedFamilies do
-    if SameText(ControlFamily, Allowed) or ControlFamily.StartsWith(Allowed + ' ', True) or
-       (Allowed.StartsWith('Segoe UI', True) and ControlFamily.StartsWith('Segoe UI', True)) then
-      Exit(True);
-end;
-
 function IsColorInList(Rgb: Cardinal; const AllowedColors: TArray<Cardinal>): Boolean;
 var
   C: Cardinal;
@@ -202,89 +190,6 @@ begin
   else
     CheckBoundsObj(Component, ObjProp(Component, 'Margins'), 'Margins', Ctx.SpacingScale, Findings);
   CheckBoundsObj(Component, ObjProp(Component, 'Padding'), 'Padding', Ctx.SpacingScale, Findings);
-end;
-
-procedure CheckTypography(Component: TComponent; const Ctx: TDesignRulesContext;
-  var Findings: TList<TDesignLintFinding>);
-var
-  FontObj, TextSettingsObj: TObject;
-  ParentProp: PPropInfo;
-  PtVal, PxVal, HeightVal: Double;
-  Fam, ValStr, ExpStr: string;
-  FS: TFormatSettings;
-  PPI: Integer;
-begin
-  FS := TFormatSettings.Invariant;
-  if Ctx.Framework = 'VCL' then
-  begin
-    ParentProp := GetPropInfo(Component, 'ParentFont');
-    if (ParentProp <> nil) and (GetOrdProp(Component, ParentProp) <> 0) then Exit;
-    FontObj := ObjProp(Component, 'Font');
-    if FontObj = nil then Exit;
-    if Length(Ctx.FontSizes) > 0 then
-    begin
-      HeightVal := 0;
-      if GetNumericProp(FontObj, 'Height', HeightVal) and (HeightVal < 0) then
-      begin
-        PPI := Ctx.PixelsPerInch;
-        if PPI <= 0 then PPI := 96;
-        PxVal := -HeightVal * 96.0 / PPI;
-        if not IsInScale(PxVal, Ctx.FontSizes, 0.5) then
-        begin
-          ValStr := FormatFloat('0.#', PxVal, FS) + 'px';
-          ExpStr := ScaleToString(Ctx.FontSizes, 'px');
-          AddFinding(Findings, Component.Name, 'font-size', ValStr, ExpStr,
-            Format('%s.Font.Height (%s) is not in typography fontSize scale (%s).', [Component.Name, ValStr, ExpStr]));
-        end;
-      end
-      else if GetNumericProp(FontObj, 'Size', PtVal) and (PtVal > 0) then
-      begin
-        PxVal := PtVal * 96.0 / 72.0;
-        if not IsInScale(PxVal, Ctx.FontSizes, 0.5) then
-        begin
-          ValStr := FormatFloat('0.#', PxVal, FS) + 'px (' + FormatFloat('0.#', PtVal, FS) + 'pt)';
-          ExpStr := ScaleToString(Ctx.FontSizes, 'px');
-          AddFinding(Findings, Component.Name, 'font-size', ValStr, ExpStr,
-            Format('%s.Font.Size (%s) is not in typography fontSize scale (%s).', [Component.Name, ValStr, ExpStr]));
-        end;
-      end;
-    end;
-    if Length(Ctx.FontFamilies) > 0 then
-    begin
-      Fam := GetStrProp(FontObj, 'Name');
-      if (Fam <> '') and not MatchesFontFamily(Fam, Ctx.FontFamilies) then
-      begin
-        ExpStr := string.Join(', ', Ctx.FontFamilies);
-        AddFinding(Findings, Component.Name, 'font-family', Fam, ExpStr,
-          Format('%s.Font.Name ("%s") is not in typography fontFamily (%s).', [Component.Name, Fam, ExpStr]));
-      end;
-    end;
-  end
-  else
-  begin
-    TextSettingsObj := ObjProp(Component, 'TextSettings');
-    if TextSettingsObj = nil then Exit;
-    FontObj := ObjProp(TextSettingsObj, 'Font');
-    if FontObj = nil then Exit;
-    if (Length(Ctx.FontSizes) > 0) and not HasStyledSetting(Component, TextSettingsObj, 'Size') and
-      GetNumericProp(FontObj, 'Size', PxVal) and (PxVal > 0) and not IsInScale(PxVal, Ctx.FontSizes, 0.5) then
-    begin
-      ValStr := FormatFloat('0.#', PxVal, FS) + 'px';
-      ExpStr := ScaleToString(Ctx.FontSizes, 'px');
-      AddFinding(Findings, Component.Name, 'font-size', ValStr, ExpStr,
-        Format('%s.TextSettings.Font.Size (%s) is not in typography fontSize scale (%s).', [Component.Name, ValStr, ExpStr]));
-    end;
-    if (Length(Ctx.FontFamilies) > 0) and not HasStyledSetting(Component, TextSettingsObj, 'Family') then
-    begin
-      Fam := GetStrProp(FontObj, 'Family');
-      if (Fam <> '') and not MatchesFontFamily(Fam, Ctx.FontFamilies) then
-      begin
-        ExpStr := string.Join(', ', Ctx.FontFamilies);
-        AddFinding(Findings, Component.Name, 'font-family', Fam, ExpStr,
-          Format('%s.TextSettings.Font.Family ("%s") is not in typography fontFamily (%s).', [Component.Name, Fam, ExpStr]));
-      end;
-    end;
-  end;
 end;
 
 procedure CheckBrushColor(Component: TComponent; Obj: TObject; const PropName: string;

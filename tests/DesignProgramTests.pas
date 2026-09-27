@@ -15,7 +15,8 @@ implementation
 
 uses
   System.SysUtils, System.Generics.Collections, System.Win.Registry, Winapi.Windows, System.TypInfo, Vcl.Graphics,
-  RADAgent.DesignProgram, RADAgent.DesignCatalog, RADAgent.DesignDoc, RADAgent.DesignTokens, RADAgent.PropValues;
+  RADAgent.DesignProgram, RADAgent.DesignCatalog, RADAgent.DesignDoc, RADAgent.DesignTokens, RADAgent.PropValues, RADAgent.DesignIcons,
+  System.JSON;
 
 const
   Dpr = 'program Demo;'#13#10#13#10 +
@@ -178,8 +179,27 @@ begin
   end;
 end;
 
+{ The glyph catalog answers with Microsoft's code points; an exact name ranks first. }
+procedure IconTests(const Check: TCheckProc);
+var
+  Reply: TJSONObject;
+  Icons: TJSONArray;
+begin
+  Reply := TJSONObject.ParseJSONValue(DesignIconsJson('QuietHours')) as TJSONObject;
+  try
+    Icons := Reply.GetValue('icons') as TJSONArray;
+    Check((Icons.Count >= 2) and ((Icons.Items[0] as TJSONObject).GetValue<string>('name') = 'QuietHours') and
+      ((Icons.Items[0] as TJSONObject).GetValue<string>('delphi') = '#$E708'),
+      'QuietHours ranks first with its published code point');
+  finally
+    Reply.Free;
+  end;
+  Check(DesignIconsJson('sun brightness').Contains('#$E706'), 'any word of the query can match');
+end;
+
 procedure RunDesignProgramTests(const Check: TCheckProc);
 begin
+  IconTests(Check);
   PropValueTests(Check);
   ProgramTests(Check);
   CustomStylesTests(Check);
