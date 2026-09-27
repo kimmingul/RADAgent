@@ -322,6 +322,7 @@
       <div class="nav-right">
         <div class="nav-links">
           <a href="#features" data-i18n="nav.features">기능</a>
+          <a href="#design" data-i18n="nav.design">디자인</a>
           <a href="#approval" data-i18n="nav.approval">승인</a>
           <a href="#download" data-i18n="nav.download">다운로드</a>
           <a href="https://github.com/kimmingul/RADAgent">GitHub</a>
@@ -396,7 +397,7 @@
 
     <section class="stats">
       <div class="wrap">
-        <div class="stat reveal"><div class="big">26<em> rad.*</em></div><div class="cap" data-i18n="stat1.cap"><b>IDE 도구</b>: 에디터, 폼 디자이너, 빌드, 디버거, 프로젝트를 모델이 직접 다룹니다.</div></div>
+        <div class="stat reveal"><div class="big">32<em> rad.*</em></div><div class="cap" data-i18n="stat1.cap"><b>IDE 도구</b>: 에디터, 폼 디자이너, 빌드, 디버거, 프로젝트를 모델이 직접 다룹니다.</div></div>
         <div class="stat reveal"><div class="big">/<em>all</em></div><div class="cap" data-i18n="stat2.cap"><b>omp 명령</b>을 채팅에서. 터미널 전용 명령도 RAD Agent가 받아 처리합니다.</div></div>
         <div class="stat reveal"><div class="big">5<em> UI</em></div><div class="cap" data-i18n="stat3.cap"><b>화면 언어</b>: English, 日本語, Deutsch, Français, 한국어.</div></div>
       </div>
@@ -468,6 +469,35 @@
       </div>
     </section>
 
+    <section id="design" class="section">
+      <div class="wrap">
+        <div class="show">
+          <div class="reveal">
+            <p class="sec-eyebrow" data-i18n="ds.eyebrow">새 기능 · v1.3 디자인 시스템</p>
+            <h2 class="sec-title" data-i18n="ds.title">스타일을 고르면<br>디자인 규칙이 따라옵니다.</h2>
+            <p class="sec-lede" data-i18n="ds.lede1"><code style="font-family:var(--mono);font-size:14px">/design</code>으로 RAD Studio에 들어 있는 VCL·FMX 스타일 중 하나를 고르면, RAD Agent가 프로젝트 폴더에 <code style="font-family:var(--mono);font-size:14px">DESIGN.md</code>를 쓰고 프로젝트에 그 스타일을 적용합니다. VCL은 프로젝트 옵션과 <code style="font-family:var(--mono);font-size:14px">TStyleManager</code>, FMX는 메인 폼의 <code style="font-family:var(--mono);font-size:14px">TStyleBook</code>. IDE가 하는 방식 그대로입니다.</p>
+            <p class="sec-lede" style="margin-top:14px" data-i18n="ds.lede2">스타일은 컨트롤의 겉모습만 정합니다. 간격, 여백, 글꼴 단계, 모서리 반경처럼 스타일에 없는 것은 공식 플랫폼 기준(Windows 11 · Fluent 2, Material 3, macOS HIG)에서 가져온 값으로 채우고, 값마다 출처를 적습니다. 스타일의 출처가 확인된 것과 이름으로만 추정한 것, Embarcadero 자체 스킨도 구분합니다.</p>
+            <p class="sec-lede" style="margin-top:14px" data-i18n="ds.lede3">에이전트는 UI를 만들기 전에 DESIGN.md를 읽고, 폼을 바꾼 뒤 <code style="font-family:var(--mono);font-size:14px">rad.design_lint</code>로 간격·글꼴·색·반경이 규칙을 벗어났는지 검사해 고칩니다.</p>
+            <div class="modes"><b data-i18n="ds.m1">/design</b><b data-i18n="ds.m2">DESIGN.md</b><b data-i18n="ds.m3">rad.design_lint</b><b data-i18n="ds.m4">Fluent 2 · Material 3 · macOS HIG</b></div>
+          </div>
+          <div class="approval reveal" aria-hidden="true">
+            <div class="t" data-i18n="ds.card">DESIGN.md · Windows Modern (VCL)</div>
+            <div class="diff">
+              <div class="c">radstudio:</div>
+              <div class="c">  style: "Windows Modern"</div>
+              <div class="c">  provenance: "windows-11 (vendor-statement)"</div>
+              <div class="c">  preset: fluent-windows11</div>
+              <div class="a">spacing:  xs 4px · sm 8px · md 12px · lg 16px</div>
+              <div class="a">typography.body: Segoe UI Variable 14/20</div>
+              <div class="a">rounded:  control 4px · overlay 8px</div>
+              <div class="a">colors.style-accent: "#91C2EA"</div>
+            </div>
+            <div class="acts"><span class="btn btn-accent" data-i18n="ds.lint">rad.design_lint → 0 findings</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="approval" class="section">
       <div class="wrap">
         <div class="show">
@@ -513,7 +543,7 @@
       <div class="wrap">
         <div class="sec-head center reveal">
           <p class="sec-eyebrow" data-i18n="dl.eyebrow">다운로드</p>
-          <h2 class="sec-title">RAD Agent v1.2.10</h2>
+          <h2 class="sec-title">RAD Agent v1.3.0</h2>
           <p class="sec-lede" data-i18n="dl.lede">설치 프로그램이 이 PC의 RAD Studio를 찾아 고른 IDE에 RAD Agent를 추가합니다.</p>
         </div>
         <div class="dl-grid">
@@ -521,8 +551,8 @@
             <div class="arch"><span class="archname">Windows</span><span class="pill" data-i18n="dl.pill">설치형</span></div>
             <p class="for" data-i18n="dl.for">RAD Studio 13 Florence — 32-bit IDE와 64-bit IDE.</p>
             <div class="row">
-              <a class="btn btn-accent" id="dl-setup" href="https://github.com/kimmingul/RADAgent/releases/download/v1.2.10/RADAgent-Setup-1.2.10.0.exe" data-i18n="dl.setup">설치 파일 받기</a>
-              <a class="btn btn-ghost" id="dl-notes" href="https://github.com/kimmingul/RADAgent/releases/tag/v1.2.10" data-i18n="dl.notes">릴리스 노트</a>
+              <a class="btn btn-accent" id="dl-setup" href="https://github.com/kimmingul/RADAgent/releases/download/v1.3.0/RADAgent-Setup-1.3.0.0.exe" data-i18n="dl.setup">설치 파일 받기</a>
+              <a class="btn btn-ghost" id="dl-notes" href="https://github.com/kimmingul/RADAgent/releases/tag/v1.3.0" data-i18n="dl.notes">릴리스 노트</a>
             </div>
           </div>
           <div class="dl reveal">
@@ -794,6 +824,54 @@
        "ap.title": {
         "ko": "바꾸기 전에<br>먼저 보여 줍니다.",
         "en": "It shows you<br>before it changes."
+       },
+       "nav.design": {
+        "ko": "디자인",
+        "en": "Design"
+       },
+       "ds.eyebrow": {
+        "ko": "새 기능 · v1.3 디자인 시스템",
+        "en": "New in v1.3 · Design system"
+       },
+       "ds.title": {
+        "ko": "스타일을 고르면<br>디자인 규칙이 따라옵니다.",
+        "en": "Pick a style,<br>get the design rules with it."
+       },
+       "ds.lede1": {
+        "ko": "<code style=\"font-family:var(--mono);font-size:14px\">/design</code>으로 RAD Studio에 들어 있는 VCL·FMX 스타일 중 하나를 고르면, RAD Agent가 프로젝트 폴더에 <code style=\"font-family:var(--mono);font-size:14px\">DESIGN.md</code>를 쓰고 프로젝트에 그 스타일을 적용합니다. VCL은 프로젝트 옵션과 <code style=\"font-family:var(--mono);font-size:14px\">TStyleManager</code>, FMX는 메인 폼의 <code style=\"font-family:var(--mono);font-size:14px\">TStyleBook</code>. IDE가 하는 방식 그대로입니다.",
+        "en": "Run <code style=\"font-family:var(--mono);font-size:14px\">/design</code> and pick one of the VCL or FMX styles RAD Studio ships. RAD Agent writes <code style=\"font-family:var(--mono);font-size:14px\">DESIGN.md</code> in the project folder and gives the project that style: project options and <code style=\"font-family:var(--mono);font-size:14px\">TStyleManager</code> for VCL, a <code style=\"font-family:var(--mono);font-size:14px\">TStyleBook</code> on the main form for FMX, the way the IDE does it."
+       },
+       "ds.lede2": {
+        "ko": "스타일은 컨트롤의 겉모습만 정합니다. 간격, 여백, 글꼴 단계, 모서리 반경처럼 스타일에 없는 것은 공식 플랫폼 기준(Windows 11 · Fluent 2, Material 3, macOS HIG)에서 가져온 값으로 채우고, 값마다 출처를 적습니다. 스타일의 출처가 확인된 것과 이름으로만 추정한 것, Embarcadero 자체 스킨도 구분합니다.",
+        "en": "A style only decides how each control looks. Spacing, margins, the type ramp and corner radii come from official platform guidance (Windows 11 · Fluent 2, Material 3, macOS HIG), each value with its source. Styles whose origin is verified are told apart from ones known only by name and from Embarcadero's own skins."
+       },
+       "ds.lede3": {
+        "ko": "에이전트는 UI를 만들기 전에 DESIGN.md를 읽고, 폼을 바꾼 뒤 <code style=\"font-family:var(--mono);font-size:14px\">rad.design_lint</code>로 간격·글꼴·색·반경이 규칙을 벗어났는지 검사해 고칩니다.",
+        "en": "The agent reads DESIGN.md before building UI, and after changing a form it runs <code style=\"font-family:var(--mono);font-size:14px\">rad.design_lint</code> to find spacing, fonts, colors and radii off the rules, then fixes them."
+       },
+       "ds.m1": {
+        "ko": "/design",
+        "en": "/design"
+       },
+       "ds.m2": {
+        "ko": "DESIGN.md",
+        "en": "DESIGN.md"
+       },
+       "ds.m3": {
+        "ko": "rad.design_lint",
+        "en": "rad.design_lint"
+       },
+       "ds.m4": {
+        "ko": "Fluent 2 · Material 3 · macOS HIG",
+        "en": "Fluent 2 · Material 3 · macOS HIG"
+       },
+       "ds.card": {
+        "ko": "DESIGN.md · Windows Modern (VCL)",
+        "en": "DESIGN.md · Windows Modern (VCL)"
+       },
+       "ds.lint": {
+        "ko": "rad.design_lint → 0 findings",
+        "en": "rad.design_lint → 0 findings"
        },
        "ap.lede1": {
         "ko": "IDE와 파일을 바꾸는 도구는 채팅 안의 카드로 승인을 받습니다. 바뀌는 줄이 diff로 보이고, 중지를 누르면 떠 있는 카드는 모두 거부됩니다.",
