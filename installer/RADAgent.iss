@@ -1,7 +1,8 @@
 ﻿; RADAgent setup (Inno Setup 6). Built by scripts\package.ps1, which stages the signed BPLs under
 ; PayloadDir\<BDS version>\<Win32|Win64>\ and passes AppVersion, PayloadDir, OutputDir and, when
-; signing, Sign=1 with the SignTool "nanum". OmpVersion/OmpSha256 pin the omp release that is
-; downloaded when omp is missing (the version RADAgent is tested with).
+; signing, Sign=1 with the SignTool "nanum". When omp is missing, the "install omp" task (on by
+; default) downloads the latest omp release for this PC's processor (x64 or ARM64), checked by
+; the SHA-256 GitHub publishes for it; RADAgent installs without omp when the user unticks it.
 ;
 ; Per-user install (no administrator rights): files go to %LOCALAPPDATA%\Programs\RADAgent and
 ; each chosen IDE gets the package in HKCU\Software\Embarcadero\BDS\<version>\Known Packages
@@ -15,9 +16,6 @@
 #endif
 #ifndef OutputDir
   #define OutputDir "..\dist"
-#endif
-#ifndef OmpVersion
-  #error OmpVersion and OmpSha256 are required. Run scripts\package.ps1.
 #endif
 
 #define Publisher "Nanum Space Co., Ltd."
@@ -84,9 +82,11 @@ english.NoIde=No supported RAD Studio was found on this PC (13 Florence, 12 Athe
 english.CloseIde=RAD Studio is running. Close every RAD Studio window, then click Next.
 english.CloseIdeUninstall=RAD Studio is running. Close every RAD Studio window and run the uninstaller again.
 english.OpenOmp=Open the oh-my-pi (omp) install page (omp is not installed; RAD Agent needs it)
-english.OmpMemo=oh-my-pi (omp) %1, which RAD Agent runs, is downloaded from GitHub (about 230 MB) to:
-english.OmpDownloading=Downloading oh-my-pi (omp)
-english.OmpDownloadFailed=omp could not be downloaded: %1%n%nContinue without omp? RAD Agent cannot chat until omp is installed.
+english.OmpMemo=The latest oh-my-pi (omp) release for %1 is downloaded from GitHub (about 230 MB) to:
+english.TaskInstallOmp=Install oh-my-pi (omp), which RAD Agent runs (latest release for %1, about 230 MB, from GitHub)
+english.OmpLookupFailed=the latest omp release could not be looked up
+english.OmpDownloading=Downloading oh-my-pi (omp) %1 for %2
+english.OmpDownloadFailed=omp was not installed: %1%n%nRAD Agent is installed without it. Install omp later from its page (offered at the end of setup).
 english.OpenWebView2=Open the Microsoft Edge WebView2 Runtime page (not found; without it the chat is plain text)
 english.DeleteSettings=Also delete RAD Agent settings and data (IDE settings, side-question notes, downloaded clangd, chat browser data)?
 english.TypeCustom=Custom
@@ -97,9 +97,11 @@ korean.NoIde=이 PC에서 지원하는 RAD Studio를 찾지 못했습니다(이 
 korean.CloseIde=RAD Studio가 실행 중입니다. RAD Studio 창을 모두 닫은 뒤 다음을 누르세요.
 korean.CloseIdeUninstall=RAD Studio가 실행 중입니다. RAD Studio 창을 모두 닫고 제거를 다시 실행하세요.
 korean.OpenOmp=oh-my-pi(omp) 설치 페이지 열기 (omp가 설치되지 않았습니다. RAD Agent에 필요합니다)
-korean.OmpMemo=RAD Agent가 쓰는 oh-my-pi(omp) %1을(를) GitHub에서 받아(약 230MB) 설치합니다:
-korean.OmpDownloading=oh-my-pi(omp) 받는 중
-korean.OmpDownloadFailed=omp를 받지 못했습니다: %1%n%nomp 없이 계속할까요? omp를 설치하기 전까지 RAD Agent 채팅을 쓸 수 없습니다.
+korean.OmpMemo=%1용 oh-my-pi(omp) 최신 버전을 GitHub에서 받아(약 230MB) 설치합니다:
+korean.TaskInstallOmp=RAD Agent가 쓰는 oh-my-pi(omp) 함께 설치 (%1용 최신 버전, GitHub에서 약 230MB)
+korean.OmpLookupFailed=최신 omp 버전을 확인하지 못했습니다
+korean.OmpDownloading=oh-my-pi(omp) %1 받는 중 (%2)
+korean.OmpDownloadFailed=omp를 설치하지 않았습니다: %1%n%nRAD Agent는 omp 없이 설치됩니다. 나중에 omp 페이지(설치 마지막 화면에서 열 수 있음)에서 설치하세요.
 korean.OpenWebView2=Microsoft Edge WebView2 런타임 페이지 열기 (없으면 채팅이 글자 화면으로 보입니다)
 korean.DeleteSettings=RAD Agent 설정과 데이터(IDE 설정, 곁가지 질문 메모, 받은 clangd, 채팅 브라우저 데이터)도 지울까요?
 korean.TypeCustom=사용자 지정
@@ -110,9 +112,11 @@ japanese.NoIde=この PC で対応する RAD Studio が見つかりません (�
 japanese.CloseIde=RAD Studio が実行中です。RAD Studio のウィンドウをすべて閉じてから [次へ] をクリックしてください。
 japanese.CloseIdeUninstall=RAD Studio が実行中です。RAD Studio のウィンドウをすべて閉じてから、アンインストールをもう一度実行してください。
 japanese.OpenOmp=oh-my-pi (omp) のインストール ページを開く (omp が未インストールです。RAD Agent に必要です)
-japanese.OmpMemo=RAD Agent が使う oh-my-pi (omp) %1 を GitHub からダウンロード (約 230 MB) してインストールします:
-japanese.OmpDownloading=oh-my-pi (omp) をダウンロード中
-japanese.OmpDownloadFailed=omp をダウンロードできませんでした: %1%n%nomp なしで続行しますか? omp をインストールするまで RAD Agent のチャットは使えません。
+japanese.OmpMemo=%1 用の oh-my-pi (omp) 最新版を GitHub からダウンロード (約 230 MB) してインストールします:
+japanese.TaskInstallOmp=RAD Agent が使う oh-my-pi (omp) も一緒にインストールする (%1 用の最新版、GitHub から約 230 MB)
+japanese.OmpLookupFailed=最新の omp リリースを確認できませんでした
+japanese.OmpDownloading=oh-my-pi (omp) %1 をダウンロード中 (%2)
+japanese.OmpDownloadFailed=omp はインストールされませんでした: %1%n%nRAD Agent は omp なしでインストールされます。後で omp のページ (セットアップの最後に開けます) からインストールしてください。
 japanese.OpenWebView2=Microsoft Edge WebView2 ランタイムのページを開く (ない場合、チャットはテキスト表示になります)
 japanese.DeleteSettings=RAD Agent の設定とデータ (IDE 設定、サイド質問のメモ、ダウンロードした clangd、チャットのブラウザー データ) も削除しますか?
 japanese.TypeCustom=カスタム
@@ -123,9 +127,11 @@ german.NoIde=Auf diesem PC wurde kein unterstütztes RAD Studio gefunden (13 Flo
 german.CloseIde=RAD Studio läuft. Schließen Sie alle RAD Studio-Fenster und klicken Sie dann auf Weiter.
 german.CloseIdeUninstall=RAD Studio läuft. Schließen Sie alle RAD Studio-Fenster und starten Sie die Deinstallation erneut.
 german.OpenOmp=Installationsseite von oh-my-pi (omp) öffnen (omp ist nicht installiert; RAD Agent benötigt es)
-german.OmpMemo=oh-my-pi (omp) %1, das RAD Agent ausführt, wird von GitHub heruntergeladen (etwa 230 MB) nach:
-german.OmpDownloading=oh-my-pi (omp) wird heruntergeladen
-german.OmpDownloadFailed=omp konnte nicht heruntergeladen werden: %1%n%nOhne omp fortfahren? Bis omp installiert ist, kann RAD Agent nicht chatten.
+german.OmpMemo=Die neueste oh-my-pi (omp)-Version für %1 wird von GitHub heruntergeladen (etwa 230 MB) nach:
+german.TaskInstallOmp=oh-my-pi (omp), das RAD Agent ausführt, mitinstallieren (neueste Version für %1, etwa 230 MB von GitHub)
+german.OmpLookupFailed=die neueste omp-Version konnte nicht ermittelt werden
+german.OmpDownloading=oh-my-pi (omp) %1 wird heruntergeladen (%2)
+german.OmpDownloadFailed=omp wurde nicht installiert: %1%n%nRAD Agent wird ohne omp installiert. Installieren Sie omp später über seine Seite (am Ende des Setups angeboten).
 german.OpenWebView2=Seite der Microsoft Edge WebView2-Laufzeit öffnen (nicht gefunden; ohne sie zeigt der Chat nur Text)
 german.DeleteSettings=Auch die Einstellungen und Daten von RAD Agent löschen (IDE-Einstellungen, Notizen zu Nebenfragen, heruntergeladenes clangd, Browserdaten des Chats)?
 german.TypeCustom=Benutzerdefiniert
@@ -136,9 +142,11 @@ french.NoIde=Aucun RAD Studio pris en charge n'a été trouvé sur ce PC (13 Flo
 french.CloseIde=RAD Studio est en cours d'exécution. Fermez toutes les fenêtres de RAD Studio, puis cliquez sur Suivant.
 french.CloseIdeUninstall=RAD Studio est en cours d'exécution. Fermez toutes les fenêtres de RAD Studio et relancez la désinstallation.
 french.OpenOmp=Ouvrir la page d'installation d'oh-my-pi (omp) (omp n'est pas installé ; RAD Agent en a besoin)
-french.OmpMemo=oh-my-pi (omp) %1, qu'exécute RAD Agent, est téléchargé depuis GitHub (environ 230 Mo) vers :
-french.OmpDownloading=Téléchargement d'oh-my-pi (omp)
-french.OmpDownloadFailed=Impossible de télécharger omp : %1%n%nContinuer sans omp ? RAD Agent ne peut pas discuter tant qu'omp n'est pas installé.
+french.OmpMemo=La dernière version d'oh-my-pi (omp) pour %1 est téléchargée depuis GitHub (environ 230 Mo) vers :
+french.TaskInstallOmp=Installer aussi oh-my-pi (omp), qu'exécute RAD Agent (dernière version pour %1, environ 230 Mo depuis GitHub)
+french.OmpLookupFailed=impossible de trouver la dernière version d'omp
+french.OmpDownloading=Téléchargement d'oh-my-pi (omp) %1 (%2)
+french.OmpDownloadFailed=omp n'a pas été installé : %1%n%nRAD Agent est installé sans omp. Installez omp plus tard depuis sa page (proposée à la fin de l'installation).
 french.OpenWebView2=Ouvrir la page du runtime Microsoft Edge WebView2 (introuvable ; sans lui, le chat s'affiche en texte)
 french.DeleteSettings=Supprimer aussi les paramètres et données de RAD Agent (paramètres de l'EDI, notes des questions annexes, clangd téléchargé, données du navigateur du chat) ?
 french.TypeCustom=Personnalisée
@@ -146,6 +154,9 @@ french.ComponentsLabel=EDI RAD Studio auxquels ajouter RAD Agent :
 
 [Types]
 Name: "custom"; Description: "{cm:TypeCustom}"; Flags: iscustom
+
+[Tasks]
+Name: "installomp"; Description: "{cm:TaskInstallOmp,{code:OmpArchName}}"; Check: OmpInstallable
 
 [Components]
 #if Has370w64
@@ -220,7 +231,7 @@ Filename: "https://developer.microsoft.com/microsoft-edge/webview2/"; Descriptio
 
 [Code]
 const
-  OmpUrl = 'https://github.com/can1357/oh-my-pi/releases/download/v{#OmpVersion}/omp-windows-x64.exe';
+  OmpLatestApi = 'https://api.github.com/repos/can1357/oh-my-pi/releases/latest';
   WebView2Client = 'SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
 
 function IdeRoot(const Version: String): String;
@@ -279,6 +290,90 @@ begin
     (FileSearch('omp.exe', GetEnv('PATH')) = '');
 end;
 
+{ The omp build for this processor: 'arm64', 'x64', or '' (omp has no 32-bit Windows build).
+  Checked first for ARM64, which also runs x64 programs. }
+function OmpArch: String;
+begin
+  if IsArm64 then
+    Result := 'arm64'
+  else if ProcessorArchitecture = paX64 then
+    Result := 'x64'
+  else
+    Result := '';
+end;
+
+function OmpArchName(Param: String): String;
+begin
+  if OmpArch = 'arm64' then
+    Result := 'ARM64'
+  else
+    Result := 'x64';
+end;
+
+{ The "install omp" task is offered when omp is missing and has a build for this PC. }
+function OmpInstallable: Boolean;
+begin
+  Result := OmpMissing and (OmpArch <> '');
+end;
+
+{ The text after Key (a JSON string value) in Json from position From, or '' when missing. }
+function JsonStringAfter(const Json, Key: String; From: Integer): String;
+var
+  Rest: String;
+  At: Integer;
+begin
+  Result := '';
+  Rest := Copy(Json, From, MaxInt);
+  At := Pos('"' + Key + '":"', Rest);
+  if At = 0 then
+    Exit;
+  Rest := Copy(Rest, At + Length(Key) + 4, MaxInt);
+  At := Pos('"', Rest);
+  if At > 0 then
+    Result := Copy(Rest, 1, At - 1);
+end;
+
+{ Tag, download URL and SHA-256 of omp-windows-<arch>.exe in GitHub's latest release. False with
+  Problem when it cannot be read: nothing older is installed instead. }
+function LatestOmp(out Tag, Url, Sha256, Problem: String): Boolean;
+var
+  Json: AnsiString;
+  Text, Asset, Digest: String;
+  At: Integer;
+begin
+  Result := False;
+  Asset := 'omp-windows-' + OmpArch + '.exe';
+  try
+    DownloadTemporaryFile(OmpLatestApi, 'omp-latest.json', '', nil);
+  except
+    Problem := CustomMessage('OmpLookupFailed') + ': ' + GetExceptionMessage;
+    Exit;
+  end;
+  if not LoadStringFromFile(ExpandConstant('{tmp}\omp-latest.json'), Json) then
+  begin
+    Problem := CustomMessage('OmpLookupFailed');
+    Exit;
+  end;
+  Text := String(Json);
+  Tag := JsonStringAfter(Text, 'tag_name', 1);
+  At := Pos('"name":"' + Asset + '"', Text);
+  if At > 0 then
+  begin
+    { Within one asset object "digest" comes before "browser_download_url". }
+    Digest := JsonStringAfter(Text, 'digest', At);
+    Url := JsonStringAfter(Text, 'browser_download_url', At);
+  end;
+  if (Tag = '') or (At = 0) or (Pos('sha256:', Digest) <> 1) or (Pos('/' + Asset, Url) = 0) then
+  begin
+    Problem := CustomMessage('OmpLookupFailed') + ' (' + Asset + ')';
+    Exit;
+  end;
+  Sha256 := Copy(Digest, 8, 64);
+  Result := Length(Sha256) = 64;
+  if not Result then
+    Problem := CustomMessage('OmpLookupFailed') + ' (' + Asset + ')';
+end;
+
 { omp was fetched on the Ready page and goes to %LOCALAPPDATA%\omp. }
 function OmpDownloaded: Boolean;
 begin
@@ -320,26 +415,37 @@ procedure InitializeWizard;
 begin
   WizardForm.SelectComponentsLabel.Caption := CustomMessage('ComponentsLabel');
   DownloadPage := CreateDownloadPage(CustomMessage('OmpDownloading'),
-    FmtMessage(CustomMessage('OmpMemo'), ['{#OmpVersion}']), nil);
+    FmtMessage(CustomMessage('OmpMemo'), [OmpArchName('')]), nil);
 end;
 
 function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo, MemoTypeInfo,
   MemoComponentsInfo, MemoGroupInfo, MemoTasksInfo: String): String;
 begin
   Result := MemoDirInfo + NewLine + NewLine + MemoComponentsInfo;
-  if OmpMissing then
-    Result := Result + NewLine + NewLine + FmtMessage(CustomMessage('OmpMemo'), ['{#OmpVersion}']) +
+  if WizardIsTaskSelected('installomp') then
+    Result := Result + NewLine + NewLine + FmtMessage(CustomMessage('OmpMemo'), [OmpArchName('')]) +
       NewLine + Space + ExpandConstant('{localappdata}\omp\omp.exe');
 end;
 
-{ RADAgent is useless without omp: fetch the pinned release (SHA-256 checked) before installing. }
+{ The user kept "install omp": look up the latest release for this processor and fetch it
+  (SHA-256 checked) before installing. omp is optional: a failed lookup or download is reported
+  and RAD Agent is installed without it. }
 function NextButtonClick(CurPageID: Integer): Boolean;
+var
+  Tag, Url, Sha256, Problem: String;
 begin
   Result := True;
-  if (CurPageID <> wpReady) or not OmpMissing or OmpFetched then
+  if (CurPageID <> wpReady) or OmpFetched or not WizardIsTaskSelected('installomp') then
     Exit;
+  if not LatestOmp(Tag, Url, Sha256, Problem) then
+  begin
+    SuppressibleMsgBox(FmtMessage(CustomMessage('OmpDownloadFailed'), [Problem]), mbInformation, MB_OK, IDOK);
+    Exit;
+  end;
+  DownloadPage.SetText(FmtMessage(CustomMessage('OmpDownloading'), [Tag, OmpArchName('')]),
+    FmtMessage(CustomMessage('OmpMemo'), [OmpArchName('')]));
   DownloadPage.Clear;
-  DownloadPage.Add(OmpUrl, 'omp.exe', '{#OmpSha256}');
+  DownloadPage.Add(Url, 'omp.exe', Sha256);
   DownloadPage.Show;
   try
     try
@@ -349,8 +455,8 @@ begin
       if DownloadPage.AbortedByUser then
         Result := False
       else
-        Result := SuppressibleMsgBox(FmtMessage(CustomMessage('OmpDownloadFailed'), [GetExceptionMessage]),
-          mbError, MB_YESNO, IDNO) = IDYES;
+        SuppressibleMsgBox(FmtMessage(CustomMessage('OmpDownloadFailed'), [GetExceptionMessage]),
+          mbInformation, MB_OK, IDOK);
     end;
   finally
     DownloadPage.Hide;

@@ -9,7 +9,7 @@ RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키
 ## 요구사항
 
 - Windows, RAD Studio 13.2(BDS 37.0) 32-bit 또는 64-bit IDE. 10.4 Sydney, 11 Alexandria, 12 Athens도 빌드되게 맞춰 두었다(아래 "한계").
-- omp. 검증 버전 18.2.11. 없으면 설치 프로그램이 그 버전을 GitHub에서 받아 `%LOCALAPPDATA%\omp\omp.exe`에 설치한다. RAD Agent는 PATH의 omp, 그다음 그 위치를 쓰고, 다른 경로는 설정에서 지정한다.
+- omp. 검증 버전 18.2.11. 없으면 설치 프로그램이 함께 설치할지 묻고(기본 켜짐) 이 PC에 맞는(x64·ARM64) 최신 릴리스를 GitHub에서 받아 `%LOCALAPPDATA%\omp\omp.exe`에 설치한다. RAD Agent는 PATH의 omp, 그다음 그 위치를 쓰고, 다른 경로는 설정에서 지정한다.
 - Edge WebView2 런타임(Windows 10/11에 보통 들어 있다). 없으면 채팅은 글자 화면으로 동작한다.
 - git(체크포인트용). 없으면 체크포인트만 꺼진다.
 - 선택: C++Builder 프로젝트의 코드 탐색에 [clangd](https://github.com/clangd/clangd/releases). 설정 창에서 받아 설치할 수 있다.
@@ -21,7 +21,7 @@ RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키
 1. RAD Studio를 모두 닫는다. 켜져 있으면 설치 프로그램이 닫으라고 한다.
 2. 이 PC에 설치된 RAD Studio 중 설치 파일에 들어 있는 IDE가 목록에 나온다(13은 32비트·64비트 IDE 따로). RAD Agent를 넣을 IDE를 고른다.
 3. 파일은 `%LOCALAPPDATA%\Programs\RADAgent\<BDS 버전>\<Win32|Win64>\`에 들어가고, 그 IDE의 `Known Packages`(64비트 IDE는 `Known Packages x64`)에 등록된다. 같은 이름의 다른 RAD Agent 등록은 지운다(두 개는 함께 로드되지 않는다).
-4. omp가 없으면 설치 직전에 검증된 omp(18.2.11, 약 230MB)를 GitHub에서 받아 SHA-256을 확인한 뒤 `%LOCALAPPDATA%\omp`에 설치하고 사용자 PATH에 더한다. 받지 못하면 omp 없이 계속할지 묻는다. omp는 RAD Agent를 제거해도 남는다. WebView2 런타임이 없으면 마지막 화면에서 설치 페이지를 열 수 있다.
+4. omp가 없으면 "oh-my-pi(omp) 함께 설치" 항목(기본 켜짐)이 나온다. 켜 두면 설치 직전에 GitHub 최신 릴리스에서 이 PC의 프로세서에 맞는 파일(`omp-windows-x64.exe` 또는 `omp-windows-arm64.exe`, 약 230MB)을 받아 GitHub이 공개한 SHA-256을 확인한 뒤 `%LOCALAPPDATA%\omp`에 설치하고 사용자 PATH에 더한다. 끄거나, 최신 릴리스를 확인·다운로드하지 못하면 알린 뒤 omp 없이 설치를 마친다(예전 버전으로 대신 받지 않는다). 32비트 Windows에는 omp 빌드가 없어 이 항목이 나오지 않는다. 조용한 설치에서 건너뛰려면 `/MERGETASKS="!installomp"`. omp는 RAD Agent를 제거해도 남는다. WebView2 런타임이 없으면 마지막 화면에서 설치 페이지를 열 수 있다.
 5. IDE를 켜고 Tools 또는 View → RAD Agent 로 창을 연다.
 
 제거는 Windows 설정 → 앱에서 RAD Agent를 고른다. 등록과 파일을 지우고, RAD Agent 설정과 데이터(IDE 설정, `/btw` 메모, 받은 clangd, 채팅 브라우저 데이터)까지 지울지 묻는다.
