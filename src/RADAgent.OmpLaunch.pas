@@ -233,6 +233,13 @@ begin
     else if Profile.Tools.Framework <> '' then
       Lines.Add('- Prefer the form designer for fixed UI (rad.new_module, rad.form_apply); this project ' +
         'allows building UI in code where that is clearly simpler.');
+    if Profile.Tools.Framework <> '' then
+      Lines.Add('- Design system: ' + IncludeTrailingPathDelimiter(Profile.ProjectDir) + 'DESIGN.md. ' +
+        'When it exists, read it and skill://radstudio-ui-design before creating or changing UI, keep ' +
+        'to its spacing scale, type ramp, radii and colors, and after changing a form run ' +
+        'rad.design_lint on it and fix the findings (or say why one is intended). When it does not ' +
+        'exist and the task builds new UI, first ask the user to pick a style (/design, or ' +
+        'rad.design_styles then rad.design_init once they agree).');
     Lines.Add('- While a debug session is running (rad.debug_state), do not edit sources unless asked.');
     Lines.Add('- Every user message is a git checkpoint; do not run git commands that commit, reset or ' +
       'switch branches unless the user asks.');

@@ -22,7 +22,7 @@ uses
   RADAgent.HostToolDefs, RADAgent.DebugTools, RADAgent.DebugControl,
   RADAgent.FormEdits, RADAgent.FormTools, RADAgent.ProjectProfile,
   RADAgent.ModuleCreator, RADAgent.ChatPlan, RADAgent.FormShot, RADAgent.FormText,
-  RADAgent.AgentSettings, RADAgent.UnitRename;
+  RADAgent.AgentSettings, RADAgent.UnitRename, RADAgent.DesignInit, RADAgent.DesignLint;
 
 function ArgText(const ArgumentsJson, Name: string): string;
 var
@@ -161,6 +161,16 @@ begin
       ResultText)
   else if ToolName = ToolRenameProject then
     IsError := not RenameProject(ArgText(ArgumentsJson, 'name'), Approval, ResultText)
+  else if ToolName = ToolDesignStyles then
+  begin
+    ResultText := DesignStylesJson;
+    IsError := ResultText.Contains('"ok":false');
+  end
+  else if ToolName = ToolDesignInit then
+    IsError := not InitDesignTool(ArgText(ArgumentsJson, 'style'), ArgText(ArgumentsJson, 'preset'),
+      ArgText(ArgumentsJson, 'applyStyle'), Approval, ResultText)
+  else if ToolName = ToolDesignLint then
+    IsError := not DesignLint(ArgText(ArgumentsJson, 'path'), ResultText)
   else if ToolName = ToolListComponents then
   begin
     ResultText := ComponentsJson(ArgText(ArgumentsJson, 'filter'));

@@ -1,0 +1,2002 @@
+{
+  "generator": "scripts/StyleCatalog",
+  "bds": "37.0",
+  "styles": [
+    {
+      "file": "Amakrits.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Amakrits",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#262626",
+        "surface": "#303030",
+        "text": "#C0C0C0",
+        "textDisabled": "#808080",
+        "accent": "#65F7E2",
+        "accentText": "#000000",
+        "border": "#000000"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "AmethystKamri.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Amethyst Kamri",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#E7EAEE",
+        "surface": "#FFFFFF",
+        "text": "#000000",
+        "textDisabled": "#808080",
+        "accent": "#EF7644",
+        "accentText": "#FFFFFF",
+        "border": "#A1A7C0"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "AquaGraphite.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Aqua Graphite",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#252525",
+        "surface": "#252525",
+        "text": "#EAEAEA",
+        "textDisabled": "#FFFFFF",
+        "accent": "#0A8BCC",
+        "accentText": "#000000",
+        "border": "#484848"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "AquaLightSlate.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Aqua Light Slate",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#D6D6D6",
+        "surface": "#FFFFFF",
+        "text": "#000000",
+        "textDisabled": "#808080",
+        "accent": "#A0D1EE",
+        "accentText": "#000000",
+        "border": "#B2B2B2"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Auric.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Auric",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#323232",
+        "surface": "#323232",
+        "text": "#C0C0C0",
+        "textDisabled": "#808080",
+        "accent": "#FFD93A",
+        "accentText": "#000000",
+        "border": "#000000"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Carbon.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Carbon",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#333333",
+        "surface": "#191919",
+        "text": "#EAEAEA",
+        "textDisabled": "#C0C0C0",
+        "accent": "#265A72",
+        "accentText": "#000000",
+        "border": "#000000"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "CharcoalDarkSlate.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Charcoal Dark Slate",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#3E3E3E",
+        "surface": "#232323",
+        "text": "#C0C0C0",
+        "textDisabled": "#808080",
+        "accent": "#5F5F5F",
+        "accentText": "#FFFFFF",
+        "border": "#282828"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "CobaltXEMedia.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Cobalt XEMedia",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#010101",
+        "surface": "#010101",
+        "text": "#FFFFFF",
+        "textDisabled": "#414141",
+        "accent": "#0B3564",
+        "accentText": "#FFFFFF",
+        "border": "#32435E"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "CyanDusk.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Cyan Dusk",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#E3E7EA",
+        "surface": "#FFFFFF",
+        "text": "#000000",
+        "textDisabled": "#808080",
+        "accent": "#B9DCED",
+        "accentText": "#000000",
+        "border": "#9AA8B9"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "CyanNight.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Cyan Night",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#E3E5EA",
+        "surface": "#FFFFFF",
+        "text": "#000000",
+        "textDisabled": "#808080",
+        "accent": "#849CD0",
+        "accentText": "#000000",
+        "border": "#9AA0B9"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "EmeraldLightSlate.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Emerald Light Slate",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#D6D6D6",
+        "surface": "#FFFFFF",
+        "text": "#000000",
+        "textDisabled": "#808080",
+        "accent": "#5AEB36",
+        "accentText": "#000000",
+        "border": "#B2B2B2"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Glossy.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Glossy",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#292929",
+        "surface": "#121212",
+        "text": "#FFFFFF",
+        "textDisabled": "#808080",
+        "accent": "#307EDE",
+        "accentText": "#FFFFFF",
+        "border": "#000000"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Glow.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Glow",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#242930",
+        "surface": "#191D22",
+        "text": "#FFFFFF",
+        "textDisabled": "#808080",
+        "accent": "#35BDBB",
+        "accentText": "#000000",
+        "border": "#1B1E23"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "GoldenGraphite.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Golden Graphite",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#252525",
+        "surface": "#252525",
+        "text": "#EAEAEA",
+        "textDisabled": "#FFFFFF",
+        "accent": "#CD890A",
+        "accentText": "#000000",
+        "border": "#484848"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "IcebergClassico.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Iceberg Classico",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#D9E4ED",
+        "surface": "#D9E4ED",
+        "text": "#373635",
+        "textDisabled": "#808080",
+        "accent": "#F0D874",
+        "accentText": "#000000",
+        "border": "#9EBACD"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "LavenderClassico.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Lavender Classico",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#D3D3DD",
+        "surface": "#D3D3DD",
+        "text": "#616161",
+        "textDisabled": "#808080",
+        "accent": "#F3D970",
+        "accentText": "#000000",
+        "border": "#85859C"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Light.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Light",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#FFFFFF",
+        "surface": "#FFFFFF",
+        "text": "#000000",
+        "textDisabled": "#C0C0C0",
+        "accent": "#D5E1F3",
+        "accentText": "#000000",
+        "border": "#C6C6C6"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Luna.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Luna",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#E3EEFD",
+        "surface": "#FFFFFF",
+        "text": "#000000",
+        "textDisabled": "#808080",
+        "accent": "#FFDF6D",
+        "accentText": "#000000",
+        "border": "#B8CBE3"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Obsidian.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Obsidian",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#535353",
+        "surface": "#FFFFFF",
+        "text": "#000000",
+        "textDisabled": "#808080",
+        "accent": "#FFD74D",
+        "accentText": "#000000",
+        "border": "#2F2F2F"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "OnyxBlue.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Onyx Blue",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#313439",
+        "surface": "#292C31",
+        "text": "#FFFFFF",
+        "textDisabled": "#808080",
+        "accent": "#44759D",
+        "accentText": "#FFFFFF",
+        "border": "#202327"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "RubyGraphite.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Ruby Graphite",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#252525",
+        "surface": "#252525",
+        "text": "#EAEAEA",
+        "textDisabled": "#FFFFFF",
+        "accent": "#FF0C0C",
+        "accentText": "#000000",
+        "border": "#484848"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "SapphireKamri.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Sapphire Kamri",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#E2EAF1",
+        "surface": "#FFFFFF",
+        "text": "#000000",
+        "textDisabled": "#808080",
+        "accent": "#EF7644",
+        "accentText": "#FFFFFF",
+        "border": "#8DBBCC"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Silver.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Silver",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#E3E7EA",
+        "surface": "#E3E7EA",
+        "text": "#636D79",
+        "textDisabled": "#808080",
+        "accent": "#FFD74D",
+        "accentText": "#000000",
+        "border": "#BCC3D0"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Sky.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Sky",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#EEEEEE",
+        "surface": "#FFFFFF",
+        "text": "#000000",
+        "textDisabled": "#808080",
+        "accent": "#A1D2EA",
+        "accentText": "#000000",
+        "border": "#CECECE"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "SlateClassico.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Slate Classico",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#DFDFDF",
+        "surface": "#FFFFFF",
+        "text": "#000000",
+        "textDisabled": "#808080",
+        "accent": "#F3DA71",
+        "accentText": "#000000",
+        "border": "#B2B2B2"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "SmokeyQuartzKamri.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Smokey Quartz Kamri",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#EFEBE7",
+        "surface": "#FFFFFF",
+        "text": "#000000",
+        "textDisabled": "#808080",
+        "accent": "#EE7543",
+        "accentText": "#FFFFFF",
+        "border": "#B8B4B0"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "TabletDark.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Tablet Dark",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#2B2937",
+        "surface": "#394264",
+        "text": "#FFFFFF",
+        "textDisabled": "#808080",
+        "accent": "#1ABC9C",
+        "accentText": "#000000",
+        "border": "#000000"
+      },
+      "pair": "TabletLight.vsf",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "TabletLight.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Tablet Light",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#FFFFFF",
+        "surface": "#FFFFFF",
+        "text": "#000000",
+        "textDisabled": "#808080",
+        "accent": "#3D84DD",
+        "accentText": "#FFFFFF",
+        "border": "#BAC9D3"
+      },
+      "pair": "TabletDark.vsf",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "TurquoiseGray.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Turquoise Gray",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#EFEFEF",
+        "surface": "#FFFFFF",
+        "text": "#555555",
+        "textDisabled": "#808080",
+        "accent": "#3DC8EC",
+        "accentText": "#FFFFFF",
+        "border": "#D4D4D4"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Windows10.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Windows10",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#F3F3F3",
+        "surface": "#FFFFFF",
+        "text": "#000000",
+        "textDisabled": "#808080",
+        "accent": "#91C2EA",
+        "accentText": "#000000",
+        "border": "#999999"
+      },
+      "pair": "Windows10Dark.vsf",
+      "provenance": {
+        "system": "windows-10",
+        "basis": "name",
+        "evidence": "Windows 10 style name"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Windows10Blue.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Windows10 Blue",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#0C70C8",
+        "surface": "#F8F8F8",
+        "text": "#000000",
+        "textDisabled": "#83AED1",
+        "accent": "#3399FF",
+        "accentText": "#FFFFFF",
+        "border": "#FFFFFF"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-10",
+        "basis": "name",
+        "evidence": "Windows 10 style name"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Windows10Dark.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Windows10 Dark",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#000000",
+        "surface": "#000000",
+        "text": "#FFFFFF",
+        "textDisabled": "#808080",
+        "accent": "#0062B1",
+        "accentText": "#FFFFFF",
+        "border": "#333333"
+      },
+      "pair": "Windows10.vsf",
+      "provenance": {
+        "system": "windows-10",
+        "basis": "name",
+        "evidence": "Windows 10 style name"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Windows10Green.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Windows10 Green",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#077568",
+        "surface": "#F8F8F8",
+        "text": "#000000",
+        "textDisabled": "#C0C0C0",
+        "accent": "#65A59E",
+        "accentText": "#FFFFFF",
+        "border": "#FFFFFF"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-10",
+        "basis": "name",
+        "evidence": "Windows 10 style name"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Windows10Purple.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Windows10 Purple",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#80397B",
+        "surface": "#F8F8F8",
+        "text": "#000000",
+        "textDisabled": "#C0C0C0",
+        "accent": "#A3569E",
+        "accentText": "#FFFFFF",
+        "border": "#FFFFFF"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-10",
+        "basis": "name",
+        "evidence": "Windows 10 style name"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Windows10SlateGray.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Windows10 SlateGray",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#37474F",
+        "surface": "#4B5A62",
+        "text": "#FFFFFF",
+        "textDisabled": "#808080",
+        "accent": "#7DACA8",
+        "accentText": "#FFFFFF",
+        "border": "#263238"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-10",
+        "basis": "name",
+        "evidence": "Windows 10 style name"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "WindowsModern.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Windows Modern",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#F3F3F3",
+        "surface": "#FFFFFF",
+        "text": "#000000",
+        "textDisabled": "#808080",
+        "accent": "#91C2EA",
+        "accentText": "#000000",
+        "border": "#999999"
+      },
+      "pair": "WindowsModernDark.vsf",
+      "provenance": {
+        "system": "windows-11",
+        "basis": "vendor-statement",
+        "evidence": "RAD Studio 13.1: six new Windows 11-specific VCL styles https://blogs.embarcadero.com/announcing-the-availability-of-rad-studio-13-florence-update-1/"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "match"
+    },
+    {
+      "file": "WindowsModernBlue.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Windows Modern Blue",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#0C70C8",
+        "surface": "#F8F8F8",
+        "text": "#000000",
+        "textDisabled": "#83AED1",
+        "accent": "#3399FF",
+        "accentText": "#FFFFFF",
+        "border": "#FFFFFF"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-11",
+        "basis": "vendor-statement",
+        "evidence": "RAD Studio 13.1: six new Windows 11-specific VCL styles https://blogs.embarcadero.com/announcing-the-availability-of-rad-studio-13-florence-update-1/"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "match"
+    },
+    {
+      "file": "WindowsModernDark.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Windows Modern Dark",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#000000",
+        "surface": "#000000",
+        "text": "#FFFFFF",
+        "textDisabled": "#808080",
+        "accent": "#0062B1",
+        "accentText": "#FFFFFF",
+        "border": "#333333"
+      },
+      "pair": "WindowsModern.vsf",
+      "provenance": {
+        "system": "windows-11",
+        "basis": "vendor-statement",
+        "evidence": "RAD Studio 13.1: six new Windows 11-specific VCL styles https://blogs.embarcadero.com/announcing-the-availability-of-rad-studio-13-florence-update-1/"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "match"
+    },
+    {
+      "file": "WindowsModernGreen.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Windows Modern Green",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#077568",
+        "surface": "#F8F8F8",
+        "text": "#000000",
+        "textDisabled": "#C0C0C0",
+        "accent": "#65A59E",
+        "accentText": "#FFFFFF",
+        "border": "#FFFFFF"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-11",
+        "basis": "vendor-statement",
+        "evidence": "RAD Studio 13.1: six new Windows 11-specific VCL styles https://blogs.embarcadero.com/announcing-the-availability-of-rad-studio-13-florence-update-1/"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "match"
+    },
+    {
+      "file": "WindowsModernPurple.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Windows Modern Purple",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#80397B",
+        "surface": "#F8F8F8",
+        "text": "#000000",
+        "textDisabled": "#C0C0C0",
+        "accent": "#A3569E",
+        "accentText": "#FFFFFF",
+        "border": "#FFFFFF"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-11",
+        "basis": "vendor-statement",
+        "evidence": "RAD Studio 13.1: six new Windows 11-specific VCL styles https://blogs.embarcadero.com/announcing-the-availability-of-rad-studio-13-florence-update-1/"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "match"
+    },
+    {
+      "file": "WindowsModernSlateGray.vsf",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "VCL",
+      "format": "vsf",
+      "name": "Windows Modern SlateGray",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#37474F",
+        "surface": "#4B5A62",
+        "text": "#FFFFFF",
+        "textDisabled": "#808080",
+        "accent": "#7DACA8",
+        "accentText": "#FFFFFF",
+        "border": "#263238"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-11",
+        "basis": "vendor-statement",
+        "evidence": "RAD Studio 13.1: six new Windows 11-specific VCL styles https://blogs.embarcadero.com/announcing-the-availability-of-rad-studio-13-florence-update-1/"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "match"
+    },
+    {
+      "file": "Air.Style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "Air",
+      "platforms": ["Windows", "macOS", "iOS", "Android", "Linux"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#343434",
+        "text": "#FDFDFD",
+        "accent": "#2B798C"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Amakrits.Style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "Amakrits",
+      "platforms": ["Windows", "macOS", "iOS", "Android", "Linux"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#272727",
+        "text": "#898989",
+        "accent": "#66F8E3"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "AndroidDark.fsf",
+      "folder": "common",
+      "subfolder": "Android",
+      "framework": "FMX",
+      "format": "fsf",
+      "name": "Android Dark",
+      "platforms": ["Android"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#111111",
+        "text": "#FFFFFF"
+      },
+      "pair": "AndroidLight.fsf",
+      "provenance": {
+        "system": "android-holo",
+        "basis": "name",
+        "evidence": "Android Holo style name"
+      },
+      "preset": "material3",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "AndroidLDark.fsf",
+      "folder": "common",
+      "subfolder": "Android",
+      "framework": "FMX",
+      "format": "fsf",
+      "name": "AndroidL Dark",
+      "platforms": ["Android"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#333333",
+        "text": "#FFFFFF"
+      },
+      "pair": "AndroidLLight.fsf",
+      "provenance": {
+        "system": "android-5-material",
+        "basis": "name",
+        "evidence": "Android L style name"
+      },
+      "preset": "material3",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "AndroidLDarkBlue.fsf",
+      "folder": "common",
+      "subfolder": "Android",
+      "framework": "FMX",
+      "format": "fsf",
+      "name": "AndroidL Dark Blue",
+      "platforms": ["Android"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#2B3840",
+        "text": "#FFFFFF"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "android-5-material",
+        "basis": "name",
+        "evidence": "Android L style name"
+      },
+      "preset": "material3",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "AndroidLight.fsf",
+      "folder": "common",
+      "subfolder": "Android",
+      "framework": "FMX",
+      "format": "fsf",
+      "name": "Android Light",
+      "platforms": ["Android"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#F4F4F4",
+        "text": "#222222"
+      },
+      "pair": "AndroidDark.fsf",
+      "provenance": {
+        "system": "android-holo",
+        "basis": "name",
+        "evidence": "Android Holo style name"
+      },
+      "preset": "material3",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "AndroidLLight.fsf",
+      "folder": "common",
+      "subfolder": "Android",
+      "framework": "FMX",
+      "format": "fsf",
+      "name": "AndroidL Light",
+      "platforms": ["Android"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#EEEEEE",
+        "text": "#222222"
+      },
+      "pair": "AndroidLDark.fsf",
+      "provenance": {
+        "system": "android-5-material",
+        "basis": "name",
+        "evidence": "Android L style name"
+      },
+      "preset": "material3",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "AndroidWear.fsf",
+      "folder": "common",
+      "subfolder": "Android",
+      "framework": "FMX",
+      "format": "fsf",
+      "name": "AndroidWear",
+      "platforms": ["Android"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#333333",
+        "text": "#FFFFFF"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "android-wear",
+        "basis": "name",
+        "evidence": "Android Wear style name"
+      },
+      "preset": "material3",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "AndroidWearDarkBlue.fsf",
+      "folder": "common",
+      "subfolder": "Android",
+      "framework": "FMX",
+      "format": "fsf",
+      "name": "AndroidWear",
+      "platforms": ["Android"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#222E32",
+        "text": "#FFFFFF"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "android-wear",
+        "basis": "name",
+        "evidence": "Android Wear style name"
+      },
+      "preset": "material3",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "AquaGraphite.style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "AquaGraphite",
+      "platforms": ["Windows", "macOS", "iOS", "Android", "Linux"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#252525",
+        "text": "#FFFFFF",
+        "accent": "#0AA1F5"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Blend.Style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "Blend",
+      "platforms": ["Windows", "macOS", "iOS", "Android", "Linux"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#505050",
+        "text": "#E0E0E0",
+        "accent": "#F69E2D"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Dark.style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "Dark",
+      "platforms": ["Windows", "macOS", "iOS", "Android", "Linux"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#505050",
+        "text": "#E0E0E0",
+        "accent": "#F69E2D"
+      },
+      "pair": "Light.Style",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "GoldenGraphite.Style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "GoldenGraphite",
+      "platforms": ["Windows", "macOS", "iOS", "Android", "Linux"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#252525",
+        "text": "#FFFFFF",
+        "accent": "#F5A40A"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "GoogleGlass.fsf",
+      "folder": "common",
+      "subfolder": "Android",
+      "framework": "FMX",
+      "format": "fsf",
+      "name": "GoogleGlass",
+      "platforms": ["Android"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#000000",
+        "text": "#FFFFFF"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "google-glass",
+        "basis": "name",
+        "evidence": "Google Glass style name"
+      },
+      "preset": "material3",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "iOSBlack.fsf",
+      "folder": "common",
+      "subfolder": "iOS",
+      "framework": "FMX",
+      "format": "fsf",
+      "name": "iOSBlack",
+      "platforms": ["iOS"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "text": "#FFFFFF"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "ios",
+        "basis": "name",
+        "evidence": "iOS style; no iOS preset yet"
+      },
+      "preset": "apple-macos",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "iOSTransparent.fsf",
+      "folder": "common",
+      "subfolder": "iOS",
+      "framework": "FMX",
+      "format": "fsf",
+      "name": "iOSTransparent",
+      "platforms": ["iOS"],
+      "theme": "unknown",
+      "loadable": true,
+      "colors": {
+        "text": "#FFFFFF"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "ios",
+        "basis": "name",
+        "evidence": "iOS style; no iOS preset yet"
+      },
+      "preset": "apple-macos",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Light.Style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "Light",
+      "platforms": ["Windows", "macOS", "iOS", "Android", "Linux"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#F0F0F0",
+        "text": "#A1A1A1",
+        "accent": "#01BAE9"
+      },
+      "pair": "Dark.style",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "macOSGraphite.fsf",
+      "folder": "common",
+      "subfolder": "MacOS",
+      "framework": "FMX",
+      "format": "fsf",
+      "name": "OSX Yosemite Graphite",
+      "platforms": ["macOS"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#EDEDED"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "macos",
+        "basis": "file-content",
+        "evidence": "macOS style title/target"
+      },
+      "preset": "apple-macos",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Material_3.0.fmxstyle",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "fmxstyle",
+      "name": "Material 3.0",
+      "platforms": ["Windows", "macOS", "iOS", "Android", "Linux"],
+      "theme": "light",
+      "loadable": false,
+      "colors": {
+        "background": "#FEF7FF",
+        "surface": "#FEF7FF",
+        "text": "#1D1B20",
+        "textDisabled": "#7B7B7B",
+        "accent": "#6750A4",
+        "accentText": "#FFFFFF",
+        "border": "#79747E"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "material-3",
+        "basis": "file-content",
+        "evidence": "Material 3 tokens and typography in style archive"
+      },
+      "preset": "material3",
+      "presetBasis": "match"
+    },
+    {
+      "file": "MetropolisUIBlack.Style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "MetroBlack",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "text": "#FFFFFF",
+        "accent": "#1373A9"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-8-metro",
+        "basis": "name",
+        "evidence": "Metropolis UI style name"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "MetropolisUIBlack_touch.Style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "MetropolisUIBlack Touch",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#1A1A1A",
+        "text": "#FFFFFF",
+        "accent": "#426BF2"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-8-metro",
+        "basis": "name",
+        "evidence": "Metropolis UI style name"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "MetropolisUIBlue.Style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "MetroBlue",
+      "platforms": ["Windows"],
+      "theme": "unknown",
+      "loadable": true,
+      "colors": {
+        "text": "#FFFFFF",
+        "accent": "#E86625"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-8-metro",
+        "basis": "name",
+        "evidence": "Metropolis UI style name"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "MetropolisUIBlue_touch.Style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "MetropolisUIBlue Touch",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#1373A9",
+        "text": "#FFFFFF",
+        "accent": "#426BF2"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-8-metro",
+        "basis": "name",
+        "evidence": "Metropolis UI style name"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "MetropolisUIDark.Style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "MetroDark",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "text": "#FFFFFF",
+        "accent": "#C0C0C0"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-8-metro",
+        "basis": "name",
+        "evidence": "Metropolis UI style name"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "MetropolisUIDark_touch.Style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "MetropolisUIDark Touch",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#1A1A1A",
+        "text": "#FFFFFF",
+        "accent": "#426BF2"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-8-metro",
+        "basis": "name",
+        "evidence": "Metropolis UI style name"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "MetropolisUIGreen.Style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "MetroGreen",
+      "platforms": ["Windows"],
+      "theme": "unknown",
+      "loadable": true,
+      "colors": {
+        "text": "#FFFFFF",
+        "accent": "#EF9513"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-8-metro",
+        "basis": "name",
+        "evidence": "Metropolis UI style name"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "MetropolisUIGreen_touch.Style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "MetropolisUIGreen Touch",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#096C37",
+        "text": "#FFFFFF",
+        "accent": "#426BF2"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-8-metro",
+        "basis": "name",
+        "evidence": "Metropolis UI style name"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "RubyGraphite.style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "RubyGraphite",
+      "platforms": ["Windows", "macOS", "iOS", "Android", "Linux"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#252525",
+        "text": "#FFFFFF",
+        "accent": "#F50A0B"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Transparent.Style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "Transparent",
+      "platforms": ["Windows", "macOS", "iOS", "Android", "Linux"],
+      "theme": "unknown",
+      "loadable": true,
+      "colors": {
+        "text": "#FFFFFF",
+        "accent": "#FFFFFF"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "none",
+        "basis": "none",
+        "evidence": "Embarcadero skin"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Win10Modern.Style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "Windows 10 Modern",
+      "platforms": ["Windows"],
+      "theme": "light",
+      "loadable": true,
+      "colors": {
+        "background": "#F3F3F3",
+        "text": "#000000",
+        "accent": "#426BF2"
+      },
+      "pair": "Win10ModernDark.Style",
+      "provenance": {
+        "system": "windows-10",
+        "basis": "file-content",
+        "evidence": "FMX style title declares Windows 10"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Win10ModernBlue.Style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "Windows 10 Modern Blue",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#0C70C0",
+        "text": "#FFFFFF",
+        "accent": "#FFFFFF"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-10",
+        "basis": "file-content",
+        "evidence": "FMX style title declares Windows 10"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Win10ModernDark.Style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "Windows 10 Modern Dark",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#000000",
+        "text": "#FFFFFF",
+        "accent": "#426BF2"
+      },
+      "pair": "Win10Modern.Style",
+      "provenance": {
+        "system": "windows-10",
+        "basis": "file-content",
+        "evidence": "FMX style title declares Windows 10"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Win10ModernGreen.style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "Windows 10 Modern Green",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#077568",
+        "text": "#FFFFFF",
+        "accent": "#FFFFFF"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-10",
+        "basis": "file-content",
+        "evidence": "FMX style title declares Windows 10"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Win10ModernPurple.style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "Windows 10 Modern Purple",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#80397B",
+        "text": "#FFFFFF",
+        "accent": "#FFFFFF"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-10",
+        "basis": "file-content",
+        "evidence": "FMX style title declares Windows 10"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "Win10ModernSlateGray.style",
+      "folder": "common",
+      "subfolder": "",
+      "framework": "FMX",
+      "format": "style",
+      "name": "Windows 10 Modern SlateGray",
+      "platforms": ["Windows"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#37474F",
+        "text": "#FFFFFF",
+        "accent": "#426BF2"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "windows-10",
+        "basis": "file-content",
+        "evidence": "FMX style title declares Windows 10"
+      },
+      "preset": "fluent-windows11",
+      "presetBasis": "policy"
+    },
+    {
+      "file": "YosemiteDark.fsf",
+      "folder": "common",
+      "subfolder": "MacOS",
+      "framework": "FMX",
+      "format": "fsf",
+      "name": "OSX Yosemite Dark",
+      "platforms": ["macOS"],
+      "theme": "dark",
+      "loadable": true,
+      "colors": {
+        "background": "#828182",
+        "text": "#FFFFFF"
+      },
+      "pair": "",
+      "provenance": {
+        "system": "macos",
+        "basis": "file-content",
+        "evidence": "macOS style title/target"
+      },
+      "preset": "apple-macos",
+      "presetBasis": "policy"
+    }
+  ]
+}

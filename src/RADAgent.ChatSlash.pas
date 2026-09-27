@@ -18,7 +18,7 @@ uses
   RADAgent.ChatSession, RADAgent.SlashRoutes, RADAgent.SessionData, RADAgent.RpcResponses,
   RADAgent.ChatCommand, RADAgent.ChatPageMessages, RADAgent.AskDialog, RADAgent.ChatActions,
   RADAgent.SettingsDialog, RADAgent.RpcJson, RADAgent.ChatQueue, RADAgent.OmpCheck,
-  RADAgent.AgentVersion, RADAgent.Lang;
+  RADAgent.AgentVersion, RADAgent.Lang, RADAgent.ChatDesign;
 
 type
   TPending = (pdNone, pdBranch, pdTree, pdCopy, pdCopyCode, pdHub, pdSubagent, pdClear, pdDelete);
@@ -166,6 +166,14 @@ begin
       Session.Notice('info', Tr('chatslash.exit'));
     srVersion:
       Session.PostToView(PageSheet(Tr('chatslash.versionTitle'), VersionSheet));
+    srDesign:
+      { Its approval cards wait for page messages, which do not arrive while this page message
+        is still being handled: run it once the handler has returned. }
+      TThread.ForceQueue(nil,
+        procedure
+        begin
+          RunDesignCommand(Args);
+        end);
     srTerminalOnly:
       Session.Notice('warn', TrF('chatslash.terminalOnly', [Name]));
   end;

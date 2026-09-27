@@ -61,7 +61,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-3. Not included, used when installed by the user
+3. Design presets (DESIGN.md presets inside the RAD Agent BPL, src\design\presets)
+   Token values (sizes, spacing, radii, colors) are taken from public platform guidance, with
+   each value's source listed in the preset. The prose is RAD Agent's own.
+   - Material 3 token values from material-components/material-web,
+     https://github.com/material-components/material-web, Apache License 2.0,
+     Copyright Google LLC. "Material Design" is a trademark of Google LLC.
+   - Windows 11 values from Microsoft Learn and microsoft/microsoft-ui-xaml
+     (https://github.com/microsoft/microsoft-ui-xaml, MIT License, Copyright (c) Microsoft
+     Corporation). "Windows" and "Fluent" are trademarks of Microsoft Corporation.
+   - macOS values from Apple's Human Interface Guidelines. "macOS" and "Apple" are trademarks of
+     Apple Inc. No Apple fonts are included.
+
+4. Not included, used when installed by the user
    - oh-my-pi (omp), MIT License, https://github.com/can1357/oh-my-pi
      RAD Agent does not ship omp. When omp is missing, the setup downloads the official
      release from GitHub (checked against its published SHA-256) to %LOCALAPPDATA%\omp.

@@ -1,8 +1,9 @@
 unit RADAgent.Skills;
 
 { The RAD Studio skills in the BPL (src\skills, RCDATA): Delphi or C++Builder conventions, component
-  usage and project layout. The one that fits the project is written to %TEMP%\RADAgent\skills\<lang>
-  and that folder joins omp's skills.customDirectories, after the user's own folders. No ToolsAPI. }
+  usage and project layout, and radstudio-ui-design (DESIGN.md tokens as VCL/FMX properties). They
+  are written to %TEMP%\RADAgent\skills\<lang> and that folder joins omp's
+  skills.customDirectories, after the user's own folders. No ToolsAPI. }
 
 interface
 
@@ -22,11 +23,31 @@ implementation
 uses
   System.SysUtils, System.Classes, System.IOUtils, System.JSON, Winapi.Windows, RADAgent.Options;
 
+{ Writes the resource to Target; False when it is missing or cannot be written. }
+function SaveResource(const Resource, Target: string): Boolean;
+var
+  Stream: TResourceStream;
+begin
+  Result := FindResource(HInstance, PChar(Resource), RT_RCDATA) <> 0;
+  if not Result then
+    Exit;
+  ForceDirectories(ExtractFileDir(Target));
+  Stream := TResourceStream.Create(HInstance, Resource, RT_RCDATA);
+  try
+    try
+      Stream.SaveToFile(Target);
+    except
+      { Another IDE is writing the same file: its content is the same. }
+      Result := FileExists(Target);
+    end;
+  finally
+    Stream.Free;
+  end;
+end;
+
 function WriteSkill(const Language: string): TSkillSet;
 var
   Resource: string;
-  Stream: TResourceStream;
-  Target: string;
 begin
   Result := Default(TSkillSet);
   if Language = 'cpp' then
@@ -39,23 +60,14 @@ begin
     Resource := 'SKILL_DELPHI';
     Result.Name := 'radstudio-delphi';
   end;
-  if FindResource(HInstance, PChar(Resource), RT_RCDATA) = 0 then
-    Exit;
   Result.Dir := AgentTempRoot + 'skills\' + Language;
-  Target := TPath.Combine(TPath.Combine(Result.Dir, Result.Name), 'SKILL.md');
-  ForceDirectories(ExtractFileDir(Target));
-  Stream := TResourceStream.Create(HInstance, Resource, RT_RCDATA);
-  try
-    try
-      Stream.SaveToFile(Target);
-    except
-      { Another IDE is writing the same file: its content is the same. }
-      if not FileExists(Target) then
-        Result.Dir := '';
-    end;
-  finally
-    Stream.Free;
+  if not SaveResource(Resource, TPath.Combine(TPath.Combine(Result.Dir, Result.Name), 'SKILL.md')) then
+  begin
+    Result.Dir := '';
+    Exit;
   end;
+  SaveResource('SKILL_UI_DESIGN', TPath.Combine(TPath.Combine(Result.Dir, 'radstudio-ui-design'),
+    'SKILL.md'));
 end;
 
 function HostConfigJson(const Skills: TSkillSet; const UserDirs: TArray<string>): string;

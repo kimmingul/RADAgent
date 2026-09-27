@@ -41,7 +41,7 @@ implementation
 
 uses
   System.SysUtils, System.StrUtils, System.Classes, System.TypInfo, Vcl.Controls, Vcl.Menus, DesignIntf,
-  RADAgent.FormDesigner, RADAgent.FormNonVisual, RADAgent.Lang;
+  RADAgent.FormDesigner, RADAgent.FormNonVisual, RADAgent.Lang, RADAgent.PropValues;
 
 const
   { FMX.Types.IItemsContainer; the package does not require fmx. }
@@ -114,7 +114,7 @@ begin
   end
   else if SameText(string(Prop.PropType^.Name), 'TShortCut') then
     SetOrdProp(Target, Prop, TextToShortCut(Value))
-  else
+  else if not SetOrdinalText(Target, Prop, Value) then
     SetPropValue(Target, Prop, Value);
 end;
 

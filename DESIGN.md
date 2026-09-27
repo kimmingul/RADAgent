@@ -47,6 +47,12 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | FormShot | `rad.form_screenshot`: VCL은 `PaintTo`, FMX는 모듈과 디자이너를 보인 뒤 디자이너 창(폼은 `FMTForm`, 프레임은 `FMTControlForm`)의 보이는 부분을 화면에서 복사해 PNG. 그동안 겹친 IDE의 떠 있는 창(채팅)은 숨기고, 다른 프로그램 창이 덮고 있으면 결과 글에 알린다. 도구 결과에 image 부분으로 보낸다. |
 | FormText | `rad.form_text_edit`: 속성 줄만 텍스트로 일괄 수정, 구문(`ObjectTextToBinary`)과 속성 이름(살아 있는 컴포넌트, 비시각 컴포넌트의 `Left`/`Top` 허용) 검사, 승인 한 번, IdeFiles로 다시 읽기. |
 | FormNonVisual | 비시각 컴포넌트(컨트롤도 다른 컴포넌트의 항목도 아닌 것) 판별과 아이콘 위치(`DesignInfo`). 폼 아래쪽에 종류별(메뉴, 액션, 대화상자, 타이머, 이미지, 데이터, 스타일, 기타)로 줄 세우고 `rad.form_arrange_nonvisual`을 처리한다. |
+| DesignCatalog | RAD Studio이 설치하는 VCL/FMX 스타일 목록(`src\design\style-map.json`, `scripts\StyleCatalog`가 만듦): 이름, 밝음/어두움과 짝, 스타일에서 읽은 색, 출처(`vendor-statement`·`file-content`·`name`·`none`)와 보충 프리셋(`match`/`policy`). 목록에 없는 스타일 파일은 unclassified로 붙인다. 프리셋(`src\design\presets`)을 리소스에서 읽는다. ToolsAPI 없음. |
+| DesignDoc | 프로젝트 `DESIGN.md`(Google Labs DESIGN.md 형식): `radstudio:`에 스타일, 스타일 색을 `style-*` 토큰으로, 나머지 토큰과 안내는 프리셋에서. ToolsAPI 없음. |
+| DesignProgram / DesignApply | 스타일 적용. VCL은 `Custom_Styles` 옵션(밝은·어두운 스타일)과 프로그램 소스의 `TStyleManager.TrySetStyle`(없으면 `{$R *.res}`도), FMX는 메인 폼의 `TStyleBook`(`FileName`, `UseStyleManager`). |
+| DesignInit / ChatDesign | `rad.design_styles`, `rad.design_init`(승인 두 번: DESIGN.md, 스타일 적용), `/design [스타일] [프리셋]`(목록에서 고르기). |
+| DesignTokens / DesignLint / DesignLintRules | DESIGN.md 앞머리 YAML 읽기와 `rad.design_lint`: 간격·틈, 글꼴 크기·글꼴, 스타일과 부딪히는 색, 모서리 반경을 폼에서 검사. FMX 객체는 TypInfo로만 읽는다. |
+| PropValues | 폼 도구의 속성 값: 스트리밍 식별자(`clBtnFace`, `mrOk`, `claWhite`)와 `#RRGGBB`를 TColor/TAlphaColor로. |
 | HandlerCode | 이벤트 핸들러 코드: Delphi는 디자이너 스텁에 주석 한 줄(빈 핸들러는 저장 때 지워짐), C++은 `.h` `__published` 선언과 `.cpp` 본문을 버퍼에 쓴다(C++ 디자이너는 코드를 쓰지 않음). |
 | CppDiagnostics | C++ 빌드 실패 때 바뀐 `.cpp`를 활성 플랫폼 컴파일러(bcc64x/bcc64/bcc32c)로 다시 컴파일해 오류를 읽는다. |
 | CppLsp | C++ 프로젝트의 clangd 연결: 활성 플랫폼 컴파일러의 헤더·타깃·매크로와 프로젝트 옵션으로 `.omp\clangd\compile_commands.json`, `.omp\lsp.json`. clangd는 설정 또는 PATH. |

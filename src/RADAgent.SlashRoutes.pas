@@ -12,7 +12,7 @@ type
     { Not RADAgent's: omp gets the text. }
     srNone,
     srClear, srDelete, srResume, srTree, srBranch, srFork, srLogin, srCopy, srRestart,
-    srSettings, srExtensions, srAgents, srPlan, srHotkeys, srHub, srQueue, srExit, srVersion,
+    srSettings, srExtensions, srAgents, srPlan, srHotkeys, srHub, srQueue, srExit, srVersion, srDesign,
     { Only omp's terminal UI can run it. }
     srTerminalOnly);
 
@@ -35,7 +35,7 @@ type
   end;
 
 const
-  Routes: array[0..21] of TRouteName = (
+  Routes: array[0..22] of TRouteName = (
     (Name: 'clear'; Route: srClear; Hint: ''),
     (Name: 'delete'; Route: srDelete; Hint: ''),
     (Name: 'resume'; Route: srResume; Hint: ''),
@@ -55,6 +55,7 @@ const
     (Name: 'hub'; Route: srHub; Hint: ''),
     (Name: 'queue'; Route: srQueue; Hint: '<message>'),
     (Name: 'version'; Route: srVersion; Hint: ''),
+    (Name: 'design'; Route: srDesign; Hint: '[style file] [preset]'),
     (Name: 'exit'; Route: srExit; Hint: ''),
     (Name: 'quit'; Route: srExit; Hint: ''),
     (Name: 'q'; Route: srExit; Hint: ''));

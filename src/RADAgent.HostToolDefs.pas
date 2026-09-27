@@ -37,6 +37,9 @@ const
   ToolDebugReset = 'rad.debug_reset';
   ToolDebugAddBreakpoint = 'rad.debug_add_breakpoint';
   ToolSubmitPlan = 'rad.submit_plan';
+  ToolDesignStyles = 'rad.design_styles';
+  ToolDesignInit = 'rad.design_init';
+  ToolDesignLint = 'rad.design_lint';
 
 type
   TToolProfile = record
@@ -82,6 +85,7 @@ begin
     (Name = ToolFormSetProperty) or (Name = ToolFormAddComponent) or (Name = ToolFormDeleteComponent) or
     (Name = ToolFormRenameComponent) or (Name = ToolFormSetEvent) or (Name = ToolFormTextEdit) or
     (Name = ToolFormArrangeNonVisual) or (Name = ToolRenameUnit) or (Name = ToolRenameProject) or
+    (Name = ToolDesignInit) or
     (Name = ToolDebugRun) or
     (Name = ToolDebugStep) or (Name = ToolDebugPause) or (Name = ToolDebugReset) or
     (Name = ToolDebugAddBreakpoint);
@@ -200,6 +204,10 @@ begin
   Tools.AddElement(ToolDef(ToolFormScreenshot,
     'PNG image of the form as the designer shows it (absolute unit path). Use it after layout ' +
     'changes to check overlaps, alignment and clipped text. Read-only.', 'path'));
+  Tools.AddElement(ToolDef(ToolDesignLint,
+    'Check the form of the unit at path against the project''s DESIGN.md: spacing and gaps off the ' +
+    'spacing scale, font sizes and families off the type ramp, literal colors that fight the style, ' +
+    'corner radii off the scale. Fix findings or say why one is intended. Read-only.', 'path'));
   if P.FormText then
     Tools.AddElement(SchemaDef(ToolFormTextEdit,
     'Bulk property changes as text in .dfm/.fmx files (many forms or many components at once): ' +
@@ -266,6 +274,17 @@ begin
     Tools.AddElement(ToolDef(ToolOpenBuffer, 'Open a file in the IDE editor.', 'file'));
     Tools.AddElement(ToolDef(ToolInsertAtCaret,
       'After approval insert text at the editor caret (the file is then saved).', 'text'));
+    if Profile.Framework <> '' then
+    begin
+      Tools.AddElement(ToolDef(ToolDesignStyles,
+        'The installed ' + Profile.Framework + ' styles (name, light/dark, provenance, matching ' +
+        'platform preset) and the presets, plus the project''s current DESIGN.md. Read-only.', ''));
+      Tools.AddElement(ToolDef(ToolDesignInit,
+        'After approval write the project''s DESIGN.md for style (a file or name from ' +
+        'rad.design_styles) with its platform preset (or preset: fluent-windows11, material3, ' +
+        'apple-macos) and give the project that style (applyStyle: "false" to skip). Ask the user ' +
+        'which style first unless they named one.', 'style,preset,applyStyle'));
+    end;
     if Profile.HasForms then
       AddFormTools(Tools, Profile);
     Tools.AddElement(ToolDef(ToolDebugState,

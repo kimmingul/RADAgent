@@ -30,13 +30,20 @@ uses
   RADAgent.UsageReport in '..\src\RADAgent.UsageReport.pas',
   RADAgent.Skills in '..\src\RADAgent.Skills.pas',
   RADAgent.UnitNaming in '..\src\RADAgent.UnitNaming.pas',
+  RADAgent.DesignTokens in '..\src\RADAgent.DesignTokens.pas',
+  RADAgent.DesignCatalog in '..\src\RADAgent.DesignCatalog.pas',
+  RADAgent.DesignDoc in '..\src\RADAgent.DesignDoc.pas',
+  RADAgent.DesignProgram in '..\src\RADAgent.DesignProgram.pas',
+  RADAgent.PropValues in '..\src\RADAgent.PropValues.pas',
   TestCheck in 'TestCheck.pas',
   RpcEventsTests in 'RpcEventsTests.pas',
   LineDiffTests in 'LineDiffTests.pas',
   OmpCompatTests in 'OmpCompatTests.pas',
   GitRepoTests in 'GitRepoTests.pas',
   LangTests in 'LangTests.pas',
-  UnitNamingTests in 'UnitNamingTests.pas';
+  UnitNamingTests in 'UnitNamingTests.pas',
+  DesignTokensTests in 'DesignTokensTests.pas',
+  DesignProgramTests in 'DesignProgramTests.pas';
 
 {$R '..\src\RADAgentResources.res' '..\src\RADAgentResources.rc'}
 
@@ -308,6 +315,8 @@ begin
     RunGitRepoTests(Check);
     RunLangTests(Check);
     RunUnitNamingTests(Check);
+    RunDesignTokensTests(Check);
+    RunDesignProgramTests(Check);
     TestLiveReady;
     RunLiveOmpProbe(Check);
   except

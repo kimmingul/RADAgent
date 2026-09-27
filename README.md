@@ -63,6 +63,7 @@ RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키
   - `/resume`: 세션 목록. `/tree`: 세션 트리. `/branch`(`/rewind`), `/fork`: 고른 내 메시지 직전에서 대화를 갈라 그 메시지를 입력칸에 되돌린다.
   - `/copy`(마지막 답), `/copy code`(그 마지막 코드 블록), `/login [provider]`, `/restart`, `/settings`, `/extensions`, `/agents`, `/plan`, `/hotkeys`, `/hub`, `/queue <메시지>`.
   - `/version`: RAD Agent·omp·IDE 버전 한 줄(복사 버튼)과 릴리스 노트 링크. 문제를 알릴 때 붙인다.
+  - `/design [스타일 파일] [프리셋]`: 디자인 시스템(아래 IDE 연동 참고). 인자 없이 쓰면 스타일 목록에서 고른다.
 - `/btw <질문>`: 곁가지 질문. 지금 대화를 복제한 별도 omp가 도구 없이 답하므로 작업 중에도 되고 본 대화에는 들어가지 않는다. 주제별로 이어 묻기, 검색, 삭제가 되는 메모 창에 남는다.
 
 ### IDE 연동
@@ -74,6 +75,7 @@ RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키
 - 폼 디자이너: 컴포넌트 목록·속성 읽기, 폼 스크린샷(모델이 레이아웃을 눈으로 확인), 속성 변경, 컴포넌트 추가·삭제·이름 변경(폼 자체 포함), 이벤트 연결, 여러 변경을 묶은 `rad.form_apply`. FMX 메뉴 항목·리스트 박스 항목처럼 항목 컨테이너 안의 컴포넌트도 부모 아래에 만든다. 여러 폼의 속성 일괄 변경은 `rad.form_text_edit`(속성 줄만, 구문·속성 이름 검사, 승인 한 번)로 하며, 설정에서 끌 수 있다.
 - 비시각 컴포넌트(메뉴, 대화상자, 타이머, 액션·이미지 목록, 데이터 접근): 새로 만들면 폼 아래쪽 한 줄에 종류별로 모아 놓는다. 흩어진 폼은 `rad.form_arrange_nonvisual`로 한 번에 정리하고, 아이콘 위치(`Left`/`Top`)는 속성 도구와 폼 텍스트 편집으로도 바꿀 수 있다.
 - UI 작성 방식(프로젝트 설정, 처음 값 "폼 디자이너 필수"): 폼·대화상자·메뉴·툴바·패널처럼 고정된 UI는 디자이너 도구로 만들고, 데이터에 따라 개수나 종류가 달라지는 컨트롤만 코드로 만들라고 omp에 안내한다. "자유"로 바꾸면 코드 작성도 허용한다.
+- 디자인 시스템: `/design`으로 설치된 VCL/FMX 스타일 중 하나를 고르면 프로젝트 폴더에 `DESIGN.md`(Google Labs DESIGN.md 형식)를 쓰고 프로젝트에 그 스타일을 적용한다(VCL: 프로젝트 옵션 Custom_Styles와 `TStyleManager.TrySetStyle`, FMX: 메인 폼의 `TStyleBook`). 스타일이 정하지 않는 간격·글꼴 단계·모서리·색은 공식 플랫폼 기준(Windows 11/Fluent 2, Material 3, macOS HIG)에서 가져온 프리셋으로 채우며, 값마다 출처가 적혀 있다. 스타일마다 출처가 확인된 것(예: WindowsModern은 Windows 11)과 이름으로만 추정한 것, Embarcadero 자체 스킨을 구분한다. 에이전트는 UI 작업 전에 DESIGN.md와 `radstudio-ui-design` 스킬을 읽고, 폼을 바꾼 뒤 `rad.design_lint`로 간격·글꼴·색·반경을 검사한다.
 - 새 모듈: `rad.new_module`로 폼·프레임·데이터 모듈·유닛을 추가한다. 유닛 이름은 필수이고 용도가 드러나야 한다: 프로젝트 네임스페이스(대부분의 유닛이 쓰는 접두사) 안에서 폼은 `Form`/`Dialog`, 프레임은 `Frame`, 데이터 모듈은 `DataModule`로 끝난다(`Nanum.UI.PivotSaveDialog`). `UnitN`은 받지 않는다. 기존 유닛은 `rad.rename_unit`으로 이름을 바꾸며, 폼 파일·프로젝트·다른 유닛의 `uses`(완전한 유닛 이름만, 주석·문자열 제외)가 함께 바뀐다. 프로젝트 이름은 `rad.rename_project`(IDE의 Save Project As)로 바꾸며 `.dproj`·`.dpr`·`.res`·실행 파일 이름이 따라간다. `ProjectN`은 받지 않는다.
 - 디버거: 상태, 호출 스택, 부작용 없는 식 평가, 중단점 목록. 승인 후 실행·계속, 스텝, 일시 정지, 종료, 중단점 추가. 에이전트가 실행한 프로그램이 예외를 내면 예외 알림 창을 Break로 닫고, 예외 위치에 멈춘 채 메시지를 결과로 돌려준다.
 - 에디터 오른쪽 클릭 메뉴 `RAD Agent: 선택 영역 설명/고치기`, 메시지 창 오른쪽 클릭 메뉴 `RAD Agent: 빌드 오류 고치기`.
