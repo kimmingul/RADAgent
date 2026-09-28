@@ -23,7 +23,7 @@ uses
   RADAgent.FormEdits, RADAgent.FormTools, RADAgent.ProjectProfile,
   RADAgent.ModuleCreator, RADAgent.ChatPlan, RADAgent.FormShot, RADAgent.FormText,
   RADAgent.AgentSettings, RADAgent.UnitRename, RADAgent.DesignInit, RADAgent.DesignLint,
-  RADAgent.DesignIcons, RADAgent.AppShot, RADAgent.Lang;
+  RADAgent.DesignIcons, RADAgent.AppShot, RADAgent.Lang, RADAgent.HostToolArgs;
 
 function ArgText(const ArgumentsJson, Name: string): string;
 var
@@ -39,17 +39,21 @@ begin
   end;
   Obj := TJSONObject(Value);
   try
-    if Obj.GetValue(Name) is TJSONString then
-      Result := TJSONString(Obj.GetValue(Name)).Value;
+    { A number or boolean where the schema says string (value 120, applyStyle false) keeps its text. }
+    if (Obj.GetValue(Name) is TJSONString) or (Obj.GetValue(Name) is TJSONNumber) or
+      (Obj.GetValue(Name) is TJSONBool) then
+      Result := Obj.GetValue(Name).Value;
   finally
     Obj.Free;
   end;
 end;
 
+{ FileName may be relative to the project or use forward slashes (ProjectPath). }
 function OpenBuffer(const FileName: string; out Problem: string): Boolean;
 var
   Modules: IOTAModuleServices;
   Module: IOTAModule;
+  FullPath: string;
 begin
   Result := False;
   Problem := '';
@@ -58,14 +62,20 @@ begin
     Problem := 'File name cannot be empty.';
     Exit;
   end;
+  FullPath := ProjectPath(FileName);
+  if not FileExists(FullPath) then
+  begin
+    Problem := 'File not found: ' + FullPath;
+    Exit;
+  end;
   Modules := BorlandIDEServices as IOTAModuleServices;
-  Module := Modules.OpenModule(FileName);
+  Module := Modules.OpenModule(FullPath);
   if Module = nil then
   begin
     Problem := 'Failed to open file.';
     Exit;
   end;
-  Module.ShowFilename(FileName);
+  Module.ShowFilename(FullPath);
   Result := True;
 end;
 
@@ -118,6 +128,8 @@ function DebugControlArgs(const ArgumentsJson: string): TDebugControlArgs;
 begin
   Result.Mode := ArgText(ArgumentsJson, 'mode');
   Result.FileName := ArgText(ArgumentsJson, 'file');
+  if Result.FileName <> '' then
+    Result.FileName := ProjectPath(Result.FileName);
   Result.Line := ArgInt(ArgumentsJson, 'line');
 end;
 
@@ -154,6 +166,11 @@ begin
   ResultText := '';
   ImagePng := '';
   IsError := True;
+  if not CheckHostToolArgs(ToolName, ArgumentsJson, Problem) then
+  begin
+    ResultText := Problem;
+    Exit;
+  end;
   if ToolName = ToolCompile then
   begin
     if CurrentProject = nil then

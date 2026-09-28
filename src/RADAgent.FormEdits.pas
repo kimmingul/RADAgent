@@ -355,16 +355,17 @@ var
 begin
   Result := False;
   Problem := '';
-  { The form itself may be renamed too (its class and the project's references follow). }
+  { The form itself may be renamed too (empty or its Name; its class and the project's references follow). }
   Native := FindNative(Editor, Args.Component);
-  if (Args.Component = '') or (Native = nil) then
+  if Native = nil then
   begin
-    Problem := IfThen(Args.Component = '', 'Component name required.', 'Component not found: ' + Args.Component);
+    Problem := 'Component not found: ' + Args.Component;
     Exit;
   end;
   if not IsValidIdent(Args.NewName) then
   begin
-    Problem := 'Not a valid identifier: ' + Args.NewName;
+    Problem := IfThen(Args.NewName = '', 'newName required: the new component name.',
+      'Not a valid identifier: ' + Args.NewName);
     Exit;
   end;
   if FindNative(Editor, Args.NewName) <> nil then

@@ -32,7 +32,8 @@ function ComponentsJson(const Filter: string): string;
 implementation
 
 uses
-  System.SysUtils, System.JSON, ToolsAPI, RADAgent.IdeContext, RADAgent.Lang, RADAgent.AgentSettings;
+  System.SysUtils, System.StrUtils, System.JSON, ToolsAPI, RADAgent.IdeContext, RADAgent.Lang,
+  RADAgent.AgentSettings;
 
 function ActiveProfile: TProjectProfile;
 var
@@ -164,7 +165,8 @@ begin
     NewPlatform := Listed(Project.SupportedPlatforms, Platform);
   if (NewConfig = '') or (NewPlatform = '') then
   begin
-    ResultText := 'Unknown configuration or platform. Choose from rad.project_info list.';
+    ResultText := Format('Unknown %s "%s". Choose from the rad.project_info list.',
+      [IfThen(NewConfig = '', 'configuration', 'platform'), IfThen(NewConfig = '', Config, Platform)]);
     Exit;
   end;
   if (Approval = nil) or not Approval.ApproveChange(Project.FileName, '', TrF(

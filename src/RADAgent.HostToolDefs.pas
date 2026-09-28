@@ -94,13 +94,12 @@ begin
     (Name = ToolDebugAddBreakpoint);
 end;
 
-{ PropList is comma separated. Every property is a string; the first one is required. }
+{ PropList is comma separated; every property is a string; a name ending in ! is required. }
 function ToolDef(const Name, Description, PropList: string): TJSONObject;
 var
   Params, Props, Prop: TJSONObject;
   Required: TJSONArray;
-  Names: TArray<string>;
-  Index: Integer;
+  PropName: string;
 begin
   Result := TJSONObject.Create;
   Result.AddPair('name', Name);
@@ -108,19 +107,24 @@ begin
   Params := TJSONObject.Create;
   Params.AddPair('type', 'object');
   Props := TJSONObject.Create;
+  Required := TJSONArray.Create;
   if PropList <> '' then
-  begin
-    Names := PropList.Split([',']);
-    for Index := 0 to High(Names) do
+    for PropName in PropList.Split([',']) do
     begin
       Prop := TJSONObject.Create;
       Prop.AddPair('type', 'string');
-      Props.AddPair(Names[Index], Prop);
+      if PropName.EndsWith('!') then
+      begin
+        Props.AddPair(PropName.TrimRight(['!']), Prop);
+        Required.Add(PropName.TrimRight(['!']));
+      end
+      else
+        Props.AddPair(PropName, Prop);
     end;
-    Required := TJSONArray.Create;
-    Required.Add(Names[0]);
-    Params.AddPair('required', Required);
-  end;
+  if Required.Count > 0 then
+    Params.AddPair('required', Required)
+  else
+    Required.Free;
   Params.AddPair('properties', Props);
   Params.AddPair('additionalProperties', TJSONFalse.Create);
   Result.AddPair('parameters', Params);
@@ -190,9 +194,9 @@ begin
   end;
   Tools.AddElement(ToolDef(ToolFormComponents,
     'List the root and every component (name, class, parent) of the form of the unit at absolute ' +
-    'path (' + UnitKind + '). Read-only.', 'path'));
+    'path (' + UnitKind + '). Read-only.', 'path!'));
   Tools.AddElement(ToolDef(ToolFormProperties,
-    'Published property values of one component (empty = the form). Read-only.', 'path,component'));
+    'Published property values of one component (empty = the form). Read-only.', 'path!,component'));
   Tools.AddElement(SchemaDef(ToolFormApply,
     'Preferred way to build or change a ' + P.Framework + ' form: one approval for the whole batch. ' +
     'delete removes components; each components[] item updates the named component or, with class, ' +
@@ -203,30 +207,32 @@ begin
   Tools.AddElement(ToolDef(ToolFormSetProperty,
     'After approval set one property (dotted path allowed) of a component (empty = the form). For a ' +
     'non-visual component (menu, dialog, timer, list) Left and Top move its designer icon.',
-    'path,component,property,value'));
+    'path!,component,property!,value!'));
   Tools.AddElement(ToolDef(ToolFormAddComponent,
     'After approval drop one component class under parent at left,top, optionally named.',
-    'path,class,name,parent,left,top'));
+    'path!,class!,name,parent,left,top'));
   Tools.AddElement(ToolDef(ToolFormDeleteComponent,
-    'After approval delete a component; the designer removes its field.', 'path,component'));
+    'After approval delete a component; the designer removes its field.', 'path!,component!'));
   Tools.AddElement(ToolDef(ToolFormRenameComponent,
-    'After approval rename a component, or the form itself (its class follows); fields and ' +
-    'default handler names follow.',
-    'path,component,newName'));
+    'After approval rename a component, or the form itself (component empty or the form''s current ' +
+    'Name, e.g. Form2; its class follows); fields and default handler names follow. newName is the ' +
+    'new name, e.g. {"path":"C:/App/MainForm.pas","component":"Form2","newName":"MainForm"}.',
+    'path!,component,newName!'));
   Tools.AddElement(ToolDef(ToolFormSetEvent,
-    'After approval connect event (OnClick) to handler; empty handler disconnects.',
-    'path,component,event,handler'));
+    'After approval connect event (OnClick) of a component (empty = the form) to handler; empty ' +
+    'handler disconnects.',
+    'path!,component,event!,handler'));
   Tools.AddElement(ToolDef(ToolFormArrangeNonVisual,
     'After approval line up every non-visual component (menus, dialogs, timers, action/image ' +
     'lists, data access) along the bottom of the form, grouped by kind. New non-visual components ' +
-    'are placed there automatically; do not give them Left/Top.', 'path'));
+    'are placed there automatically; do not give them Left/Top.', 'path!'));
   Tools.AddElement(ToolDef(ToolFormScreenshot,
     'PNG image of the form as the designer shows it (absolute unit path). Use it after layout ' +
-    'changes to check overlaps, alignment and clipped text. Read-only.', 'path'));
+    'changes to check overlaps, alignment and clipped text. Read-only.', 'path!'));
   Tools.AddElement(ToolDef(ToolDesignLint,
     'Check the form of the unit at path against the project''s DESIGN.md: spacing and gaps off the ' +
     'spacing scale, font sizes and families off the type ramp, literal colors that fight the style, ' +
-    'corner radii off the scale. Fix findings or say why one is intended. Read-only.', 'path'));
+    'corner radii off the scale. Fix findings or say why one is intended. Read-only.', 'path!'));
   if P.FormText then
     Tools.AddElement(SchemaDef(ToolFormTextEdit,
     'Bulk property changes as text in .dfm/.fmx files (many forms or many components at once): ' +
@@ -270,7 +276,7 @@ begin
       'message). Call after edits.', ''));
     Tools.AddElement(ToolDef(ToolSetBuildConfig,
       'After approval switch the active build configuration (e.g. Debug, Release) and/or ' +
-      'target platform (e.g. Win32, Win64).', 'config,platform'));
+      'target platform (e.g. Win32, Win64); give at least one.', 'config,platform'));
     Tools.AddElement(ToolDef(ToolNewModule,
       'After approval add a new module to the project. kind: form, frame, datamodule or unit. unit: ' +
       'the unit name, required and descriptive, in the project''s namespace (Delphi units may be ' +
@@ -278,21 +284,22 @@ begin
       'App.UI.ExportDialog, App.UI.GridFrame; the file is <unit>.pas (.cpp) in the project folder. ' +
       'name: optional component name of the form, frame or data module (default: the last part of ' +
       'unit). Returns the new file. Form tools appear after the first form.',
-      'kind,unit,name'));
+      'kind!,unit!,name'));
     Tools.AddElement(ToolDef(ToolRenameUnit,
-      'After approval give an existing unit (absolute path of its .pas/.cpp) a new unit name under ' +
-      'the same naming rules as rad.new_module; its form file, the project and the uses clauses of ' +
-      'the project''s other units follow. Compile afterwards.', 'path,unit'));
+      'After approval give an existing unit (path: absolute path of its .pas/.cpp) a new unit name ' +
+      '(unit, not name) under the same naming rules as rad.new_module, e.g. {"path":"C:/App/Unit2.pas",' +
+      '"unit":"App.UI.MainForm"}; its form file, the project and the uses clauses of the project''s ' +
+      'other units follow. Compile afterwards.', 'path!,unit!'));
     Tools.AddElement(ToolDef(ToolRenameProject,
       'After approval rename the active project (the IDE''s Save Project As): name is the new ' +
       'project name, a plain identifier (e.g. CsvViewer); the project file, program source, ' +
-      'resources and executable follow. Compile afterwards.', 'name'));
+      'resources and executable follow. Compile afterwards.', 'name!'));
     Tools.AddElement(ToolDef(ToolListComponents,
-      'Installed component classes on the IDE palette with their package; filter is a ' +
+      'Installed component classes on the IDE palette with their package; filter is an optional ' +
       'case-insensitive substring. Use it to pick valid classes for forms. Read-only.', 'filter'));
-    Tools.AddElement(ToolDef(ToolOpenBuffer, 'Open a file in the IDE editor.', 'file'));
+    Tools.AddElement(ToolDef(ToolOpenBuffer, 'Open a file in the IDE editor.', 'file!'));
     Tools.AddElement(ToolDef(ToolInsertAtCaret,
-      'After approval insert text at the editor caret (the file is then saved).', 'text'));
+      'After approval insert text at the editor caret (the file is then saved).', 'text!'));
     if Profile.Framework <> '' then
     begin
       Tools.AddElement(ToolDef(ToolDesignStyles,
@@ -302,11 +309,11 @@ begin
         'After approval write the project''s DESIGN.md for style (a file or name from ' +
         'rad.design_styles) with its platform preset (or preset: fluent-windows11, material3, ' +
         'apple-macos) and give the project that style (applyStyle: "false" to skip). Ask the user ' +
-        'which style first unless they named one.', 'style,preset,applyStyle'));
+        'which style first unless they named one.', 'style!,preset,applyStyle'));
       Tools.AddElement(ToolDef(ToolDesignIcons,
         'Segoe Fluent Icons glyphs by name (words, e.g. "save filter brightness"): code point and ' +
         'the ' + Lang + ' literal, from Microsoft''s published list. Use it instead of guessing ' +
-        'icon characters. Read-only.', 'query'));
+        'icon characters; empty query: notes and a sample. Read-only.', 'query'));
       if Profile.Framework = 'FMX' then
         Tools.AddElement(SchemaDef(ToolStyleLookups,
           'Style lookups (StyleLookup names) the project''s FMX style really has, with the height ' +
@@ -325,16 +332,16 @@ begin
     Tools.AddElement(ToolDef(ToolDebugStack,
       'Call stack of the current thread while stopped. Read-only.', ''));
     Tools.AddElement(ToolDef(ToolDebugEvaluate,
-      'Evaluate a ' + Expr + ' expression in the stopped debuggee without side effects.', 'expression'));
+      'Evaluate a ' + Expr + ' expression in the stopped debuggee without side effects.', 'expression!'));
     Tools.AddElement(ToolDef(ToolDebugBreakpoints, 'List source breakpoints. Read-only.', ''));
     Tools.AddElement(ToolDef(ToolDebugRun,
       'After approval run the project under the debugger (F9) or continue; returns the state.', ''));
     Tools.AddElement(ToolDef(ToolDebugStep,
-      'After approval step the stopped debuggee. mode: over, into or return.', 'mode'));
+      'After approval step the stopped debuggee. mode: over, into or return.', 'mode!'));
     Tools.AddElement(ToolDef(ToolDebugPause, 'After approval pause the running debuggee.', ''));
     Tools.AddElement(ToolDef(ToolDebugReset, 'After approval terminate the debuggee.', ''));
     Tools.AddElement(ToolDef(ToolDebugAddBreakpoint,
-      'After approval add a source breakpoint at file (absolute path) and 1-based line.', 'file,line'));
+      'After approval add a source breakpoint at file (absolute path) and 1-based line.', 'file!,line!'));
     if Profile.PlanMode then
     begin
       for Index := Tools.Count - 1 downto 0 do

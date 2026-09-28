@@ -11,6 +11,7 @@ uses
   RADAgent.Options in '..\src\RADAgent.Options.pas',
   RADAgent.RpcProtocol in '..\src\RADAgent.RpcProtocol.pas',
   RADAgent.HostToolDefs in '..\src\RADAgent.HostToolDefs.pas',
+  RADAgent.HostToolArgs in '..\src\RADAgent.HostToolArgs.pas',
   RADAgent.ChatCommand in '..\src\RADAgent.ChatCommand.pas',
   RADAgent.RpcDispatch in '..\src\RADAgent.RpcDispatch.pas',
   RADAgent.RpcClient in '..\src\RADAgent.RpcClient.pas',
@@ -183,6 +184,16 @@ begin
   Profile.Language := 'cpp';
   Frame := BuildSetHostToolsFrame('req-6', Profile);
   Check(Frame.Contains('C++Builder') and Frame.Contains('.cpp'), 'C++ project docs name C++Builder');
+  Check(not CheckHostToolArgs(ToolRenameUnit, '{"path":"C:/A/Unit2.pas","name":"A.MainForm"}', Frame) and
+    Frame.Contains('"name"') and Frame.Contains('unit'), 'rename_unit names the unknown argument and the expected ones');
+  Check(not CheckHostToolArgs(ToolFormRenameComponent, '{"path":"C:/A/Main.pas","component":"Form2"}', Frame) and
+    Frame.Contains('newName'), 'form_rename_component reports a missing newName');
+  Check(CheckHostToolArgs(ToolRenameUnit, '{"path":"C:/A/Unit2.pas","unit":"A.MainForm"}', Frame),
+    'rename_unit accepts path and unit');
+  Check(CheckHostToolArgs(ToolFormApply, '{"path":"C:/A/Main.pas","extra":"x"}', Frame),
+    'hand-written schemas without additionalProperties pass extra arguments');
+  Check(CheckHostToolArgs(ToolSetBuildConfig, '{"platform":"Win64"}', Frame),
+    'set_build_config accepts a platform alone');
   SetLength(List, 1);
   List[0].FileName := 'Unit1.pas';
   List[0].Line := 12;

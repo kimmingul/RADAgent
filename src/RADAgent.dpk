@@ -36,6 +36,7 @@ contains
   RADAgent.Lang in 'RADAgent.Lang.pas',
   RADAgent.RpcProtocol in 'RADAgent.RpcProtocol.pas',
   RADAgent.HostToolDefs in 'RADAgent.HostToolDefs.pas',
+  RADAgent.HostToolArgs in 'RADAgent.HostToolArgs.pas',
   RADAgent.ChatCommand in 'RADAgent.ChatCommand.pas',
   RADAgent.AskDialog in 'RADAgent.AskDialog.pas',
   RADAgent.RpcEvents in 'RADAgent.RpcEvents.pas',
