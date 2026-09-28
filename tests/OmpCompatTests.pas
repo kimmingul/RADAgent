@@ -2,7 +2,7 @@
 
 { What keeps RADAgent working across omp updates: protocol choice and v2 chunk reassembly on the
   real stdout reader, approval prompts matched by meaning, local slash commands ending the turn,
-  and (live) the probe against the installed omp. }
+  and (live) the probe against the installed omp. A moved session keeps omp's JSONL layout. }
 
 interface
 
@@ -16,10 +16,10 @@ procedure RunLiveOmpProbe(const Check: TCheckProc);
 implementation
 
 uses
-  System.SysUtils, System.Classes, System.JSON, System.NetEncoding, Winapi.Windows,
+  System.SysUtils, System.Classes, System.IOUtils, System.JSON, System.NetEncoding, Winapi.Windows,
   RADAgent.RpcProtocol, RADAgent.RpcDispatch, RADAgent.RpcEvents, RADAgent.ChatCommand,
   RADAgent.OmpProbe, RADAgent.Options, RADAgent.SlashRoutes, RADAgent.SessionData,
-  RADAgent.UsageReport, RADAgent.RpcResponses;
+  RADAgent.UsageReport, RADAgent.RpcResponses, RADAgent.SessionMove;
 
 type
   TLineSink = class
@@ -293,9 +293,48 @@ begin
     'an answer''s completedAt is its end time');
 end;
 
+{ Header as omp 18 writes it (title line first, then the session line with cwd). }
+procedure TestSessionMove(const Check: TCheckProc);
+const
+  Title = '{"type":"title","v":1,"title":"","updatedAt":"2026-09-28T11:02:42.939Z"}';
+  Body = '{"type":"message","id":"a","message":{"role":"user","content":[{"type":"text","text":"한글"}]}}';
+var
+  Root, OldFile, Moved, Text: string;
+  Lines: TStringList;
+  Header: TJSONObject;
+begin
+  Root := IncludeTrailingPathDelimiter(TPath.GetTempPath) + 'radagent-move-' + IntToStr(GetTickCount) + '\';
+  ForceDirectories(Root + 'old');
+  OldFile := Root + 'old\s.jsonl';
+  TFile.WriteAllText(OldFile, Title + #10 + '{"type":"session","version":3,"id":"x","cwd":"C:\\Old"}' + #10 +
+    Body + #10, TUTF8Encoding.Create(False));
+  Moved := MoveSessionFile(OldFile, Root + 'new', 'D:\repo\gnm');
+  Check((Moved = Root + 'new\s.jsonl') and not FileExists(OldFile), 'a session file moves to the new folder');
+  Text := TFile.ReadAllText(Moved, TEncoding.UTF8);
+  Lines := TStringList.Create;
+  try
+    Lines.LineBreak := #10;
+    Lines.Text := Text;
+    Header := TJSONObject.ParseJSONValue(Lines[1]) as TJSONObject;
+    try
+      Check((Header.GetValue<string>('cwd') = 'D:\repo\gnm') and (Header.GetValue<string>('id') = 'x'),
+        'the moved session''s header points at the new folder and keeps its id');
+    finally
+      Header.Free;
+    end;
+    Check((Lines[0] = Title) and (Lines[2] = Body) and Text.EndsWith(#10) and (Text[1] = '{'),
+      'other lines, the final newline and no BOM are kept so omp can append');
+  finally
+    Lines.Free;
+  end;
+  Check(MoveSessionFile(Moved, Root + 'new', 'D:\x') = Moved, 'a session already in the folder stays');
+  TDirectory.Delete(Root, True);
+end;
+
 procedure RunOmpCompatTests(const Check: TCheckProc);
 begin
   TestSlashRoutes(Check);
+  TestSessionMove(Check);
   TestSessionReplies(Check);
   TestReader(Check);
   TestProtocolChoice(Check);

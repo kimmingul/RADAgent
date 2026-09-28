@@ -73,7 +73,7 @@ begin
   if not Result then
     Exit;
   GShell := True;
-  ChatSession.ShowUserText('!' + Command);
+  ChatSession.Emit(PageUser('!' + Command));
   ChatSession.SendCommand('bash', BuildTypeFieldFrame('bash', 'command', Command));
   ChatSession.Changed;
 end;

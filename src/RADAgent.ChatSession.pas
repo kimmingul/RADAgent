@@ -9,7 +9,7 @@ interface
 uses
   System.Classes, System.SysUtils, Vcl.ExtCtrls, RADAgent.Approval, RADAgent.RpcClient,
   RADAgent.RpcEvents, RADAgent.RpcResponses, RADAgent.ChatActivity, RADAgent.ChatStream,
-  RADAgent.ChatCatalog, RADAgent.HostToolDefs;
+  RADAgent.ChatCatalog, RADAgent.HostToolDefs, RADAgent.ProjectFollow;
 
 type
   IChatView = interface
@@ -29,6 +29,7 @@ type
     FState: TStateInfo;
     FCatalog: TChatCatalog;
     FResumeFile: string;
+    FFollow: TProjectFollow;
     FStartError: string;
     FNotedNoProject, FSubscribed, FRestartPending: Boolean;
     FTimer: TTimer;
@@ -58,8 +59,6 @@ type
     procedure SendCommand(const FrameType, Frame: string);
     { Sends a prompt frame; on success shows DisplayText as the user's message. }
     function SendPrompt(const Message, DisplayText: string; const ImagesJson: string = ''): Boolean;
-    { Shows a slash command the chat handled locally. }
-    procedure ShowUserText(const Text: string);
     { Adds a page message to the transcript and the attached view. }
     procedure Emit(const Json: string);
     procedure ClearTranscript;
@@ -84,7 +83,7 @@ procedure FreeChatSession;
 implementation
 
 uses
-  System.JSON, Winapi.Windows, RADAgent.Options, RADAgent.ChatCommand,
+  System.JSON, System.StrUtils, Winapi.Windows, RADAgent.Options, RADAgent.ChatCommand,
   RADAgent.ChatApproval, RADAgent.IdeContext, RADAgent.ChatTheme,
   RADAgent.ChatPageMessages, RADAgent.ChatTurnTime, RADAgent.ChatActions,
   RADAgent.AgentSettings, RADAgent.OmpSettings, RADAgent.OmpLaunch, RADAgent.ProjectProfile,
@@ -189,14 +188,12 @@ begin
 end;
 
 procedure TChatSession.DisplayChanged;
-const
-  Levels: array[Boolean] of string = ('off', 'progress');
 begin
   PostToView(PageDisplay(ChatShows));
   if not Connected then
     Exit;
   SendCommand('set_subagent_subscription', BuildTypeFieldFrame('set_subagent_subscription', 'level',
-    Levels[csSubagents in ChatShows]));
+    IfThen(csSubagents in ChatShows, 'progress', 'off')));
   FSubscribed := True;
 end;
 
@@ -220,6 +217,7 @@ var
   Dir, Guide, Note, Extra: string;
   Tools: TToolProfile;
   Configs: TArray<string>;
+  Leave: TFollowLeave;
 begin
   Dir := ExcludeTrailingPathDelimiter(ActiveProjectDir);
   if Dir = '' then
@@ -230,12 +228,15 @@ begin
   end
   else
     FNotedNoProject := False;
-  if (FClient <> nil) and (FClient.Pid <> 0) and (Dir <> '') and
-    not SameText(ExcludeTrailingPathDelimiter(FClient.Cwd), Dir) then
+  if (FClient <> nil) and (FClient.Pid <> 0) and FFollow.Moved(Dir) then
   begin
+    Leave := FFollow.Leave(FState.SessionFile, Busy);
+    if Leave = flDefer then
+      Exit; { Tick follows once the turn has ended. }
+    if Leave = flSwitch then
+      ClearTranscript;
     StopChild;
     FResumeFile := '';
-    ClearTranscript;
     Notice('info', TrF('chatsession.projectDirChanged', [Dir]));
   end;
   if FClient = nil then
@@ -253,6 +254,7 @@ begin
     if Dir = '' then
       Dir := GetCurrentDir;
     FState := Default(TStateInfo);
+    FResumeFile := FFollow.Start(Dir, FResumeFile);
     FSubscribed := False;
     FCatalog.LoadProject(OmpCommand, Dir);
     PrepareLaunch(ExistingOverlay(Dir), FCatalog.Project.BaseList('skills.customDirectories'), Tools,
@@ -306,8 +308,9 @@ procedure TChatSession.Tick(Sender: TObject);
 begin
   if (FClient <> nil) and FClient.Exited then
     RecoverExitedChild
-  else if (FView <> nil) and not Connected then
-    EnsureStarted
+  else if ((FView <> nil) and not Connected) or
+    (Connected and not Busy and FFollow.Moved(ExcludeTrailingPathDelimiter(ActiveProjectDir))) then
+    EnsureStarted { The second case: Save As fires no project notification. }
   else if Busy then
     Changed;
 end;
@@ -355,6 +358,9 @@ end;
 procedure TChatSession.StateArrived(const Info: TStateInfo);
 begin
   FState := Info;
+  { First state after following a moved project: reopen the conversation from its new place. }
+  if FFollow.Arrived(Info.SessionFile, FResumeFile) then
+    ClientStatus;
   FStream.ShowTodos(Info.Todos);
   FCatalog.Touch;
   Changed;
@@ -389,11 +395,6 @@ begin
   Emit(PageUser(DisplayText));
   FActivity.PromptSent;
   Changed;
-end;
-
-procedure TChatSession.ShowUserText(const Text: string);
-begin
-  Emit(PageUser(Text));
 end;
 
 end.

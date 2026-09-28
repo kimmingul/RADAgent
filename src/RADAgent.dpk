@@ -37,6 +37,8 @@ contains
   RADAgent.RpcProtocol in 'RADAgent.RpcProtocol.pas',
   RADAgent.HostToolDefs in 'RADAgent.HostToolDefs.pas',
   RADAgent.HostToolArgs in 'RADAgent.HostToolArgs.pas',
+  RADAgent.SessionMove in 'RADAgent.SessionMove.pas',
+  RADAgent.ProjectFollow in 'RADAgent.ProjectFollow.pas',
   RADAgent.ChatCommand in 'RADAgent.ChatCommand.pas',
   RADAgent.AskDialog in 'RADAgent.AskDialog.pas',
   RADAgent.RpcEvents in 'RADAgent.RpcEvents.pas',

@@ -101,7 +101,7 @@ begin
   if DispatchSlash(Text, Session.SendCommand, PickModels) then
   begin
     GPickModel := PickModels;
-    Session.ShowUserText(Text);
+    Session.Emit(PageUser(Text));
     Exit(True);
   end;
   Result := Session.SendPrompt(Text, Text);

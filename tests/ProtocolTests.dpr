@@ -12,6 +12,7 @@ uses
   RADAgent.RpcProtocol in '..\src\RADAgent.RpcProtocol.pas',
   RADAgent.HostToolDefs in '..\src\RADAgent.HostToolDefs.pas',
   RADAgent.HostToolArgs in '..\src\RADAgent.HostToolArgs.pas',
+  RADAgent.SessionMove in '..\src\RADAgent.SessionMove.pas',
   RADAgent.ChatCommand in '..\src\RADAgent.ChatCommand.pas',
   RADAgent.RpcDispatch in '..\src\RADAgent.RpcDispatch.pas',
   RADAgent.RpcClient in '..\src\RADAgent.RpcClient.pas',

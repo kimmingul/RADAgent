@@ -20,6 +20,8 @@ type
 
 function ActiveProjectFile: string;
 function ActiveProjectDir: string;
+{ ProjectGUID of the active project ('' without one); unchanged by Save As. }
+function ActiveProjectGuid: string;
 { A tool's path as the IDE wants it: backslashes, relative to the project folder, expanded.
   OpenModule turns C:/dir/Unit1.pas into C:\Unit1.pas. }
 function ProjectPath(const Path: string): string;
@@ -191,6 +193,17 @@ begin
     Result := ''
   else
     Result := IncludeTrailingPathDelimiter(ExtractFilePath(FileName));
+end;
+
+function ActiveProjectGuid: string;
+var
+  Project: IOTAProject;
+begin
+  Project := CurrentProject;
+  if Project = nil then
+    Result := ''
+  else
+    Result := GUIDToString(Project.ProjectGUID);
 end;
 
 function ProjectPath(const Path: string): string;

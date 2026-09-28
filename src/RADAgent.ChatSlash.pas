@@ -102,7 +102,7 @@ begin
   if not Result then
     Exit;
   if RouteSlash(Text, Names, Name, Args) <> srQueue then
-    Session.ShowUserText(Text);
+    Session.Emit(PageUser(Text));
   case RouteSlash(Text, Names, Name, Args) of
     srNone:
       Exit(False);
