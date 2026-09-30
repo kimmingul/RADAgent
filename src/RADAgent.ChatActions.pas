@@ -48,7 +48,7 @@ end;
 function SubmitChat(const Text, Attachment, AttachmentLabel, ImagesJson: string; FollowUp: Boolean): Boolean;
 var
   Session: TChatSession;
-  Arg1, Arg2, Display: string;
+  Arg1, Arg2, Display, Prompt: string;
   PickModels: Boolean;
   Seq: Integer;
 begin
@@ -98,13 +98,15 @@ begin
       Session.Notice('error', Tr('chatactions.sendFailed'));
     Exit;
   end;
-  if DispatchSlash(Text, Session.SendCommand, PickModels) then
+  if DispatchSlash(Text, Session.SendCommand, PickModels, Prompt) then
   begin
     GPickModel := PickModels;
     Session.Emit(PageUser(Text));
     Exit(True);
   end;
-  Result := Session.SendPrompt(Text, Text);
+  if Prompt = '' then
+    Prompt := Text;
+  Result := Session.SendPrompt(Prompt, Prompt);
 end;
 
 procedure CompileActiveProject;
@@ -257,7 +259,8 @@ var
   Root: TJSONValue;
   Ok: Boolean;
 begin
-  if HandleSlashResponse(Line) or HandleShellResponse(Line) or HandleUsageResponse(Line) then
+  if HandleSlashResponse(Line) or HandleShellResponse(Line) or HandleUsageResponse(Line) or
+    HandleQueueFrame(Line) then
     Exit;
   Root := TJSONObject.ParseJSONValue(Line);
   try

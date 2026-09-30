@@ -24,8 +24,10 @@ function ExtensionReply(const Line: string; out Reply, Notice: string; out Input
 type
   TRawSend = procedure(const FrameType, Frame: string) of object;
 
+{ False when omp should get the text as a prompt: Original, or Prompt when that is set (a picker
+  choice only omp's own command can make). }
 function DispatchSlash(const Original: string; const Send: TRawSend;
-  out PickModels: Boolean): Boolean;
+  out PickModels: Boolean; out Prompt: string): Boolean;
 
 implementation
 
@@ -347,12 +349,13 @@ begin
 end;
 
 function DispatchSlash(const Original: string; const Send: TRawSend;
-  out PickModels: Boolean): Boolean;
+  out PickModels: Boolean; out Prompt: string): Boolean;
 var
   Arg1, Arg2: string;
   Command: TChatCommand;
 begin
   PickModels := False;
+  Prompt := '';
   Result := False;
   if not Assigned(Send) then
     Exit;
@@ -373,8 +376,14 @@ begin
     ccSetModel: Send('set_model', BuildSetModelFrame('req', Arg1, Arg2));
     ccFast:
       begin
-        if (Arg1 = '') and not AskCsv(Tr('askdialog.fastModeTitle'), 'on,off', Arg1) then
+        if (Arg1 = '') and
+          not AskCsv(Tr('askdialog.fastModeTitle'), FastModeChoices(ChatSession.Commands), Arg1) then
           Exit;
+        if SameText(Arg1, 'ultra') then
+        begin
+          Prompt := '/fast ultra';
+          Exit(False);
+        end;
         Send('set_fast_mode', BuildSetFastFrame('req', SameText(Arg1, 'on')));
       end;
     ccThinking:

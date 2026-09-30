@@ -5,12 +5,18 @@ unit RADAgent.ChatPageMessages;
 interface
 
 uses
-  RADAgent.RpcEvents, RADAgent.RpcResponses, RADAgent.AgentSettings;
+  RADAgent.RpcEvents, RADAgent.RpcResponses, RADAgent.RpcQueue, RADAgent.AgentSettings;
 
 { ts: when it was sent (ms since 1970, UTC), shown on hover. }
 function PageUser(const Text: string): string;
-{ A message sent while omp works: Queue is 'steer' (read at the next step) or 'followUp'. }
-function PageQueuedUser(const Text, Queue: string): string;
+{ A message sent while omp works: Queue is 'steer' (read at the next step) or 'followUp'; Sent is
+  the text omp got, which its queue reports list. }
+function PageQueuedUser(const Text, Queue, Sent: string): string;
+{ omp's pending messages. FromState: a get_state answer, which follows every queue change omp
+  reported, so a message missing from it was lost (omp restarted), not read. }
+function PageQueue(const Snapshot: TQueueSnapshot; FromState: Boolean): string;
+{ omp's answer to calling off a queued message (Queue as in PageQueuedUser). }
+function PageQueueRemoved(const Sent, Queue: string; Removed: Boolean): string;
 { A panel over the chat with Markdown (a subagent transcript, the shortcut list). }
 function PageSheet(const Title, Markdown: string): string;
 function PageDelta(const Text: string): string;
@@ -69,9 +75,50 @@ begin
   Result := Build('user', ['text', 'ts'], [Text, IntToStr(UnixMs)]);
 end;
 
-function PageQueuedUser(const Text, Queue: string): string;
+function PageQueuedUser(const Text, Queue, Sent: string): string;
 begin
-  Result := Build('user', ['text', 'queue', 'ts'], [Text, Queue, IntToStr(UnixMs)]);
+  Result := Build('user', ['text', 'queue', 'sent', 'ts'], [Text, Queue, Sent, IntToStr(UnixMs)]);
+end;
+
+function StringArray(const Items: TArray<string>): TJSONArray;
+var
+  Item: string;
+begin
+  Result := TJSONArray.Create;
+  for Item in Items do
+    Result.Add(Item);
+end;
+
+function PageQueue(const Snapshot: TQueueSnapshot; FromState: Boolean): string;
+var
+  Obj: TJSONObject;
+begin
+  Obj := TJSONObject.Create;
+  try
+    Obj.AddPair('t', 'queue');
+    Obj.AddPair('steering', StringArray(Snapshot.Steering));
+    Obj.AddPair('followUp', StringArray(Snapshot.FollowUp));
+    Obj.AddPair('state', TJSONBool.Create(FromState));
+    Result := Obj.ToJSON;
+  finally
+    Obj.Free;
+  end;
+end;
+
+function PageQueueRemoved(const Sent, Queue: string; Removed: Boolean): string;
+var
+  Obj: TJSONObject;
+begin
+  Obj := TJSONObject.Create;
+  try
+    Obj.AddPair('t', 'queueRemoved');
+    Obj.AddPair('sent', Sent);
+    Obj.AddPair('queue', Queue);
+    Obj.AddPair('removed', TJSONBool.Create(Removed));
+    Result := Obj.ToJSON;
+  finally
+    Obj.Free;
+  end;
 end;
 
 function PageSheet(const Title, Markdown: string): string;

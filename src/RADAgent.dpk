@@ -96,6 +96,7 @@ contains
   RADAgent.IdeMenus in 'RADAgent.IdeMenus.pas',
   RADAgent.DockKeeper in 'RADAgent.DockKeeper.pas',
   RADAgent.RpcJson in 'RADAgent.RpcJson.pas',
+  RADAgent.RpcQueue in 'RADAgent.RpcQueue.pas',
   RADAgent.RpcResponses in 'RADAgent.RpcResponses.pas',
   RADAgent.AgentSettings in 'RADAgent.AgentSettings.pas',
   RADAgent.OmpCli in 'RADAgent.OmpCli.pas',

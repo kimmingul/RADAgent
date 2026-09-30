@@ -12,7 +12,7 @@ function AgentBitness: string;
 { The running bds.exe, "37.0.57242.3601"; '' when it cannot be read. }
 function IdeVersion: string;
 function ReleaseNotesUrl: string;
-{ "RAD Agent 1.2.5 (64-bit) · omp 18.2.11"; OmpVersion '' shows "?". }
+{ "RAD Agent 1.2.5 (64-bit) · omp 18.4.4"; OmpVersion '' shows "?". }
 function ShortVersionLine(const OmpVersion: string): string;
 { One line for bug reports and the log, the same in every language: the short line and
   " · BDS 37.0.57242.3601". }

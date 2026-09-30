@@ -22,8 +22,9 @@ procedure SetRpcLogHeader(const Line: string);
 function ChildExitReason(const StderrPath: string): string;
 { One command-line argument in quotes, safe for a trailing backslash (C:\dir\). }
 function QuoteArg(const Value: string): string;
-{ Configs: --config files in order (empty entries skipped); AppendPrompt: file whose text omp
-  appends to its system prompt; ExtraArgs: appended verbatim. }
+{ omp over RPC with tool UI (--mode rpc-ui): tools that ask the user, such as ask, reach the IDE
+  as extension UI requests. Configs: --config files in order (empty entries skipped); AppendPrompt:
+  file whose text omp appends to its system prompt; ExtraArgs: appended verbatim. }
 function BuildOmpCommandLine(const Executable, WorkDir: string; const Configs: array of string;
   const AppendPrompt, ExtraArgs: string): string;
 
@@ -182,7 +183,7 @@ function BuildOmpCommandLine(const Executable, WorkDir: string; const Configs: a
 var
   Config: string;
 begin
-  Result := QuoteArg(Executable) + ' --mode rpc --cwd ' + QuoteArg(WorkDir);
+  Result := QuoteArg(Executable) + ' --mode rpc-ui --cwd ' + QuoteArg(WorkDir);
   for Config in Configs do
     if Config <> '' then
       Result := Result + ' --config ' + QuoteArg(Config);

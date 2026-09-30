@@ -1,15 +1,17 @@
 ﻿---
 name: omp-rpc
-description: omp --mode rpc JSONL 계약(검증 버전 18.2.11). ready 프레임, prompt, abort, host-tools. Use when starting omp, writing the Delphi RPC client, or handling host tool calls. DelphiLSP는 이 스킬이 아니라 delphi-lsp 스킬로 연결한다.
+description: omp --mode rpc-ui JSONL 계약(검증 버전 18.4.4). ready 프레임, prompt, abort, 대기 메시지, host-tools. Use when starting omp, writing the Delphi RPC client, or handling host tool calls. DelphiLSP는 이 스킬이 아니라 delphi-lsp 스킬로 연결한다.
 ---
 
 # omp RPC
 
-엔진은 설치된 omp 18.2.11이다. 기본 명령:
+엔진은 설치된 omp 18.4.4이다. 기본 명령:
 
 ```text
-omp --mode rpc
+omp --mode rpc-ui
 ```
+
+`rpc-ui`는 `rpc`와 같은 JSONL 전송에 도구 UI를 더한다. `rpc`에서는 `ask` 도구가 없고, `rpc-ui`에서는 `ask`의 질문이 `extension_ui_request`(`select`, 직접 입력을 고르면 이어서 `editor`)로 온다. 여러 개 고르기(`multi`)도 RPC에서는 한 개 고르기 `select`로 온다.
 
 자식의 cwd는 활성 `.dproj` 디렉터리다. `--cwd`로 그 경로를 넘긴다. `@file` 인자는 RPC 모드에서 거부되므로 쓰지 않는다.
 
@@ -44,6 +46,21 @@ DelphiLSP는 이 프로세스에 붙이지 않는다. omp가 `.omp/lsp.json`으�
 - 에이전트 턴은 `agent_end`이고 `isTerminal`이 `false`가 아닐 때 끝이다.
 - `data.agentInvoked: false` 또는 이후 `prompt_result`는 로컬에서 끝난 프롬프트다(`agent_end` 없음). 이때 턴을 끝낸다. 그 전에 온 `command_output.text`는 ANSI 색을 지우고 보여 준다.
 - 이미 스트리밍 중이면 `streamingBehavior`가 필요하다. `"steer"` 또는 `"followUp"`. 없으면 실패한다.
+
+## 대기 메시지 (omp 18.4.4부터)
+
+작업 중 보낸 `steer`와 `follow_up`은 omp가 읽을 때까지 대기열에 있다. 목록은 omp가 알려 준다. 클라이언트가 따로 세지 않는다.
+
+```json
+{"type":"queue_update","steering":["Use the existing parser"],"followUp":[]}
+{"id":"req-4","type":"remove_queued_message","message":"Use the existing parser","queue":"steering"}
+{"id":"req-4","type":"response","command":"remove_queued_message","success":true,"data":{"removed":true}}
+```
+
+- `queue_update`는 대기열이 바뀔 때마다 온다. `get_state`의 `queuedMessages`도 같은 모양이다.
+- `remove_queued_message` 응답에는 메시지가 없다. 보낸 순서로 짝을 맞춘다. `removed: false`는 omp가 이미 읽었다는 뜻이다.
+- `abort`는 follow-up을 지우지 않는다. 남은 follow-up은 다음 프롬프트 뒤에 전달된다.
+- 예전 omp는 이 프레임을 보내지 않는다. 없으면 대기 표시를 하지 않는다.
 
 ## abort
 

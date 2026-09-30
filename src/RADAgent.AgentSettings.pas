@@ -44,7 +44,7 @@ procedure SetDesignerUiRequired(const ProjectDir: string; Value: Boolean);
 { clangd.exe (or its folder) for C++Builder projects; '' means search PATH. }
 function ClangdPath: string;
 procedure SetClangdPath(const Value: string);
-{ Extra command line arguments appended after --mode rpc. }
+{ Extra command line arguments appended after --mode rpc-ui. }
 function OmpExtraArgs: string;
 procedure SetOmpExtraArgs(const Value: string);
 { omp works (thinks, plans, briefs subagents) in English and answers in the user's language. }

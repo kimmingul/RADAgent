@@ -1,6 +1,6 @@
 unit RADAgent.BtwRunner;
 
-{ One omp --mode rpc child per side question (/btw): no tools, forked from the conversation or
+{ One omp --mode rpc-ui child per side question (/btw): no tools, forked from the conversation or
   resuming the topic's own session, one prompt, then stdin closes and the child exits. Polled
   from the main thread; reads never block. Stopping sends the abort frame, as for the main
   child. No ToolsAPI. }

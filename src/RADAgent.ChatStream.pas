@@ -30,8 +30,9 @@ type
     { Adds a message to the transcript and the view. }
     procedure Emit(const Json: string);
     procedure Clear;
-    { Shows the todo list when it changed since the last call. }
-    procedure ShowTodos(const Todos: TArray<TTodoItem>);
+    { Shows the todo list when it changed since the last call, and omp's pending messages when
+      omp lists them (on the view only: every get_state brings them). }
+    procedure ShowState(const Info: TStateInfo);
     { Everything a newly attached view needs, unfinished blocks included. }
     function Replay: TArray<string>;
   end;
@@ -86,14 +87,16 @@ begin
   FPost(Json);
 end;
 
-procedure TChatStream.ShowTodos(const Todos: TArray<TTodoItem>);
+procedure TChatStream.ShowState(const Info: TStateInfo);
 var
   Json: string;
 begin
-  Json := PageTodos(Todos);
-  if (Json <> FTodos) and ((FTodos <> '') or (Length(Todos) > 0)) then
+  Json := PageTodos(Info.Todos);
+  if (Json <> FTodos) and ((FTodos <> '') or (Length(Info.Todos) > 0)) then
     Emit(Json);
   FTodos := Json;
+  if Info.HasQueue then
+    FPost(PageQueue(Info.Queue, True));
 end;
 
 procedure TChatStream.Clear;

@@ -221,6 +221,8 @@ begin
       SubmitChat(Text, '', '')
     else if Kind = 'abortRetry' then
       AbortRetry
+    else if Kind = 'cancelQueued' then
+      CancelQueued(Obj.GetValue<string>('sent', ''), Obj.GetValue<string>('queue', ''))
     else if Kind = 'subagentLog' then
       ShowSubagentLog(Obj.GetValue<string>('id', ''))
     else if Kind = 'usage' then

@@ -1,6 +1,6 @@
 ﻿# RAD Agent 설계
 
-design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자식 프로세스에 JSONL RPC로 프롬프트를 넘긴다. 에이전트 루프, 도구 실행, LSP 세션은 omp가 소유한다.
+design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.4.4 자식 프로세스에 JSONL RPC로 프롬프트를 넘긴다. 에이전트 루프, 도구 실행, LSP 세션은 omp가 소유한다.
 
 ## 아키텍처
 
@@ -16,7 +16,7 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 |  IdeFiles(저장) + GitRepo(체크포인트) --- IdeContext                          |
 |    |  디스크가 기준                             활성 .dproj, 에디터 버퍼       |
 |    v                                                                         |
-|  RpcClient  ==== JSONL stdin/stdout ===>  omp --mode rpc                     |
+|  RpcClient  ==== JSONL stdin/stdout ===>  omp --mode rpc-ui                  |
 |    ^                                         cwd = .dproj 디렉터리           |
 |    |  host_tool_call / result                 tools + 자체 LSP               |
 |  HostTools                                      |                            |
@@ -67,14 +67,14 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | ChatApprovalCard | 채팅 안 승인 카드: diff 메시지를 보내고 답이 올 때까지 메시지를 돌린다. 중지하면 모두 거부. |
 | ChatPlan | 계획 모드: 들어가기·나오기(omp 재시작), `rad.submit_plan`으로 `docs\plans` 계획서 작성, `docs` 파일 프로젝트 추가, 진행 후속 프롬프트. |
 | ChatBtw | `/btw` 곁가지 질문: 질문마다 별도 omp 자식을 띄우고(타이머로 읽음) 채팅 카드와 메모 목록 메시지를 보낸다. 본 대화와 섞지 않는다. |
-| BtwRunner | 곁가지 질문 omp 자식 하나: `--mode rpc --no-tools`, 대화 `--fork` 또는 주제 `--resume`, 프롬프트 하나, 중지는 abort 프레임. 막히지 않는 읽기. ToolsAPI 없음. |
+| BtwRunner | 곁가지 질문 omp 자식 하나: `--mode rpc-ui --no-tools`, 대화 `--fork` 또는 주제 `--resume`, 프롬프트 하나, 중지는 abort 프레임. 막히지 않는 읽기. ToolsAPI 없음. |
 | BtwStore | 곁가지 질문 메모(주제별 JSON과 주제 세션)를 `%LOCALAPPDATA%\RADAgent\btw\<프로젝트>`에 읽고 쓴다. |
 | ChatSession | IDE당 대화 하나. omp 자식과 진행 상태를 가진다. 창을 닫거나 레이아웃이 바뀌어도 살아 있다. 설정을 바꾸면 같은 세션 파일로 omp를 다시 시작한다. 승인 계약을 구현한다. |
-| ChatStream | 에이전트 이벤트를 페이지 메시지로 바꾸고 기록(재표시용)을 가진다: 답, 생각, 도구 입력·중간 출력·결과, 하위 에이전트, 작업 목록, 알림. |
+| ChatStream | 에이전트 이벤트를 페이지 메시지로 바꾸고 기록(재표시용)을 가진다: 답, 생각, 도구 입력·중간 출력·결과, 하위 에이전트, 작업 목록, 알림. `get_state`의 대기 메시지 목록은 기록에 넣지 않고 보이는 화면에만 보낸다. |
 | ChatCatalog | 설정 창용 모델, 생각 수준, 로그인 공급자 목록(RPC 응답). |
 | ChatActions | 보내기(저장, 체크포인트, 선택 영역 첨부), 컴파일, 새 세션, 세션 전환과 기록 불러오기, 내보내기, host-tool 실행, 상태줄 문구. |
 | ChatActivity | RPC 이벤트로 지금 하는 일(생각, 답 작성, 도구 실행, 압축)과 경과 시간을 정한다. |
-| ChatPageMessages | 채팅 페이지(`src\chat`)로 보내는 JSON 메시지. 페이지는 `chat.js`(기록), `tools.js`(도구 묶음·파일 카드), `activity.js`(생각·입력·하위 에이전트·작업 목록), `topbar.js`, `composer.js`(입력 상자와 아래 줄), `panels.js`(시트와 사용량 패널), `clicks.js`(파일·코드·링크 클릭)로 나뉜다. |
+| ChatPageMessages | 채팅 페이지(`src\chat`)로 보내는 JSON 메시지. 페이지는 `chat.js`(기록), `queue.js`(작업 중 보낸 메시지의 대기·취소), `tools.js`(도구 묶음·파일 카드), `activity.js`(생각·입력·하위 에이전트·작업 목록), `topbar.js`, `composer.js`(입력 상자와 아래 줄), `panels.js`(시트와 사용량 패널), `clicks.js`(파일·코드·링크 클릭)로 나뉜다. |
 | WebView2Api | WebView2 COM 인터페이스 선언(WebView2.h vtable 순서, 쓰지 않는 메서드는 자리만). 릴리스마다 다른 rtl `Winapi.WebView2`를 쓰지 않으려고 둔다. |
 | WebView2Host / WebView2Handlers | `RADAgent.WebView2Api`로 WebView2를 띄운다. 가상 호스트로 페이지를 싣고, 페이지 밖 이동과 새 창을 막는다. 도킹·핀·레이아웃으로 창이 다시 만들어지면 브라우저를 숨은 최상위 창에 잠시 옮겼다가 다시 붙인다(WebView2는 `HWND_MESSAGE`를 부모로 받지 않는다). 그래도 브라우저가 없어졌으면 같은 환경에서 새로 띄우고 채팅을 다시 보여 준다(`PageLoads`). |
 | WebView2Runtime | BPL 옆 `WebView2Loader.dll` 로드와 환경 만들기, 채팅 페이지·사용자 데이터 폴더, 브라우저가 기다리는 숨은 창. |
@@ -95,18 +95,19 @@ design-time BPL이 RAD Studio IDE 안에서 Chat을 띄우고, omp 18.2.11 자�
 | IdeMenus | 에디터와 메시지 창 오른쪽 클릭 메뉴 항목. |
 | DockKeeper | 디버그 시작·종료로 데스크톱이 바뀐 뒤 채팅을 다시 보여 준다. |
 | ApprovalDialog / LineDiff | 승인 창과 줄 diff. |
-| RpcClient | `omp --mode rpc` 자식 프로세스와 읽기 스레드. `ready` 전 프롬프트 금지. 이벤트는 RpcEvents로 해석해 메인 스레드에 넘긴다. |
+| RpcClient | `omp --mode rpc-ui` 자식 프로세스와 읽기 스레드. `rpc-ui`는 RPC에 도구 UI를 더해 `ask` 도구의 질문도 `extension_ui_request`로 온다. `ready` 전 프롬프트 금지. 이벤트는 RpcEvents로 해석해 메인 스레드에 넘긴다. |
 | RpcEvents | stdout 프레임을 이벤트(텍스트, 생각, 도구 입력·시작·중간 출력·끝, 하위 에이전트, 재시도, 알림, 턴 끝)로 해석한다. ToolsAPI 없음. |
-| RpcResponses / RpcJson | 명령 응답(명령 목록, 상태·작업 목록, 기록 페이지, 모델, 생각 수준, 로그인 공급자) 해석과 공용 JSON 읽기. ToolsAPI 없음. |
+| RpcResponses / RpcJson | 명령 응답(명령 목록, 상태·작업 목록·대기 메시지, 기록 페이지, 모델, 생각 수준, 로그인 공급자) 해석과 공용 JSON 읽기. ToolsAPI 없음. |
+| RpcQueue | omp의 대기 메시지(omp 18.4.4부터): `queue_update` 이벤트와 `get_state`의 `queuedMessages` 해석, `remove_queued_message` 프레임과 응답. 예전 omp는 보내지 않으므로 없으면 대기 표시를 하지 않는다. ToolsAPI 없음. |
 | RpcProtocol | JSONL 프레임 생성과 판별. ToolsAPI 없음. |
 | RpcDispatch | stdout 줄을 프레임 종류별로 나눠 이벤트로 넘긴다. ToolsAPI 없음. |
-| SlashRoutes | omp 터미널 전용 명령의 처리 방식(RAD Agent가 함, 터미널에서만, omp에 넘김). omp가 RPC 목록에 올린 이름이 먼저다. ToolsAPI 없음. |
+| SlashRoutes | omp 터미널 전용 명령의 처리 방식(RAD Agent가 함, 터미널에서만, omp에 넘김). omp가 RPC 목록에 올린 이름이 먼저다. 다만 omp가 목록에 올려도 RPC에서는 아무것도 하지 않는 명령(`/annotate`)은 터미널 전용으로 알린다. ToolsAPI 없음. |
 | ChatSlash | 터미널 전용 명령 실행: `/clear`, `/delete`, `/resume`, `/tree`, `/branch`, `/fork`, `/copy`, `/login`, `/hub` 등을 RPC 요청과 RAD Agent 창으로, 하위 에이전트 대화 보기. |
-| ChatQueue | 턴 옆의 일: 작업 중 보낸 메시지(`steer`, `follow_up`), `!` 셸 명령(`bash`, `abort_bash`), 재시도 취소(`abort_retry`). |
+| ChatQueue | 턴 옆의 일: 작업 중 보낸 메시지(`steer`, `follow_up`; omp가 대기 목록에 올린 동안 페이지가 대기로 보이고 `remove_queued_message`로 취소), `!` 셸 명령(`bash`, `abort_bash`), 재시도 취소(`abort_retry`). |
 | ChatUsage / UsageReport | 컨텍스트 원의 사용량 패널: `get_session_stats`와 뒤에서 돌린 `omp usage --json --provider`(1분 보관), 공급자 한도를 창·그룹·재설정 시각으로. |
 | SessionData | 세션 응답 해석(갈라질 메시지, 트리, 마지막 답·코드 블록, 하위 에이전트 대화, 셸 결과). ToolsAPI 없음. |
 | ChatCommand | 채팅 입력을 기존 omp RPC 프레임으로 분류한다. 새 명령 `type`을 만들지 않는다. |
-| AskDialog | `extension_ui_request`와 슬래시 명령 선택 모달. |
+| AskDialog | `extension_ui_request`(omp `ask` 도구의 선택·직접 입력 포함)와 슬래시 명령 선택 모달. `/fast` 선택지는 omp 명령 목록의 `/fast` 인자 안내를 따른다(`ultra`는 `set_fast_mode`에 없어 `/fast ultra` 프롬프트로 보냄). |
 | Options | omp 실행 파일, 명령줄(인자 인용), `%TEMP%\RADAgent` 로그 경로(omp에 넘기는 파일과 stderr 로그는 IDE 프로세스마다 `-p<pid>`, 끝난 IDE의 것은 처음 쓸 때 지움, `rpc.log`는 20MB가 넘으면 `rpc.1.log`로 돌림, 새 `rpc.log` 첫 줄은 버전 줄), 자식이 일찍 끝난 이유(stderr 마지막 줄), 공통 `--config` 내용. |
 | RpcChunks | RPC v2 `rpc_chunk` 조각을 원래 프레임으로 되돌린다(순서·크기·끊김 검사). |
 | OmpProbe | 설치된 omp 호환성 검사: 버전, 명령줄 옵션, RPC 시작·프로토콜, `rad.*` 등록과 xd:// 연결, 응답 필드, `config list`. 모델 호출 없음. 시험과 IDE가 같이 쓴다. |

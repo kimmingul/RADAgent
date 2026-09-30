@@ -5,7 +5,7 @@
 interface
 
 uses
-  System.SysUtils;
+  System.SysUtils, RADAgent.RpcResponses;
 
 type
   TChatCommand = (
@@ -22,6 +22,9 @@ function ClassifyChat(const Text: string; out Arg1, Arg2: string): TChatCommand;
 function BuildIdTypeFrame(const Id, FrameType: string): string;
 function BuildSetModelFrame(const Id, Provider, ModelId: string): string;
 function BuildSetFastFrame(const Id: string; Enabled: Boolean): string;
+{ The /fast picker's choices: on and off, and ultra when omp's /fast offers it (omp 18.4.4 and
+  later); set_fast_mode only switches on and off, so ultra goes as the /fast ultra command. }
+function FastModeChoices(const Commands: TArray<TSlashCommand>): string;
 function BuildSetThinkingFrame(const Id, Level: string): string;
 { Frames with one string field besides type, e.g. switch_session/sessionPath. }
 function BuildTypeFieldFrame(const FrameType, Field, Value: string): string;
@@ -163,6 +166,16 @@ begin
   finally
     Obj.Free;
   end;
+end;
+
+function FastModeChoices(const Commands: TArray<TSlashCommand>): string;
+var
+  Command: TSlashCommand;
+begin
+  Result := 'on,off';
+  for Command in Commands do
+    if SameText(Command.Name, 'fast') and Command.Hint.Contains('ultra') then
+      Exit('on,ultra,off');
 end;
 
 function BuildSetThinkingFrame(const Id, Level: string): string;

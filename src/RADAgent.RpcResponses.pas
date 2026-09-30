@@ -4,14 +4,19 @@ unit RADAgent.RpcResponses;
 
 interface
 
+uses
+  RADAgent.RpcQueue;
+
 type
   TSlashCommand = record Name, Description, Hint: string; end;
   TTodoItem = record Phase, Content, Status: string; end;
+  { HasQueue: omp listed its pending messages (queuedMessages, omp 18.4.4 and later). }
   TStateInfo = record
     Provider, ModelId, ThinkingLevel, SessionFile, SessionName, Cwd: string;
     ContextPercent: Double;
-    HasContext, IsStreaming: Boolean;
+    HasContext, IsStreaming, HasQueue: Boolean;
     Todos: TArray<TTodoItem>;
+    Queue: TQueueSnapshot;
   end;
   { Model: "provider/model" of an assistant message, when omp recorded it. }
   { Timestamp: ms since 1970 (UTC) when omp recorded it, 0 when unknown; CompletedAt: when an
@@ -151,6 +156,7 @@ begin
       Info.HasContext := True;
     end;
     ReadTodos(Data, Info);
+    Info.HasQueue := ReadQueueSnapshot(JsonChild(Data, 'queuedMessages'), Info.Queue);
     Result := True;
   finally
     Root.Free;

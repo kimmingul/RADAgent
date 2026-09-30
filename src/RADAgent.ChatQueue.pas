@@ -1,8 +1,9 @@
 unit RADAgent.ChatQueue;
 
 { Work beside a running turn: messages sent while omp works (steer: read at its next step;
-  follow-up: after the turn), "!" shell commands in omp's shell, and calling off a waiting retry.
-  Main thread only. }
+  follow-up: after the turn), which the page shows as pending while omp's queue reports list them
+  and which can be called off there, "!" shell commands in omp's shell, and calling off a waiting
+  retry. Main thread only. }
 
 interface
 
@@ -12,22 +13,34 @@ function QueueMessage(const Text, DisplayText, ImagesJson: string; FollowUp: Boo
 { "!command": omp runs it in its shell and keeps the output in the context. }
 function RunShell(const Command: string): Boolean;
 function ShellRunning: Boolean;
-{ The omp child that ran the shell command is gone: its reply will never come. }
+{ The omp child is gone: the replies to a shell command or to calling off a message never come. }
 procedure ResetShell;
 { Stop button while a shell command runs. }
 procedure AbortShell;
 procedure AbortRetry;
 { The bash reply RunShell waits for; True when handled. }
 function HandleShellResponse(const Line: string): Boolean;
+{ omp's queue_update event, or its answer to CancelQueued; True when handled. }
+function HandleQueueFrame(const Line: string): Boolean;
+{ The page's cancel button on a pending message. Sent: the text omp got; Queue: the page's 'steer'
+  or 'followUp'. }
+procedure CancelQueued(const Sent, Queue: string);
 
 implementation
 
 uses
   System.SysUtils, System.JSON, RADAgent.ChatSession, RADAgent.SessionData, RADAgent.ChatCommand,
-  RADAgent.ChatPageMessages, RADAgent.Lang;
+  RADAgent.ChatPageMessages, RADAgent.RpcQueue, RADAgent.Lang;
+
+type
+  TCancelRequest = record
+    Sent, Queue: string;
+  end;
 
 var
   GShell: Boolean;
+  { remove_queued_message answers carry no message: they come back in the order sent. }
+  GCancels: TArray<TCancelRequest>;
 
 function QueueMessage(const Text, DisplayText, ImagesJson: string; FollowUp: Boolean): Boolean;
 const
@@ -57,7 +70,7 @@ begin
     Obj.Free;
   end;
   if Result then
-    ChatSession.Emit(PageQueuedUser(DisplayText, Tags[FollowUp]))
+    ChatSession.Emit(PageQueuedUser(DisplayText, Tags[FollowUp], Text))
   else
     ChatSession.Notice('error', Tr('chatactions.sendFailed'));
 end;
@@ -85,6 +98,7 @@ end;
 
 procedure ResetShell;
 begin
+  GCancels := nil;
   if not GShell then
     Exit;
   GShell := False;
@@ -128,6 +142,47 @@ begin
   Result := ResponseOf(Line, Ok) = 'bash';
   if Result then
     ShowBash(Line);
+end;
+
+function HandleQueueFrame(const Line: string): Boolean;
+var
+  Snapshot: TQueueSnapshot;
+  Removed: Boolean;
+  Request: TCancelRequest;
+begin
+  Result := True;
+  if ParseQueueUpdate(Line, Snapshot) then
+  begin
+    ChatSession.Emit(PageQueue(Snapshot, False));
+    Exit;
+  end;
+  if not ParseRemoveQueued(Line, Removed) then
+    Exit(False);
+  if Length(GCancels) = 0 then
+    Exit;
+  Request := GCancels[0];
+  Delete(GCancels, 0, 1);
+  ChatSession.Emit(PageQueueRemoved(Request.Sent, Request.Queue, Removed));
+  if not Removed then
+    ChatSession.Notice('info', Tr('chatqueue.notRemoved'));
+end;
+
+procedure CancelQueued(const Sent, Queue: string);
+const
+  OmpQueues: array[Boolean] of string = ('steering', 'followUp');
+var
+  Request: TCancelRequest;
+begin
+  Request.Sent := Sent;
+  Request.Queue := Queue;
+  if not ChatSession.Connected then
+  begin
+    ChatSession.Emit(PageQueueRemoved(Sent, Queue, False));
+    Exit;
+  end;
+  GCancels := GCancels + [Request];
+  ChatSession.SendCommand('remove_queued_message',
+    BuildRemoveQueuedFrame('req', Sent, OmpQueues[Queue = 'followUp']));
 end;
 
 end.

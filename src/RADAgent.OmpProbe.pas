@@ -13,7 +13,7 @@ uses
 
 const
   { The omp release RADAgent was built and verified against. }
-  TestedOmpVersion = '18.2.11';
+  TestedOmpVersion = '18.4.4';
 
 type
   TOmpCheck = record
@@ -40,8 +40,9 @@ uses
   RADAgent.Skills, RADAgent.Lang;
 
 const
-  { Flags RADAgent passes (main child, plan mode, /btw). omp --help does not list --fork. }
-  UsedFlags: array[0..13] of string = ('--mode', '--cwd', '--config', '--append-system-prompt',
+  { Flags RADAgent passes (main child, plan mode, /btw), and the mode value rpc-ui. omp --help
+    does not list --fork. }
+  UsedFlags: array[0..14] of string = ('--mode', 'rpc-ui', '--cwd', '--config', '--append-system-prompt',
     '--approval-mode', '--no-tools', '--no-skills', '--no-extensions', '--no-lsp', '--no-title',
     '--session-dir', '--resume', '--model', '--thinking');
   RpcTimeoutMs = 30000;

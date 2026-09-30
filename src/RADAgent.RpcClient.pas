@@ -1,5 +1,5 @@
 unit RADAgent.RpcClient;
-{ omp --mode rpc child. The read thread never calls ToolsAPI. }
+{ omp --mode rpc-ui child. The read thread never calls ToolsAPI. }
 interface
 uses
   System.Classes, System.SysUtils, RADAgent.RpcDispatch, RADAgent.RpcEvents,
@@ -248,7 +248,7 @@ begin
   Kind := FrameTypeOf(Line);
   if Kind = 'ready' then FProtocol := ChooseProtocol(Line);
   if Assigned(FOnUi) and (Kind = 'extension_ui_request') then begin QueueUi(Line); Exit; end;
-  if (Kind = 'response') or (Kind = 'available_commands_update') then
+  if (Kind = 'response') or (Kind = 'available_commands_update') or (Kind = 'queue_update') then
     QueueResponse(Line);
   Event := ParseAgentEvent(Line);
   if Event.Kind <> aekNone then

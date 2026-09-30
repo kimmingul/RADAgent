@@ -1,6 +1,6 @@
 unit RADAgent.RpcProtocol;
 
-{ JSONL frames for omp --mode rpc (protocol v1, and v2 when omp offers it). No ToolsAPI. }
+{ JSONL frames for omp --mode rpc-ui (protocol v1, and v2 when omp offers it). No ToolsAPI. }
 
 interface
 

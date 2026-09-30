@@ -3,7 +3,8 @@ unit RADAgent.SlashRoutes;
 { Which slash commands RADAgent carries out itself. omp runs the commands it lists over RPC
   (get_available_commands); the ones its terminal UI keeps to itself would reach the model as
   plain text, so RADAgent maps them onto RPC features or its own windows, or says they need
-  the terminal. A command omp starts to list over RPC goes to omp again. No VCL, no ToolsAPI. }
+  the terminal. A command omp starts to list over RPC goes to omp again, except the ones omp
+  lists but can only run in its terminal. No VCL, no ToolsAPI. }
 
 interface
 
@@ -60,10 +61,12 @@ const
     (Name: 'quit'; Route: srExit; Hint: ''),
     (Name: 'q'; Route: srExit; Hint: ''));
 
-  { omp 18.2.11 terminal-only built-ins with no RPC counterpart. }
+  { omp 18.4.4 terminal-only built-ins with no RPC counterpart. }
   TerminalOnly: array[0..19] of string = ('goal', 'guided-goal', 'loop', 'vibe', 'tan', 'omfg',
     'cleanse', 'plan-review', 'collab', 'join', 'leave', 'pause', 'live', 'record', 'git', 'debug',
     'setup', 'skills', 'logout', 'open');
+  { omp 18.4.4 lists these over RPC, but there they open nothing and answer nothing. }
+  TerminalUiOnly: array[0..0] of string = ('annotate');
 
 function RouteSlash(const Text: string; const RpcNames: TArray<string>; out Name, Args: string): TSlashRoute;
 var
@@ -85,6 +88,9 @@ begin
     Name := LowerCase(Copy(Body, 2, Space - 2));
     Args := Trim(Copy(Body, Space + 1, MaxInt));
   end;
+  for Known in TerminalUiOnly do
+    if Known = Name then
+      Exit(srTerminalOnly);
   for Known in RpcNames do
     if SameText(Known, Name) then
       Exit;

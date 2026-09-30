@@ -1,6 +1,6 @@
 ﻿# RAD Agent
 
-RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp이고 검증 버전은 18.2.11이다. Delphi로 다시 구현하지 않는다.
+RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp이고 검증 버전은 18.4.4이다. Delphi로 다시 구현하지 않는다.
 
 기준 버전은 13.2이고, 10.4 Sydney(BDS 21.0)부터 11, 12도 빌드되게 유지한다(아래 "구버전").
 
@@ -49,7 +49,7 @@ RAD Studio 13.2 (BDS 37.0) design-time BPL. 에이전트 루프는 omp이고 검
 
 ## omp
 
-- omp는 자식 프로세스다. 기본 명령은 `omp --mode rpc`이다.
+- omp는 자식 프로세스다. 기본 명령은 `omp --mode rpc-ui`이다(RPC에 도구 UI를 더한 모드라 `ask` 도구의 질문이 extension UI 요청으로 온다).
 - 전송은 stdin/stdout JSONL이다. 한 줄에 JSON 객체 하나.
 - `ready` 프레임을 읽기 전에 `prompt`를 보내지 않는다.
 - 자식의 cwd는 활성 `.dproj`가 있는 디렉터리다.

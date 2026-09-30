@@ -2,14 +2,14 @@
 
 **RAD Agent — an agentic coding assistant for Delphi, powered by oh-my-pi**
 
-RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키지(BPL)로 설치하고, 에이전트 루프는 사용자가 설치한 [oh-my-pi](https://github.com/can1357/oh-my-pi)(omp)가 맡는다. RAD Agent는 omp를 `omp --mode rpc` 자식 프로세스로 띄우고, 채팅 화면과 IDE 기능(에디터, 폼 디자이너, 컴파일, 디버거, 메시지 뷰)을 omp에 이어 준다. 창은 Tools 또는 View 메뉴의 RAD Agent다.
+RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키지(BPL)로 설치하고, 에이전트 루프는 사용자가 설치한 [oh-my-pi](https://github.com/can1357/oh-my-pi)(omp)가 맡는다. RAD Agent는 omp를 `omp --mode rpc-ui` 자식 프로세스로 띄우고, 채팅 화면과 IDE 기능(에디터, 폼 디자이너, 컴파일, 디버거, 메시지 뷰)을 omp에 이어 준다. 창은 Tools 또는 View 메뉴의 RAD Agent다.
 
 제품 페이지: https://kimmingul.github.io/RADAgent/ · 다운로드: [Releases](https://github.com/kimmingul/RADAgent/releases)
 
 ## 요구사항
 
 - Windows, RAD Studio 13.2(BDS 37.0) 32-bit 또는 64-bit IDE. 10.4 Sydney, 11 Alexandria, 12 Athens도 빌드되게 맞춰 두었다(아래 "한계").
-- omp. 검증 버전 18.2.11. 없으면 설치 프로그램이 함께 설치할지 묻고(기본 켜짐) 이 PC에 맞는(x64·ARM64) 최신 릴리스를 GitHub에서 받아 `%LOCALAPPDATA%\omp\omp.exe`에 설치한다. RAD Agent는 PATH의 omp, 그다음 그 위치를 쓰고, 다른 경로는 설정에서 지정한다. 새로 받은 omp는 검증 버전보다 새것일 수 있다. 그때 RAD Agent는 처음 시작할 때 호환성 검사를 하고 문제가 있으면 채팅에 알린다.
+- omp. 검증 버전 18.4.4. 없으면 설치 프로그램이 함께 설치할지 묻고(기본 켜짐) 이 PC에 맞는(x64·ARM64) 최신 릴리스를 GitHub에서 받아 `%LOCALAPPDATA%\omp\omp.exe`에 설치한다. RAD Agent는 PATH의 omp, 그다음 그 위치를 쓰고, 다른 경로는 설정에서 지정한다. 새로 받은 omp는 검증 버전보다 새것일 수 있다. 그때 RAD Agent는 처음 시작할 때 호환성 검사를 하고 문제가 있으면 채팅에 알린다.
 - Edge WebView2 런타임(Windows 10/11에 보통 들어 있다). 없으면 채팅은 글자 화면으로 동작한다.
 - git(체크포인트용). 없으면 체크포인트만 꺼진다.
 - 선택: C++Builder 프로젝트의 코드 탐색에 [clangd](https://github.com/clangd/clangd/releases). 설정 창에서 받아 설치할 수 있다.
@@ -46,6 +46,8 @@ RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키
 - 입력 상자: Enter 보내기, Shift+Enter 줄바꿈, ↑ 이전 문장, `/` 명령 목록, `@` 프로젝트 파일. 위에 활성 파일, 선택 영역(누르면 프롬프트에 붙음), 저장 안 한 파일 수가 보인다.
 - 입력 아래 줄: `＋` 메뉴, 승인 방식, 모델(검색 가능한 목록), 생각 수준, 컨텍스트 사용량 원, 연결 점.
 - omp가 작업하는 중에도 입력할 수 있다. Enter는 진행 중인 턴에 끼워 넣고(다음 단계에서 읽음), Ctrl+Enter는 턴이 끝난 뒤 보낸다. 입력이 비어 있으면 단추와 Esc는 중지다. 중지는 abort를 보내고, 5초 안에 끝나지 않거나 한 번 더 누르면 omp를 다시 시작해 같은 대화로 잇는다.
+- 작업 중 보낸 메시지는 omp가 아직 읽지 않은 동안 대기로 보이고 `취소`로 거둘 수 있다(omp 18.4.4부터). 중지한 턴의 Ctrl+Enter 메시지는 omp에 남아 다음 메시지 뒤에 전달되므로 채팅이 그 사실을 알린다. omp가 다시 시작되어 전달되지 못한 메시지는 그렇게 표시된다.
+- 모델이 omp의 `ask` 도구로 물으면 선택 창이 뜨고, `Other (type your own)`를 고르면 직접 입력한다.
 - `!명령`은 omp 셸에서 실행하고 출력이 채팅과 컨텍스트에 들어간다.
 - 자동 재시도를 기다리는 알림에는 `재시도 취소`가 있다. 하위 에이전트 줄을 누르면 그 에이전트의 대화가 보인다.
 - 컨텍스트 원을 누르면 사용량 패널이 뜬다: 컨텍스트 윈도우 사용률과 토큰, 이 세션의 입력·출력·캐시 토큰과 비용, 지금 공급자의 플랜 한도(5시간·주간·모델별 사용률과 재설정 시각). 제목 줄을 누르면 `/usage` 전체 보고서.
@@ -56,7 +58,7 @@ RAD Studio IDE 안에 도킹되는 AI 코딩 에이전트다. design-time 패키
 ### 명령
 
 - omp가 제공하는 명령(`/usage`, `/context`, `/compact`, `/handoff`, `/mcp`, `/memory`, `/todo`, `/skill:*` 등)은 omp가 실행하고 결과가 채팅에 보인다.
-- `/model`, `/fast`, `/thinking`은 선택 창을, `/new`는 확인 창을 띄운다.
+- `/model`, `/fast`, `/thinking`은 선택 창을, `/new`는 확인 창을 띄운다. `/fast` 선택 창에는 omp가 제공하면 `ultra`(OpenAI Ultrafast)도 나온다.
 - omp 터미널 화면에만 있는 명령은 RAD Agent가 처리한다:
   - `/clear`: 컨텍스트를 비우고 같은 이름으로 이어 간다. 이전 부분은 세션 목록에 남는다.
   - `/delete`: 확인 후 이 세션 파일을 지우고 새 세션.
@@ -121,11 +123,11 @@ omp 버전이 바뀌면 처음 시작할 때 모델을 부르지 않는 호환�
 
 ## 한계
 
-- **검증 범위**: RAD Studio 13.2와 omp 18.2.11에서 확인했다. 10.4·11·12는 빌드되게 맞췄을 뿐 아직 빌드·실행 확인을 하지 않았다. 10.3 이하는 도킹 창 API가 없어 지원하지 않는다.
+- **검증 범위**: RAD Studio 13.2와 omp 18.4.4에서 확인했다. 10.4·11·12는 빌드되게 맞췄을 뿐 아직 빌드·실행 확인을 하지 않았다. 10.3 이하는 도킹 창 API가 없어 지원하지 않는다.
 - **구버전 차이**: 11·12에는 64-bit IDE가 없어 32-bit IDE만 쓴다. 10.4에서는 View 메뉴 항목에 아이콘이 없다. 64-bit DelphiLSP가 없는 릴리스에서는 32-bit `bin\DelphiLSP.exe`를 쓴다. C++ `bcc64x`(Win64x)는 12.1부터다.
 - **DelphiLSP**: 정의 이동과 진단은 되지만 참조 검색과 hover는 DelphiLSP가 거절한다. 참조는 grep으로 찾는다.
 - **clangd(C++)**: 일반 clangd는 `__property`를 몰라 VCL 속성의 정보·이동이 없고, `System.hpp`와 폼 생성자에서 늘 나는 오류가 있다(omp 안내문에 무시하라고 적는다). 참조는 열린 파일 기준이다. Win64(bcc64) 설정은 확인하지 않았다. 최종 확인은 컴파일이다.
-- **omp 터미널 전용 명령**: `/goal`, `/loop`, `/vibe`, `/tan`, `/omfg`, `/cleanse`, `/plan-review`, `/collab`, `/join`, `/leave`, `/pause`, `/live`, `/record`, `/git`, `/debug`, `/setup`, `/skills`, `/logout`, `/open`은 omp가 RPC로 제공하지 않아 쓸 수 없다고 알린다. 터미널에서 omp를 실행해 쓴다.
+- **omp 터미널 전용 명령**: `/goal`, `/loop`, `/vibe`, `/tan`, `/omfg`, `/cleanse`, `/plan-review`, `/collab`, `/join`, `/leave`, `/pause`, `/live`, `/record`, `/git`, `/debug`, `/setup`, `/skills`, `/logout`, `/open`, `/annotate`는 omp가 RPC로 제공하지 않아 쓸 수 없다고 알린다. 터미널에서 omp를 실행해 쓴다.
 - **대화 갈래**: `/tree`, `/branch`, `/fork`로 갈라지면 새 세션 파일로 이어지므로 `/tree`는 지금 세션 파일 안의 갈래만 보인다. 이 명령들은 파일을 되돌리지 않는다(파일까지는 메시지의 체크포인트).
 - **사용량 패널**: 플랜 이름은 omp가 알려 주는 공급자만 보인다(Anthropic은 공급자 이름으로 대신한다). 한도는 omp가 보고하는 공급자만 나온다.
 - **강제 중지**: 응답하지 않는 omp를 강제로 다시 시작하면 그 턴의 진행 중이던 내용은 사라진다.

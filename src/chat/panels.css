@@ -23,8 +23,12 @@
   margin-top: 4px; }
 .usage-head:hover { color: var(--fg); }
 
-/* Messages sent while omp worked, and the retry stop */
+/* Messages sent while omp worked (queue.js), and the retry stop */
 .queue-tag { font-size: 10px; color: var(--muted); margin-top: 2px; text-align: right; }
+.queue-waiting .queue-tag { font-style: italic; }
+.queue-cancel { font-style: normal; }
+.queue-cancelled .user-text { text-decoration: line-through; opacity: 0.6; }
+.queue-lost .queue-tag { color: var(--warn, var(--muted)); }
 .notice-btn { margin-left: 8px; font: inherit; font-size: 11px; color: var(--fg); cursor: pointer;
   background: transparent; border: 1px solid var(--border); border-radius: 4px; padding: 0 6px; }
 .subagent-row { cursor: pointer; }

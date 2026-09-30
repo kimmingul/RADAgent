@@ -18,6 +18,7 @@ uses
   RADAgent.RpcClient in '..\src\RADAgent.RpcClient.pas',
   RADAgent.RpcJson in '..\src\RADAgent.RpcJson.pas',
   RADAgent.RpcEvents in '..\src\RADAgent.RpcEvents.pas',
+  RADAgent.RpcQueue in '..\src\RADAgent.RpcQueue.pas',
   RADAgent.RpcResponses in '..\src\RADAgent.RpcResponses.pas',
   RADAgent.LineDiff in '..\src\RADAgent.LineDiff.pas',
   RADAgent.RpcChunks in '..\src\RADAgent.RpcChunks.pas',
@@ -87,7 +88,7 @@ var
   Command: string;
 begin
   Command := BuildOmpCommandLine('omp', 'D:\work', [], '', '');
-  Check(Command.Contains('--mode rpc'), 'command has rpc mode');
+  Check(Command.Contains('--mode rpc-ui '), 'command has rpc mode with tool UI');
   Check(Command.Contains('--cwd'), 'command has cwd');
   Check(not Command.Contains('--config'), 'command omits empty overlay');
   Command := BuildOmpCommandLine('omp', 'D:\work', ['C:\t\host.yml', '', 'D:\work\.omp\radagent.yml'],

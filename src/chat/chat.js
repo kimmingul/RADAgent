@@ -116,12 +116,7 @@
     }
   }
 
-  // queue: sent while omp worked, 'steer' (read at its next step) or 'followUp' (after the turn).
-  function handleUser(text, queue, ts) {
-    const wasNear = isNearBottom();
-    closeAssistantBlock();
-    currentTurn = null;
-
+  function userTurn(text, ts) {
     const turn = document.createElement('div');
     turn.className = 'turn turn-user';
     const bubble = document.createElement('div');
@@ -130,16 +125,20 @@
     body.className = 'user-text';
     body.textContent = text || '';
     bubble.appendChild(body);
-    if (queue) {
-      const tag = document.createElement('div');
-      tag.className = 'queue-tag';
-      tag.textContent = global.T(queue === 'followUp' ? 'page.chat.queuedFollowUp' : 'page.chat.queuedSteer');
-      bubble.appendChild(tag);
-    }
     turn.appendChild(bubble); global.ChatTurnTime.stamp(turn, ts);
+    return turn;
+  }
+
+  // queue: sent while omp worked, 'steer' (read at its next step) or 'followUp' (after the turn).
+  function handleUser(msg) {
+    const wasNear = isNearBottom();
+    closeAssistantBlock();
+    currentTurn = null;
+    const turn = userTurn(msg.text, msg.ts);
+    if (msg.queue) global.ChatQueue.mark(turn.firstChild, msg.queue, msg.sent);
     // Above the working line: the turn goes on below the message.
     const working = document.getElementById('working');
-    if (queue && working && logEl.lastElementChild === working) logEl.insertBefore(turn, working);
+    if (msg.queue && working && logEl.lastElementChild === working) logEl.insertBefore(turn, working);
     else logEl.appendChild(turn);
     handleNewContent(wasNear);
   }
@@ -256,6 +255,7 @@
     global.ChatTools.endTurn();
     currentTurn = null;
     const wasNear = isNearBottom(); if (global.ChatTurnTime.append(logEl, msg)) handleNewContent(wasNear);
+    global.ChatQueue.turnEnd(msg);
   }
 
   function handleClear() {
@@ -278,15 +278,7 @@
     for (const item of items) {
       if (!item) continue;
       if (item.role === 'user') {
-        const turn = document.createElement('div');
-        turn.className = 'turn turn-user';
-        const bubble = document.createElement('div');
-        bubble.className = 'user-bubble';
-        const body = document.createElement('div');
-        body.className = 'user-text';
-        body.textContent = item.text || '';
-        bubble.appendChild(body);
-        turn.appendChild(bubble); global.ChatTurnTime.stamp(turn, item.ts);
+        const turn = userTurn(item.text, item.ts);
         logEl.appendChild(turn);
         if (item.seq) global.ChatCheckpoints.attach(turn, item.seq);
         global.ChatTurnTime.append(logEl, item);
@@ -312,7 +304,9 @@
     switch (msg.t) {
       case 'strings': handleStrings(msg); if (global.ChatModelPicker && logEl) global.ChatModelPicker.relabel(); break;
       case 'theme': handleTheme(msg.vars); break;
-      case 'user': handleUser(msg.text, msg.queue, msg.ts); break;
+      case 'user': handleUser(msg); break;
+      case 'queue': global.ChatQueue.update(msg); break;
+      case 'queueRemoved': global.ChatQueue.removed(msg); break;
       case 'assistantDelta': handleAssistantDelta(msg.text); break;
       case 'assistantEnd': handleAssistantEnd(); break;
       case 'toolStart': global.ChatTools.start(msg.id, msg.name, msg.detail, msg.input); break;
@@ -369,6 +363,7 @@
     };
     global.ChatTools.init(ctx);
     global.ChatCards.init(ctx);
+    global.ChatQueue.init(ctx);
     global.ChatActivity.init(ctx);
     global.ChatTopbar.wire();
     global.ChatModelPicker.wire();

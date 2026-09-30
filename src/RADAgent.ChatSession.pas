@@ -361,7 +361,7 @@ begin
   { First state after following a moved project: reopen the conversation from its new place. }
   if FFollow.Arrived(Info.SessionFile, FResumeFile) then
     ClientStatus;
-  FStream.ShowTodos(Info.Todos);
+  FStream.ShowState(Info);
   FCatalog.Touch;
   Changed;
 end;

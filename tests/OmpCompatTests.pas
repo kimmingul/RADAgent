@@ -19,7 +19,7 @@ uses
   System.SysUtils, System.Classes, System.IOUtils, System.JSON, System.NetEncoding, Winapi.Windows,
   RADAgent.RpcProtocol, RADAgent.RpcDispatch, RADAgent.RpcEvents, RADAgent.ChatCommand,
   RADAgent.OmpProbe, RADAgent.Options, RADAgent.SlashRoutes, RADAgent.SessionData,
-  RADAgent.UsageReport, RADAgent.RpcResponses, RADAgent.SessionMove;
+  RADAgent.UsageReport, RADAgent.RpcResponses, RADAgent.SessionMove, RADAgent.RpcQueue;
 
 type
   TLineSink = class
@@ -225,6 +225,8 @@ begin
   Check(RouteSlash('/usage', ['usage'], Name, Args) = srNone, 'a command omp lists over RPC goes to omp');
   Check(RouteSlash('/tree', ['tree'], Name, Args) = srNone, 'once omp lists a command over RPC, omp gets it');
   Check(RouteSlash('/goal ship it', [], Name, Args) = srTerminalOnly, 'a terminal-only command is not sent to the model');
+  Check(RouteSlash('/annotate last', ['annotate'], Name, Args) = srTerminalOnly,
+    'a command omp lists but runs only in its terminal still says so');
   Check((RouteSlash('/Copy code', [], Name, Args) = srCopy) and (Args = 'code'), 'name case-insensitive, args kept');
   Check(RouteSlash('/myfilecmd x', [], Name, Args) = srNone, 'unknown commands still reach omp');
 end;
@@ -293,6 +295,39 @@ begin
     'an answer''s completedAt is its end time');
 end;
 
+{ The queue frames as omp 18.4.4 sends them (rpc.log); older omp sends none. }
+procedure TestQueueFrames(const Check: TCheckProc);
+var
+  Snapshot: TQueueSnapshot;
+  Info: TStateInfo;
+  Removed: Boolean;
+  Frame: TJSONObject;
+begin
+  Check(ParseQueueUpdate('{"type":"queue_update","steering":[],"followUp":["A","B"]}', Snapshot) and
+    (Length(Snapshot.Steering) = 0) and (Length(Snapshot.FollowUp) = 2) and (Snapshot.FollowUp[1] = 'B'),
+    'queue_update lists the pending follow-ups in order');
+  Check(not ParseQueueUpdate('{"type":"notice","steering":[],"followUp":[]}', Snapshot), 'other events are no queue');
+  Check(ParseStateInfo('{"type":"response","command":"get_state","success":true,"data":{"queuedMessageCount":1,' +
+    '"queuedMessages":{"steering":["S"],"followUp":[]}}}', Info) and Info.HasQueue and (Info.Queue.Steering[0] = 'S'),
+    'get_state carries the pending messages');
+  Check(ParseStateInfo('{"type":"response","command":"get_state","success":true,"data":{"queuedMessageCount":0}}', Info) and
+    not Info.HasQueue, 'an omp without queuedMessages reports no queue');
+  Check(ParseRemoveQueued('{"id":"r","type":"response","command":"remove_queued_message","success":true,' +
+    '"data":{"removed":true}}', Removed) and Removed, 'a removed message');
+  Check(ParseRemoveQueued('{"id":"r","type":"response","command":"remove_queued_message","success":true,' +
+    '"data":{"removed":false}}', Removed) and not Removed, 'a message omp already read');
+  Check(ParseRemoveQueued('{"type":"response","command":"remove_queued_message","success":false,"error":"x"}', Removed) and
+    not Removed, 'a refused removal is not a removal');
+  Frame := TJSONObject.ParseJSONValue(BuildRemoveQueuedFrame('q1', 'Then say "hi"', 'followUp')) as TJSONObject;
+  try
+    Check((Frame.GetValue<string>('type') = 'remove_queued_message') and
+      (Frame.GetValue<string>('message') = 'Then say "hi"') and (Frame.GetValue<string>('queue') = 'followUp'),
+      'remove_queued_message names the message and its queue');
+  finally
+    Frame.Free;
+  end;
+end;
+
 { Header as omp 18 writes it (title line first, then the session line with cwd). }
 procedure TestSessionMove(const Check: TCheckProc);
 const
@@ -341,6 +376,7 @@ begin
   TestApprovalMatching(Check);
   TestLocalPrompts(Check);
   TestMessageTimes(Check);
+  TestQueueFrames(Check);
 end;
 
 procedure RunLiveOmpProbe(const Check: TCheckProc);
